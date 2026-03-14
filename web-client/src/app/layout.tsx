@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/stores/provider";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
@@ -8,33 +9,21 @@ import NextTopLoader from "nextjs-toploader";
 // import AuthTokenSync from "@/components/auth/AuthTokenSync";
 // import { ChatSocketProvider } from "@/contexts/ChatSocketContext";
 
-// Suppress Antd React 19 compatibility warning and hydration mismatch
-if (typeof window !== "undefined") {
-  const originalError = console.error;
-  console.error = (...args: any[]) => {
-    // Suppress Antd v5 React compatibility warning
-    if (
-      args[0]?.includes?.("antd v5 support React is 16 ~ 18") ||
-      (typeof args[0] === "string" && args[0].includes("antd v5 support React"))
-    ) {
-      return;
-    }
-    // Suppress hydration mismatch warning from Ant Design
-    if (
-      typeof args[0] === "string" &&
-      args[0].includes("Hydration failed because the server rendered HTML didn't match the client")
-    ) {
-      return;
-    }
-    originalError.call(console, ...args);
-  };
-}
+const bodyFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
+const displayFont = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+});
 
 export const metadata: Metadata = {
-  title: "Rental Platform",
+  title: "TradeHub",
   icons: {
     icon: "/assets/logo1.png",
-  }
+  },
 };
 
 export default function RootLayout({
@@ -44,16 +33,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+      <body className={`${bodyFont.variable} ${displayFont.variable}`} suppressHydrationWarning>
         <AntdRegistry>
             <NextTopLoader
-              color="#5750F1"
+              color="#22c55e"
               showSpinner={false}
               height={3}
               crawlSpeed={200}
               speed={200}
               easing="ease"
-              shadow="0 0 10px #5750F1,0 0 5px #5750F1"
+              shadow="0 0 10px #22c55e,0 0 5px #22c55e"
             />
               <ReduxProvider>
                   {children}

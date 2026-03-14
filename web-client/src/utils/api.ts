@@ -8,6 +8,7 @@ type HttpOptions = {
 };
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+type RequestData = FormData | Record<string, unknown> | string | null | undefined;
 
 class HttpClient {
   private baseUrl: string;
@@ -22,11 +23,10 @@ class HttpClient {
   setAccessToken(token: string | null): void {
     this.accessToken = token;
     if (token) {
-      // Save to Secure Cookie
       Cookies.set("accessToken", token, {
-        secure: true, // Only send over HTTPS (requires HTTPS or localhost)
-        sameSite: "strict",
-        expires: 7 // 7 days
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: 7,
       });
     } else {
       Cookies.remove("accessToken");
@@ -40,7 +40,7 @@ class HttpClient {
 
   private buildHeaders(
     options?: HttpOptions,
-    data?: any
+    data?: RequestData
   ): Record<string, string> {
     const headers: Record<string, string> = {};
 
@@ -66,13 +66,16 @@ class HttpClient {
   private async request<T>(
     method: HttpMethod,
     endpoint: string,
-    data?: any,
+    data?: RequestData,
     options?: HttpOptions
-  ) {
+  ): Promise<T> {
+    const normalizedBaseUrl = this.baseUrl.endsWith("/")
+      ? this.baseUrl.slice(0, -1)
+      : this.baseUrl;
+
     const url = endpoint.startsWith("http")
       ? endpoint
-      : `${this.baseUrl}/api${endpoint.startsWith("/") ? endpoint : `/${endpoint}`
-      }`;
+      : `${normalizedBaseUrl}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
     const headers = this.buildHeaders(options, data);
 
@@ -81,15 +84,12 @@ class HttpClient {
       headers,
     };
 
-    // Thêm body cho POST, PUT, DELETE
-    if (data && method !== "GET") {
-      // Nếu data là FormData, gửi trực tiếp; nếu không thì JSON.stringify
+    if (data !== undefined && data !== null && method !== "GET") {
       config.body = data instanceof FormData ? data : JSON.stringify(data);
     }
 
-    // Timeout implementation using AbortController
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     config.signal = controller.signal;
 
     if (process.env.NODE_ENV === 'development') {
@@ -101,13 +101,11 @@ class HttpClient {
       response = await fetch(url, config);
     } catch (networkError) {
       if (networkError instanceof Error && networkError.name === 'AbortError') {
-        // Only log timeout in development mode
         if (process.env.NODE_ENV === 'development') {
           console.warn('[API] Request timed out:', url);
         }
         throw new Error("Request timed out. Please try again.");
       }
-      // Only log network errors in development mode
       if (process.env.NODE_ENV === 'development') {
         console.error('[API] Network error:', networkError);
       }
@@ -118,10 +116,7 @@ class HttpClient {
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expired or invalid
         this.setAccessToken(null);
-        // Optional: Window.location.href = '/login' if strictly needed,
-        // but usually handled by UI state (redux)
       }
       try {
         const error = await response.json();
@@ -141,30 +136,28 @@ class HttpClient {
     }
   }
 
-  get(endpoint: string, options?: HttpOptions) {
+  get<T>(endpoint: string, options?: HttpOptions): Promise<T> {
     return this.request("GET", endpoint, undefined, options);
   }
 
-  post(endpoint: string, data?: any, options?: HttpOptions) {
+  post<T>(endpoint: string, data?: RequestData, options?: HttpOptions): Promise<T> {
     return this.request("POST", endpoint, data, options);
   }
 
-  put(endpoint: string, data?: any, options?: HttpOptions) {
+  put<T>(endpoint: string, data?: RequestData, options?: HttpOptions): Promise<T> {
     return this.request("PUT", endpoint, data, options);
   }
 
-  delete(endpoint: string, data?: any, options?: HttpOptions) {
+  delete<T>(endpoint: string, data?: RequestData, options?: HttpOptions): Promise<T> {
     return this.request("DELETE", endpoint, data, options);
   }
 
-  patch(endpoint: string, data?: any, options?: HttpOptions) {
+  patch<T>(endpoint: string, data?: RequestData, options?: HttpOptions): Promise<T> {
     return this.request("PATCH", endpoint, data, options);
   }
 }
 
-// Export instance mặc định
 const http = new HttpClient();
 export default http;
 
-// Export class để có thể tạo instance mới với baseUrl khác
 export { HttpClient };
