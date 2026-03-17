@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Dropdown,
   Button,
   Divider,
   Input,
@@ -19,7 +20,6 @@ import {
   ArrowRightOutlined,
 } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
   clearAuthError,
@@ -86,6 +86,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
     try {
       await dispatch(loginUser(loginForm)).unwrap();
+                    message.success("Đăng nhập thành công!");
     } catch {}
   };
 
@@ -100,7 +101,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     try {
       const res = await dispatch(registerUser(registerForm)).unwrap();
 
-      messageApi.success(res.message || "Đăng ký thành công!");
+      message.success("Đăng ký thành công!");
       setMode("login");
     } catch {}
   };
@@ -131,52 +132,37 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         <div className="flex flex-col md:flex-row min-h-[520px]">
 
           {/* LEFT PANEL */}
+<div className="hidden md:flex md:w-1/2 relative 
+bg-gradient-to-br from-primary/70 via-primary/20 to-white 
+items-center justify-center p-12 overflow-hidden">
 
-          <div className="hidden md:flex md:w-[45%] bg-[#052c24] text-white p-10 relative items-center">
+  {/* Background blur blobs */}
+  <div className="absolute inset-0 z-0 opacity-70">
+    <div className="absolute top-0 left-0 w-80 h-80 bg-primary rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+    <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-primary rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
+  </div>
 
-            <div className="absolute top-[-20%] left-[-20%] w-72 h-72 bg-emerald-500/20 rounded-full blur-[120px]" />
-            <div className="absolute bottom-[-20%] right-[-20%] w-72 h-72 bg-emerald-700/30 rounded-full blur-[120px]" />
+  {/* Content */}
+  <div className="relative z-10 text-center">
+    <div className="mb-8 flex justify-center">
+      <div
+        className="w-full max-w-md aspect-[4/5] rounded-2xl bg-center bg-cover shadow-2xl"
+        style={{
+          backgroundImage:
+            "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDe6LGE8hyGq8LiaoJ7_Uv9NkyKx84H3-8eKjXU21u3fkZPM0PonBFnaPIsgtCNzX1O0PnbV8KyVQVt3Rqy8CGzKLRlKMcwHL8KFBXzND6XmXu7OPS1k7cIBaPuRyQj3m7xh_PfFsh8IBRMZM59NKJD5aR_SrpuKGIZwTx1qOXiS8JjPHLJjeu2XwybNEDINmwlHEFl3Ltsay5cFWV2urTW2Vn4Iu_yz5NOZXbJv-qYoRjHAAo_5XLhGVo_cxIh6GI1TDogd0gQdmod')",
+        }}
+      />
+    </div>
 
-            <div className="relative z-10">
+    <h2 className="text-3xl font-extrabold text-slate-900 mb-4">
+      Gia nhập cộng đồng <span className="text-primary">Xanh</span>
+    </h2>
 
-              <img
-                src="/logo/icon-logo.png"
-                className="w-14 mb-6 brightness-0 invert"
-              />
-
-              <Typography.Title
-                level={2}
-                className="!text-white !font-black !text-3xl !mb-4"
-              >
-                Mua sắm xanh
-                <br />
-                <span className="text-emerald-400 italic">bắt đầu từ bạn</span>
-              </Typography.Title>
-
-              <Typography.Paragraph className="text-emerald-100/80 text-base mb-8">
-                Mỗi món đồ cũ được tái sử dụng là một bước nhỏ
-                giúp hành tinh xanh hơn.
-              </Typography.Paragraph>
-
-              <div className="flex items-center gap-4">
-
-                <div className="flex -space-x-3">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="w-9 h-9 rounded-full border-2 border-emerald-900 overflow-hidden"
-                    >
-                      <img src={`https://i.pravatar.cc/150?u=${i}`} />
-                    </div>
-                  ))}
-                </div>
-
-                <span className="text-sm text-emerald-200">
-                  +1.2k người vừa tham gia
-                </span>
-              </div>
-            </div>
-          </div>
+    <p className="text-slate-600 text-lg leading-relaxed">
+      Mua bán đồ cũ không chỉ tiết kiệm mà còn góp phần bảo vệ môi trường.
+    </p>
+  </div>
+</div>
 
           {/* RIGHT PANEL */}
 
