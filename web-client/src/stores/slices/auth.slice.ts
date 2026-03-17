@@ -3,7 +3,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 import http from "@/utils/api";
-import type { LoginPayload, RegisterPayload, UserType } from "@/types/user.type";
+import type {
+	LoginPayload,
+	RegisterPayload,
+	UserProfileApiResponseType,
+	UserType,
+} from "@/types/user.type";
 
 type AuthProvider = "email" | null;
 
@@ -26,6 +31,10 @@ type AuthSuccessPayload = {
 	user: UserType;
 };
 
+type RegisterSuccessPayload = {
+	message: string;
+};
+
 const initialState: AuthState = {
 	loading: false,
 	isAuth: false,
@@ -43,13 +52,24 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 	return fallback;
 };
 
+const mapProfileResponseToUser = (profileResponse: UserProfileApiResponseType): UserType => ({
+	userId: profileResponse.user.userId,
+	email: profileResponse.user.email,
+	phoneNumber: profileResponse.user.phoneNumber,
+	role: profileResponse.user.role,
+	status: profileResponse.user.status,
+	fullName: profileResponse.user_profile?.fullName,
+	avatarUrl: profileResponse.user_profile?.avatarUrl,
+});
+
 export const fetchCurrentUser = createAsyncThunk<
 	UserType,
 	void,
 	{ rejectValue: string }
 >("auth/fetchCurrentUser", async (_, { rejectWithValue }) => {
 	try {
-		return await http.get<UserType>("/auth/api/me");
+		const profileResponse = await http.get<UserProfileApiResponseType>("/auth/api/profile");
+		return mapProfileResponseToUser(profileResponse);
 	} catch (error) {
 		return rejectWithValue(getErrorMessage(error, "Không thể tải thông tin người dùng"));
 	}
@@ -63,7 +83,8 @@ export const loginUser = createAsyncThunk<
 	try {
 		const response = await http.post<AuthResponse>("/auth/api/login/user", credentials);
 		http.setAccessToken(response.accessToken);
-		const user = await http.get<UserType>("/auth/api/me");
+		const profileResponse = await http.get<UserProfileApiResponseType>("/auth/api/profile");
+		const user = mapProfileResponseToUser(profileResponse);
 
 		return {
 			accessToken: response.accessToken,
@@ -76,18 +97,18 @@ export const loginUser = createAsyncThunk<
 });
 
 export const registerUser = createAsyncThunk<
-	AuthSuccessPayload,
+	RegisterSuccessPayload,
 	RegisterPayload,
 	{ rejectValue: string }
->("auth/registerUser", async (payload, { dispatch, rejectWithValue }) => {
+>("auth/registerUser", async (payload, { rejectWithValue }) => {
 	try {
-		await http.post<{ message: string }>("/auth/api/register/user", payload);
-		return await dispatch(
-			loginUser({
-				email: payload.email,
-				password: payload.password,
-			})
-		).unwrap();
+		const response = await http.post<{ message?: string }>("/auth/api/register/user", payload, {
+			timeoutMs: 60000,
+		});
+
+		return {
+			message: response?.message || "Đăng ký thành công",
+		};
 	} catch (error) {
 		return rejectWithValue(getErrorMessage(error, "Đăng ký thất bại"));
 	}
@@ -144,12 +165,7 @@ export const authSlice = createSlice({
 			})
 			.addCase(registerUser.fulfilled, (state, action) => {
 				state.loading = false;
-				state.isAuth = true;
-				state.accessToken = action.payload.accessToken;
-				state.user = action.payload.user;
-				state.authProvider = "email";
 				state.error = null;
-				Cookies.set("authProvider", "email", { expires: 7 });
 			})
 			.addCase(registerUser.rejected, (state, action) => {
 				state.loading = false;

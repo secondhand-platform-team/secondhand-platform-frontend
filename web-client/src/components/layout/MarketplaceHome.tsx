@@ -4,14 +4,14 @@
 
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
-import SiteFooter from "@/components/layout/SiteFooter";
-import SiteHeader from "@/components/layout/SiteHeader";
 import HeroSection from "@/components/home/HeroSection";
 import SearchSection from "@/components/home/SearchSection";
 import CategorySection from "@/components/home/CategorySection";
 import FeaturedProductsSection from "@/components/home/FeaturedProductsSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import { useAppSelector } from "@/stores/hooks";
+import Header from "./Header";
+import Footer from "./Footer";
 
 const categories = [
   { icon: "/icon-caterogy/device.png", title: "Điện tử" },
@@ -19,10 +19,10 @@ const categories = [
   { icon: "/icon-caterogy/interior.png", title: "Nội thất" },
   { icon: "/icon-caterogy/book.png", title: "Sách" },
   {
-    icon: "/logo/icon-caterogy/home_repair_service.png",
+    icon: "/icon-caterogy/home_repair_service.png",
     title: "Gia dụng",
   },
-  { icon: "/logo/icon-caterogy/other.png", title: "Khác" },
+  { icon: "/icon-caterogy/other.png", title: "Khác" },
 ];
 
 const featuredProducts = [
@@ -62,17 +62,12 @@ const featuredProducts = [
 
 export default function MarketplaceHome() {
   const [authOpen, setAuthOpen] = useState(false);
-  const { isAuth, user } = useAppSelector((state) => state.auth);
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-slate-50 dark:bg-slate-950">
-      <SiteHeader
-        isAuth={isAuth}
-        user={user}
-        onOpenAuth={() => setAuthOpen(true)}
-      />
+      
 
-      <main className="flex-grow">
+      <main className="grow">
         <HeroSection onOpenAuth={() => setAuthOpen(true)} />
         <SearchSection />
         <CategorySection categories={categories} />
@@ -80,10 +75,8 @@ export default function MarketplaceHome() {
         <HowItWorksSection />
       </main>
 
-      <SiteFooter />
-      {authOpen ? (
-        <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
-      ) : null}
+      <Footer />
+      
     </div>
   );
 }

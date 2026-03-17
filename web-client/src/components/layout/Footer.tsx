@@ -1,27 +1,25 @@
-import { Globe, Instagram, Store } from "lucide-react";
+import { Globe, Instagram } from "lucide-react";
 
-export default function SiteFooter() {
+export default function Footer() {
   return (
-    <footer id="footer" className="border-t border-white/60 bg-white/80 py-14">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[1.3fr_0.8fr_0.8fr] lg:px-8">
+    <footer id="footer" className="border-t border-white/60 bg-white/80 py-12">
+      <div className="mx-auto grid w-full max-w-360 gap-10 px-3 sm:px-4 lg:grid-cols-[1.3fr_0.8fr_0.8fr] lg:px-5">
         <div>
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-white">
-              <img
-                src="/logo/icon-logo.png"
-                alt=""
-                className="h-8 w-8 brightness-0 invert"
-              />{" "}
-            </div>
+             <img
+              src="/logo/icon-logo.png"
+              alt="Logo Chợ Đồ Cũ"
+              className="h-9 w-9 rounded-lg object-contain"
+            />
             <div>
-              <p className="text-lg font-semibold text-slate-950">TradeHub</p>
+              <p className="text-lg font-semibold text-slate-950">ReLife</p>
               <p className="text-sm text-slate-500">
                 Nền tảng giao dịch đồ đã qua sử dụng
               </p>
             </div>
           </div>
           <p className="mt-5 max-w-md text-sm leading-7 text-slate-500">
-            TradeHub kết nối người mua và người bán theo cách gọn, minh bạch và
+            ChợĐồCũ kết nối người mua và người bán theo cách gọn, minh bạch và
             dễ kiểm soát hơn cho đồ điện tử, thời trang, sách và nội thất.
           </p>
           <div className="mt-6 flex items-center gap-3">
@@ -42,46 +40,46 @@ export default function SiteFooter() {
 
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Marketplace
+            Khám phá
           </p>
           <div className="mt-5 grid gap-3 text-sm text-slate-600">
             <a href="#categories" className="transition hover:text-slate-950">
-              All Categories
+              Danh mục nổi bật
             </a>
             <a href="#featured" className="transition hover:text-slate-950">
-              Featured Items
+              Sản phẩm nổi bật
             </a>
             <a href="#hero" className="transition hover:text-slate-950">
-              Sell an Item
+              Đăng tin miễn phí
             </a>
             <a href="#auth" className="transition hover:text-slate-950">
-              Trade Policy
+              Chính sách giao dịch
             </a>
           </div>
         </div>
 
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Support
+            Hỗ trợ
           </p>
           <div className="mt-5 grid gap-3 text-sm text-slate-600">
             <a href="#footer" className="transition hover:text-slate-950">
-              Help Center
+              Trung tâm trợ giúp
             </a>
             <a href="#footer" className="transition hover:text-slate-950">
-              Safety Tips
+              Mẹo an toàn
             </a>
             <a href="#footer" className="transition hover:text-slate-950">
-              Contact Us
+              Liên hệ
             </a>
             <a href="#footer" className="transition hover:text-slate-950">
-              FAQ
+              Câu hỏi thường gặp
             </a>
           </div>
         </div>
       </div>
-      <div className="mx-auto mt-10 max-w-7xl border-t border-slate-100 px-4 pt-6 text-sm text-slate-400 sm:px-6 lg:px-8">
-        © 2026 TradeHub. Web client connected to auth-service API.
+      <div className="mx-auto mt-10 w-full max-w-360 border-t border-slate-100 px-3 pt-6 text-sm text-slate-400 sm:px-4 lg:px-5">
+        © 2026 ChợĐồCũ. Phiên bản web client đang kết nối API backend.
       </div>
     </footer>
   );
