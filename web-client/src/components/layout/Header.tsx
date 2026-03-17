@@ -1,6 +1,6 @@
 "use client";
 
-import { Dropdown } from "antd";
+import { Dropdown, message } from "antd";
 import {
   ChevronDown,
   CreditCard,
@@ -157,6 +157,7 @@ export default function Header({
                 onClick: ({ key }) => {
                   if (key === "logout") {
                     dispatch(logout());
+                    message.success("Đăng xuất thành công!");
                   }
                 },
               }}
@@ -204,6 +205,7 @@ export default function Header({
                 onClick: ({ key }) => {
                   if (key === "logout") {
                     dispatch(logout());
+                    message.success("Đăng xuất thành công!");
                   }
                 },
               }}
