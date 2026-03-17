@@ -20,9 +20,9 @@ const displayFont = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "TradeHub",
+  title: "ReLife",
   icons: {
-    icon: "/assets/logo1.png",
+    icon: "/logo/icon-logo.png",
   },
 };
 
@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="vi" suppressHydrationWarning>
       <body className={`${bodyFont.variable} ${displayFont.variable}`} suppressHydrationWarning>
         <AntdRegistry>
             <NextTopLoader

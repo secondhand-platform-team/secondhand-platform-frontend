@@ -16,24 +16,24 @@ export default function FeaturedProductsSection({
   products,
 }: FeaturedProductsSectionProps) {
   return (
-    <section className="bg-[#4cae4f]/5 py-16 dark:bg-[#4cae4f]/5">
+    <section className="bg-primary/5 py-12 dark:bg-primary/5" id="featured">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold tracking-tight">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
             Sản phẩm nổi bật
           </h2>
           <a
-            className="text-sm font-bold text-[#4cae4f] hover:underline cursor-pointer"
+            className="cursor-pointer text-sm font-bold text-primary hover:underline"
             href="#"
           >
             Xem tất cả
           </a>
         </div>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (
             <div
               key={product.title}
-              className="group relative flex flex-col overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-sm transition-all hover:shadow-xl cursor-pointer"
+              className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-xl dark:bg-slate-800"
             >
               <div className="aspect-square w-full overflow-hidden bg-slate-200">
                 <img
@@ -42,7 +42,7 @@ export default function FeaturedProductsSection({
                   src={product.image}
                 />
                 {product.isFree && (
-                  <div className="absolute left-3 top-3 rounded-lg bg-[#4cae4f] px-2 py-1 text-xs font-bold text-white uppercase">
+                  <div className="absolute left-3 top-3 rounded-lg bg-primary px-2 py-1 text-xs font-bold uppercase text-white">
                     Tặng miễn phí
                   </div>
                 )}
@@ -55,10 +55,10 @@ export default function FeaturedProductsSection({
                 </button>
               </div>
               <div className="flex flex-1 flex-col p-4">
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 line-clamp-2">
+                <h3 className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-slate-100 sm:text-base">
                   {product.title}
                 </h3>
-                <p className="mt-2 text-xl font-black text-[#4cae4f]">
+                <p className="mt-2 text-lg font-black text-primary">
                   {product.price}
                 </p>
                 <div className="mt-4 flex items-center gap-1 text-xs text-slate-500">

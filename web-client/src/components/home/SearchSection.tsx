@@ -2,10 +2,10 @@
 
 export default function SearchSection() {
   return (
-    <section className="relative -mt-12 mx-auto max-w-4xl px-4 pb-16">
-      <div className="rounded-xl bg-white dark:bg-slate-800 p-3 shadow-2xl border border-[#4cae4f]/5">
+    <section className="relative -mt-10 mx-auto max-w-3xl px-4 pb-12">
+      <div className="rounded-xl border border-primary/5 bg-white p-2.5 shadow-xl dark:bg-slate-800">
         <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-grow">
+          <div className="relative grow">
             <svg
               className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"
               fill="none"
@@ -20,12 +20,12 @@ export default function SearchSection() {
               />
             </svg>
             <input
-              className="w-full rounded-lg border-none bg-slate-100 dark:bg-slate-700 py-4 pl-12 pr-4 text-base focus:ring-2 focus:ring-[#4cae4f]"
+              className="w-full rounded-lg border-none bg-slate-100 py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary dark:bg-slate-700"
               placeholder="Tìm kiếm đồ cũ, quần áo, nội thất..."
               type="text"
             />
           </div>
-          <button className="rounded-lg bg-[#4cae4f] px-8 py-4 font-bold text-white hover:bg-[#4cae4f]/90 transition-all cursor-pointer">
+          <button className="cursor-pointer rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-primary/90">
             Tìm kiếm
           </button>
         </div>

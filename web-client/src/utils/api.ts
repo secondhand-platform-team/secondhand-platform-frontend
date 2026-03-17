@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 type HttpOptions = {
   headers?: Record<string, string>;
   contentType?: string;
+  timeoutMs?: number;
 };
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -13,6 +14,7 @@ type RequestData = FormData | Record<string, unknown> | string | null | undefine
 class HttpClient {
   private baseUrl: string;
   private accessToken: string | null = null;
+  private readonly defaultTimeoutMs = 45000;
 
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl || envConfig.NEXT_PUBLIC_API_ENDPOINT;
@@ -89,7 +91,8 @@ class HttpClient {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutMs = options?.timeoutMs ?? this.defaultTimeoutMs;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     config.signal = controller.signal;
 
     if (process.env.NODE_ENV === 'development') {
@@ -104,7 +107,7 @@ class HttpClient {
         if (process.env.NODE_ENV === 'development') {
           console.warn('[API] Request timed out:', url);
         }
-        throw new Error("Request timed out. Please try again.");
+        throw new Error("Yêu cầu quá thời gian xử lý. Vui lòng thử lại.");
       }
       if (process.env.NODE_ENV === 'development') {
         console.error('[API] Network error:', networkError);
@@ -128,11 +131,20 @@ class HttpClient {
       }
     }
 
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    const rawResponse = await response.text();
+    if (!rawResponse) {
+      return {} as T;
+    }
+
     try {
-      return await response.json();
+      return JSON.parse(rawResponse) as T;
     } catch (e) {
       console.error("Failed to parse response as JSON:", e);
-      throw new Error("Invalid response format from server");
+      throw new Error("Phản hồi từ máy chủ không hợp lệ");
     }
   }
 

@@ -6,7 +6,7 @@ type HeroSectionProps = {
 
 export default function HeroSection({ onOpenAuth }: HeroSectionProps) {
   return (
-    <section className="relative h-[560px] w-full overflow-hidden">
+    <section className="relative h-125 w-full overflow-hidden" id="hero">
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -15,20 +15,20 @@ export default function HeroSection({ onOpenAuth }: HeroSectionProps) {
         }}
       />
       <div className="relative mx-auto flex h-full max-w-7xl flex-col items-center justify-center px-4 text-center">
-        <h1 className="text-4xl font-black leading-tight tracking-tight text-white sm:text-6xl md:max-w-3xl">
+        <h1 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-5xl md:max-w-3xl">
           Trao tặng món đồ cũ của bạn một cuộc đời mới
         </h1>
-        <p className="mt-4 text-lg text-slate-200 sm:text-xl">
+        <p className="mt-3 text-base text-slate-200 sm:text-lg">
           Mua, bán hoặc tặng đồ cũ dễ dàng trong cộng đồng của bạn
         </p>
-        <div className="mt-10 flex flex-wrap justify-center gap-4">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
             onClick={onOpenAuth}
-            className="rounded-lg bg-[#4cae4f] px-8 py-4 text-lg font-bold text-white shadow-lg hover:scale-105 transition-transform cursor-pointer"
+            className="cursor-pointer rounded-lg bg-primary px-6 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:scale-105"
           >
             Xem sản phẩm
           </button>
-          <button className="rounded-lg bg-white/10 px-8 py-4 text-lg font-bold text-white backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all cursor-pointer">
+          <button className="rounded-lg border border-white/20 bg-white/10 px-6 py-3 text-base font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 cursor-pointer">
             Đăng tin ngay
           </button>
         </div>

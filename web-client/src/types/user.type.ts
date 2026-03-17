@@ -10,6 +10,27 @@ export type UserType = {
 	avatarUrl?: string;
 };
 
+export type UserProfileType = {
+	fullName?: string;
+	avatarUrl?: string;
+	dateOfBirth?: string;
+	gender?: string;
+	bio?: string;
+};
+
+export type UserInfoApiType = {
+	userId: string;
+	email: string;
+	phoneNumber: string;
+	role: UserRole;
+	status: boolean;
+};
+
+export type UserProfileApiResponseType = {
+	user: UserInfoApiType;
+	user_profile?: UserProfileType | null;
+};
+
 export type LoginPayload = {
 	email: string;
 	password: string;
