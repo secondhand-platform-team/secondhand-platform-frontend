@@ -98,6 +98,10 @@ button{
   animation: relifeDropdown 0.18s ease;
 }
 
+/* Position Ant Design messages at top-right */
+
+
+
 .dark .relife-dropdown .ant-dropdown-menu {
   background: #1e293b;
 }
