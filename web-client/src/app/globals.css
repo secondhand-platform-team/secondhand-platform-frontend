@@ -16,6 +16,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: #4cae4f;
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
 }
@@ -78,4 +79,8 @@ select {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+button{
+    cursor: pointer;
+
 }
