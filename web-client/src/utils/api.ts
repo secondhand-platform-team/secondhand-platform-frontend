@@ -1,6 +1,5 @@
 "use client";
 import envConfig from "@/config";
-import Cookies from "js-cookie";
 
 type HttpOptions = {
   headers?: Record<string, string>;
@@ -13,31 +12,10 @@ type RequestData = FormData | Record<string, unknown> | string | null | undefine
 
 class HttpClient {
   private baseUrl: string;
-  private accessToken: string | null = null;
   private readonly defaultTimeoutMs = 45000;
 
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl || envConfig.NEXT_PUBLIC_API_ENDPOINT;
-    // Load token from cookie on init
-    this.accessToken = Cookies.get("accessToken") || null;
-  }
-
-  setAccessToken(token: string | null): void {
-    this.accessToken = token;
-    if (token) {
-      Cookies.set("accessToken", token, {
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        expires: 7,
-      });
-    } else {
-      Cookies.remove("accessToken");
-    }
-  }
-
-  private getAccessToken(): string | null {
-    // Priority: Memory -> Cookie
-    return this.accessToken || Cookies.get("accessToken") || null;
   }
 
   private buildHeaders(
@@ -49,12 +27,6 @@ class HttpClient {
     // Nếu data là FormData, không set Content-Type (browser tự động set với boundary)
     if (!(data instanceof FormData)) {
       headers["Content-Type"] = options?.contentType || "application/json";
-    }
-
-    // Thêm access token vào header nếu có
-    const accessToken = this.getAccessToken();
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
     // Merge với headers tùy chỉnh
@@ -84,6 +56,7 @@ class HttpClient {
     const config: RequestInit = {
       method,
       headers,
+      credentials: "include",
     };
 
     if (data !== undefined && data !== null && method !== "GET") {
@@ -118,9 +91,6 @@ class HttpClient {
     }
 
     if (!response.ok) {
-      if (response.status === 401) {
-        this.setAccessToken(null);
-      }
       try {
         const error = await response.json();
         throw new Error(error.message || `HTTP Error: ${response.status}`);

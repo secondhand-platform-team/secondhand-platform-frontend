@@ -7,9 +7,7 @@ import React, { useState } from "react";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const { isAuth, user } = useAppSelector((state) => state.auth);
-    const [authOpen, setAuthOpen] = useState(false);
-  
-
+  const [authOpen, setAuthOpen] = useState(false);
   return (
     <div className="min-h-screen flex flex-col">
       <Header

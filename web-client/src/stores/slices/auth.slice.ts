@@ -1,7 +1,6 @@
 "use client";
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import Cookies from "js-cookie";
 import http from "@/utils/api";
 import type {
 	LoginPayload,
@@ -16,19 +15,8 @@ type AuthState = {
 	loading: boolean;
 	isAuth: boolean;
 	user: UserType | null;
-	accessToken: string | null;
 	authProvider: AuthProvider;
 	error: string | null;
-};
-
-type AuthResponse = {
-	accessToken: string;
-	tokenType: string;
-};
-
-type AuthSuccessPayload = {
-	accessToken: string;
-	user: UserType;
 };
 
 type RegisterSuccessPayload = {
@@ -39,7 +27,6 @@ const initialState: AuthState = {
 	loading: false,
 	isAuth: false,
 	user: null,
-	accessToken: null,
 	authProvider: null,
 	error: null,
 };
@@ -76,25 +63,29 @@ export const fetchCurrentUser = createAsyncThunk<
 });
 
 export const loginUser = createAsyncThunk<
-	AuthSuccessPayload,
+	UserType,
 	LoginPayload,
 	{ rejectValue: string }
 >("auth/loginUser", async (credentials, { rejectWithValue }) => {
 	try {
-		const response = await http.post<AuthResponse>("/auth/api/login/user", credentials);
-		http.setAccessToken(response.accessToken);
+		await http.post<UserProfileApiResponseType>("/auth/api/login/user", credentials);
 		const profileResponse = await http.get<UserProfileApiResponseType>("/auth/api/profile");
-		const user = mapProfileResponseToUser(profileResponse);
-
-		return {
-			accessToken: response.accessToken,
-			user,
-		};
+		return mapProfileResponseToUser(profileResponse);
 	} catch (error) {
-		http.setAccessToken(null);
 		return rejectWithValue(getErrorMessage(error, "Đăng nhập thất bại"));
 	}
 });
+
+export const logoutUser = createAsyncThunk<void, void, { rejectValue: string }>(
+	"auth/logoutUser",
+	async (_, { rejectWithValue }) => {
+		try {
+			await http.post<{ message?: string }>("/auth/api/logout");
+		} catch (error) {
+			return rejectWithValue(getErrorMessage(error, "Đăng xuất thất bại"));
+		}
+	}
+);
 
 export const registerUser = createAsyncThunk<
 	RegisterSuccessPayload,
@@ -118,22 +109,15 @@ export const authSlice = createSlice({
 	name: "auth",
 	initialState,
 	reducers: {
-		logout: (state) => {
+		logoutLocal: (state) => {
 			state.loading = false;
 			state.isAuth = false;
 			state.user = null;
-			state.accessToken = null;
 			state.authProvider = null;
 			state.error = null;
-			http.setAccessToken(null);
-			Cookies.remove("authProvider");
 		},
 		clearAuthError: (state) => {
 			state.error = null;
-		},
-		hydrateAccessToken: (state, action: { payload: string | null }) => {
-			state.accessToken = action.payload;
-			state.isAuth = Boolean(action.payload);
 		},
 	},
 	extraReducers: (builder) => {
@@ -145,17 +129,14 @@ export const authSlice = createSlice({
 			.addCase(loginUser.fulfilled, (state, action) => {
 				state.loading = false;
 				state.isAuth = true;
-				state.accessToken = action.payload.accessToken;
-				state.user = action.payload.user;
+				state.user = action.payload;
 				state.authProvider = "email";
 				state.error = null;
-				Cookies.set("authProvider", "email", { expires: 7 });
 			})
 			.addCase(loginUser.rejected, (state, action) => {
 				state.loading = false;
 				state.isAuth = false;
 				state.user = null;
-				state.accessToken = null;
 				state.authProvider = null;
 				state.error = action.payload || "Đăng nhập thất bại";
 			})
@@ -179,20 +160,28 @@ export const authSlice = createSlice({
 				state.loading = false;
 				state.isAuth = true;
 				state.user = action.payload;
+				state.authProvider = "email";
 				state.error = null;
 			})
 			.addCase(fetchCurrentUser.rejected, (state, action) => {
 				state.loading = false;
 				state.isAuth = false;
 				state.user = null;
-				state.accessToken = null;
 				state.authProvider = null;
-				state.error = action.payload || "Phiên đăng nhập đã hết hạn";
-				http.setAccessToken(null);
-				Cookies.remove("authProvider");
+				state.error = null;
+			})
+			.addCase(logoutUser.fulfilled, (state) => {
+				state.loading = false;
+				state.isAuth = false;
+				state.user = null;
+				state.authProvider = null;
+				state.error = null;
+			})
+			.addCase(logoutUser.rejected, (state, action) => {
+				state.error = action.payload || "Đăng xuất thất bại";
 			});
 	},
 });
 
-export const { logout, clearAuthError, hydrateAccessToken } = authSlice.actions;
+export const { logoutLocal, clearAuthError } = authSlice.actions;
 export default authSlice.reducer;
