@@ -65,8 +65,6 @@ export default function MarketplaceHome() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-slate-50 dark:bg-slate-950">
-      
-
       <main className="grow">
         <HeroSection onOpenAuth={() => setAuthOpen(true)} />
         <SearchSection />

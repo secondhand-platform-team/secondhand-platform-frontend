@@ -2,19 +2,24 @@
 
 import { Dropdown, message } from "antd";
 import {
+  Bell,
   ChevronDown,
   CreditCard,
   FileText,
+  Heart,
   KeyRound,
   LayoutDashboard,
   LogOut,
+  MessageCircle,
   Settings,
   Users,
 } from "lucide-react";
 import { useAppDispatch } from "@/stores/hooks";
-import { logout } from "@/stores/slices/auth.slice";
+import { logoutUser } from "@/stores/slices/auth.slice";
 import type { UserType } from "@/types/user.type";
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 
 type SiteHeaderProps = {
   user: UserType | null;
@@ -31,6 +36,9 @@ export default function Header({
   const dispatch = useAppDispatch();
   const showAuthenticatedUi = isAuth && Boolean(user);
   const displayName = user?.fullName?.trim() || user?.email || "Người dùng";
+  const router = useRouter();
+  const pathname = usePathname();
+  const isChat = pathname?.startsWith("/chat") ?? false;
 
   const getAvatarText = (fullName?: string, email?: string) => {
     const normalizedName = fullName?.trim();
@@ -51,6 +59,16 @@ export default function Header({
 
   const avatarText = getAvatarText(user?.fullName, user?.email);
 
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      message.success("Đăng xuất thành công!");
+      router.replace("/home");
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "Đăng xuất thất bại!");
+    }
+  };
+
   const userMenuItems = [
     {
       key: "overview",
@@ -66,11 +84,6 @@ export default function Header({
       key: "customers",
       label: "Quản lý khách hàng",
       icon: <Users size={16} />,
-    },
-    {
-      key: "wallet",
-      label: "Nạp tiền",
-      icon: <CreditCard size={16} />,
     },
     {
       type: "divider" as const,
@@ -94,10 +107,10 @@ export default function Header({
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-white dark:bg-background-dark/80 backdrop-blur-md shadow-sm ">
+    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-white dark:bg-background-dark/80 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-360 items-center justify-between px-3 py-3 sm:px-4 lg:px-5">
         <div className="flex items-center gap-6 lg:gap-8">
-          <a href="/home" className="flex items-center gap-2 text-primary">
+          <Link href="/home" className="flex items-center gap-2 text-primary">
             <img
               src="/logo/icon-logo.png"
               alt="Logo Chợ Đồ Cũ"
@@ -106,7 +119,7 @@ export default function Header({
             <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 sm:text-xl">
               ReLife
             </h2>
-          </a>
+          </Link>
           <nav className="hidden items-center gap-5 md:flex lg:gap-6">
             <a
               className="text-sm font-semibold text-slate-700 transition-colors hover:text-primary"
@@ -135,6 +148,40 @@ export default function Header({
           </nav>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          {showAuthenticatedUi && (
+            <div className="flex items-center gap-1">
+              {/* Notification */}
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-primary"
+                title="Thông báo"
+              >
+                <Bell size={18} />
+              </button>
+              {!isChat && (
+                  <>
+                  {/* Chat */}
+              <button
+                onClick={() => router.push("/chat")}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-primary"
+                title="Tin nhắn"
+              >
+                <MessageCircle size={18} />
+              </button>
+                  </>
+              )}
+
+              {/* Favorites */}
+              <button
+                onClick={() => router.push("/favorites")}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-primary"
+                title="Yêu thích"
+              >
+                <Heart size={18} />
+              </button>
+              
+              
+            </div>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -156,8 +203,7 @@ export default function Header({
                 items: userMenuItems,
                 onClick: ({ key }) => {
                   if (key === "logout") {
-                    dispatch(logout());
-                    message.success("Đăng xuất thành công!");
+                    void handleLogout();
                   }
                 },
               }}
@@ -204,8 +250,7 @@ export default function Header({
                 items: userMenuItems,
                 onClick: ({ key }) => {
                   if (key === "logout") {
-                    dispatch(logout());
-                    message.success("Đăng xuất thành công!");
+                    void handleLogout();
                   }
                 },
               }}
