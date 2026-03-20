@@ -2,26 +2,26 @@
 
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatWindow from "@/components/chat/ChatWindow";
-import chatSocketService from "@/services/chatSocket.service";
+import chatSocketService from "@/config/services/chatSocket.service";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
-  connectChatSocket,
-  createConversation,
-  disconnectChatSocket,
-  fetchConversationMessages,
-  fetchMyConversations,
-  receiveSocketMessage,
-  reactToChatMessage,
-  setParticipantOnlineStatus,
-  sendChatMessage,
-  setActiveConversation,
-  upsertConversation,
+    connectChatSocket,
+    createConversation,
+    disconnectChatSocket,
+    fetchConversationMessages,
+    fetchMyConversations,
+    reactToChatMessage,
+    receiveSocketMessage,
+    sendChatMessage,
+    setActiveConversation,
+    setParticipantOnlineStatus,
+    upsertConversation,
 } from "@/stores/slices/chat.slice";
+import { ChatMessage, ReplyMessage } from "@/types/message.type";
 import { Empty } from "antd";
 import dayjs from "dayjs";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChatMessage, ReplyMessage } from "@/types/message.type";
 
 const ChatWindowPageContent = () => {
   const dispatch = useAppDispatch();
