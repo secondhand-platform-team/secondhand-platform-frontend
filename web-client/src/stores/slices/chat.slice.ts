@@ -1,9 +1,7 @@
 "use client";
 
-import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import dayjs from "dayjs";
-import chatService from "@/services/chat.service";
-import chatSocketService from "@/services/chatSocket.service";
+import chatService from "@/config/services/chat.service";
+import chatSocketService from "@/config/services/chatSocket.service";
 import type { RootState } from "@/stores/store";
 import type {
   ChatConversation,
@@ -13,10 +11,16 @@ import type {
   ChatMessage,
   ChatMessageSocketResponse,
   MessageHistoryApiResponse,
-  ReplyMessage,
   MessageType,
+  ReplyMessage,
   SendChatMessagePayload,
 } from "@/types/message.type";
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
+import dayjs from "dayjs";
 
 type CreateConversationPayload = {
   participantId: string;
@@ -75,11 +79,14 @@ const formatConversationTime = (dateTime?: string | null) => {
   return dayjs(dateTime).format("HH:mm");
 };
 
-const buildParticipantName = (participantId: string) => `Người dùng ${participantId.slice(0, 8)}`;
+const buildParticipantName = (participantId: string) =>
+  `Người dùng ${participantId.slice(0, 8)}`;
 const buildParticipantAvatar = (participantId: string) =>
   `https://i.pravatar.cc/120?u=${encodeURIComponent(participantId)}`;
 
-const mapConversationApiToView = (conversation: ChatConversationApiResponse): ChatConversation => ({
+const mapConversationApiToView = (
+  conversation: ChatConversationApiResponse,
+): ChatConversation => ({
   id: conversation.conversationId,
   participantId: conversation.participantUserId,
   name:
@@ -91,7 +98,9 @@ const mapConversationApiToView = (conversation: ChatConversationApiResponse): Ch
     buildParticipantAvatar(conversation.participantUserId),
   isOnline: Boolean(conversation.isOnline),
   time: formatConversationTime(
-    conversation.lastMessageAt || conversation.updatedAt || conversation.createdAt
+    conversation.lastMessageAt ||
+      conversation.updatedAt ||
+      conversation.createdAt,
   ),
   lastMessage: conversation.lastMessage || "Bắt đầu cuộc trò chuyện",
   unreadCount: 0,
@@ -100,7 +109,7 @@ const mapConversationApiToView = (conversation: ChatConversationApiResponse): Ch
 
 const mapConversationWithParticipantProfile = (
   conversation: ChatConversation,
-  profile?: { fullName?: string; avatarUrl?: string }
+  profile?: { fullName?: string; avatarUrl?: string },
 ): ChatConversation => {
   if (!profile) {
     return conversation;
@@ -113,7 +122,9 @@ const mapConversationWithParticipantProfile = (
   };
 };
 
-const mapApiMessageToChatMessage = (payload: MessageHistoryApiResponse): ChatMessage => ({
+const mapApiMessageToChatMessage = (
+  payload: MessageHistoryApiResponse,
+): ChatMessage => ({
   id: payload.messageId,
   conversationId: payload.conversationId,
   senderId: payload.senderId,
@@ -126,7 +137,9 @@ const mapApiMessageToChatMessage = (payload: MessageHistoryApiResponse): ChatMes
   reactions: payload.reactions,
 });
 
-const mapSocketMessageToChatMessage = (payload: ChatMessageSocketResponse): ChatMessage => ({
+const mapSocketMessageToChatMessage = (
+  payload: ChatMessageSocketResponse,
+): ChatMessage => ({
   id: payload.messageId,
   conversationId: payload.conversationId,
   senderId: payload.senderId,
@@ -147,7 +160,8 @@ const mergeMessages = (current: ChatMessage[], incoming: ChatMessage[]) => {
   });
 
   return [...merged.values()].sort(
-    (left, right) => dayjs(left.createdAt).valueOf() - dayjs(right.createdAt).valueOf()
+    (left, right) =>
+      dayjs(left.createdAt).valueOf() - dayjs(right.createdAt).valueOf(),
   );
 };
 
@@ -160,13 +174,18 @@ export const fetchMyConversations = createAsyncThunk<
     const conversations = await chatService.getMyConversations();
     const mappedConversations = conversations.map(mapConversationApiToView);
     const participantIds = Array.from(
-      new Set(mappedConversations.map((conversation) => conversation.participantId).filter(Boolean))
+      new Set(
+        mappedConversations
+          .map((conversation) => conversation.participantId)
+          .filter(Boolean),
+      ),
     );
 
     const profileEntries = await Promise.all(
       participantIds.map(async (participantId) => {
         try {
-          const profileResponse = await chatService.getUserProfileByUserId(participantId);
+          const profileResponse =
+            await chatService.getUserProfileByUserId(participantId);
           return [
             participantId,
             {
@@ -177,7 +196,7 @@ export const fetchMyConversations = createAsyncThunk<
         } catch {
           return [participantId, undefined] as const;
         }
-      })
+      }),
     );
 
     const participantProfileMap = new Map(profileEntries);
@@ -185,11 +204,13 @@ export const fetchMyConversations = createAsyncThunk<
     return mappedConversations.map((conversation) =>
       mapConversationWithParticipantProfile(
         conversation,
-        participantProfileMap.get(conversation.participantId)
-      )
+        participantProfileMap.get(conversation.participantId),
+      ),
     );
   } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Không thể tải danh sách cuộc trò chuyện"));
+    return rejectWithValue(
+      getErrorMessage(error, "Không thể tải danh sách cuộc trò chuyện"),
+    );
   }
 });
 
@@ -197,17 +218,23 @@ export const fetchConversationMessages = createAsyncThunk<
   { conversationId: string; messages: ChatMessage[] },
   string,
   { rejectValue: string }
->("chat/fetchConversationMessages", async (conversationId, { rejectWithValue }) => {
-  try {
-    const messages = await chatService.getConversationMessages(conversationId);
-    return {
-      conversationId,
-      messages: messages.map(mapApiMessageToChatMessage),
-    };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Không thể tải lịch sử tin nhắn"));
-  }
-});
+>(
+  "chat/fetchConversationMessages",
+  async (conversationId, { rejectWithValue }) => {
+    try {
+      const messages =
+        await chatService.getConversationMessages(conversationId);
+      return {
+        conversationId,
+        messages: messages.map(mapApiMessageToChatMessage),
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getErrorMessage(error, "Không thể tải lịch sử tin nhắn"),
+      );
+    }
+  },
+);
 
 export const createConversation = createAsyncThunk<
   ChatConversation,
@@ -215,10 +242,12 @@ export const createConversation = createAsyncThunk<
   { rejectValue: string }
 >("chat/createConversation", async (payload, { rejectWithValue }) => {
   try {
-    const response = await chatService.createConversation({ userId: payload.participantId });
+    const response = await chatService.createConversation({
+      userId: payload.participantId,
+    });
     const conversations = await chatService.getMyConversations();
     const createdConversation = conversations.find(
-      (conversation) => conversation.conversationId === response.conversationId
+      (conversation) => conversation.conversationId === response.conversationId,
     );
 
     if (createdConversation) {
@@ -234,8 +263,11 @@ export const createConversation = createAsyncThunk<
     return {
       id: response.conversationId,
       participantId: payload.participantId,
-      name: payload.participantName || buildParticipantName(payload.participantId),
-      avatar: payload.participantAvatar || buildParticipantAvatar(payload.participantId),
+      name:
+        payload.participantName || buildParticipantName(payload.participantId),
+      avatar:
+        payload.participantAvatar ||
+        buildParticipantAvatar(payload.participantId),
       isOnline: false,
       time: formatConversationTime(now),
       lastMessage: "Bắt đầu cuộc trò chuyện",
@@ -243,27 +275,32 @@ export const createConversation = createAsyncThunk<
       updatedAt: now,
     };
   } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Không thể tạo cuộc trò chuyện"));
+    return rejectWithValue(
+      getErrorMessage(error, "Không thể tạo cuộc trò chuyện"),
+    );
   }
 });
 
-export const connectChatSocket = createAsyncThunk<void, void, { state: RootState; rejectValue: string }>(
-  "chat/connectSocket",
-  async (_, { rejectWithValue, getState }) => {
-    try {
-      const userId = getState().auth.user?.userId;
+export const connectChatSocket = createAsyncThunk<
+  void,
+  void,
+  { state: RootState; rejectValue: string }
+>("chat/connectSocket", async (_, { rejectWithValue, getState }) => {
+  try {
+    const userId = getState().auth.user?.userId;
 
-      if (!userId) {
-        return rejectWithValue("Bạn cần đăng nhập để kết nối chat realtime");
-      }
-
-      chatSocketService.setCurrentUserId(userId);
-      await chatSocketService.ensureConnected();
-    } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Không thể kết nối realtime chat"));
+    if (!userId) {
+      return rejectWithValue("Bạn cần đăng nhập để kết nối chat realtime");
     }
+
+    chatSocketService.setCurrentUserId(userId);
+    await chatSocketService.ensureConnected();
+  } catch (error) {
+    return rejectWithValue(
+      getErrorMessage(error, "Không thể kết nối realtime chat"),
+    );
   }
-);
+});
 
 export const sendChatMessage = createAsyncThunk<
   SendChatMessagePayload,
@@ -294,10 +331,13 @@ export const sendChatMessage = createAsyncThunk<
   }
 });
 
-export const disconnectChatSocket = createAsyncThunk("chat/disconnectSocket", async () => {
-  chatSocketService.setCurrentUserId(null);
-  chatSocketService.disconnect();
-});
+export const disconnectChatSocket = createAsyncThunk(
+  "chat/disconnectSocket",
+  async () => {
+    chatSocketService.setCurrentUserId(null);
+    chatSocketService.disconnect();
+  },
+);
 
 export const reactToChatMessage = createAsyncThunk<
   ChatMessageSocketResponse,
@@ -326,7 +366,7 @@ const chatSlice = createSlice({
       }
 
       const targetConversation = state.conversations.find(
-        (conversation) => conversation.id === action.payload
+        (conversation) => conversation.id === action.payload,
       );
 
       if (targetConversation) {
@@ -335,7 +375,7 @@ const chatSlice = createSlice({
     },
     upsertConversation: (state, action: PayloadAction<ChatConversation>) => {
       const index = state.conversations.findIndex(
-        (conversation) => conversation.id === action.payload.id
+        (conversation) => conversation.id === action.payload.id,
       );
 
       if (index === -1) {
@@ -353,7 +393,7 @@ const chatSlice = createSlice({
       action: PayloadAction<{
         participantId: string;
         isOnline: boolean;
-      }>
+      }>,
     ) => {
       state.conversations.forEach((conversation) => {
         if (conversation.participantId !== action.payload.participantId) {
@@ -368,20 +408,27 @@ const chatSlice = createSlice({
       action: PayloadAction<{
         payload: ChatMessageSocketResponse;
         currentUserId: string;
-      }>
+      }>,
     ) => {
       const { payload, currentUserId } = action.payload;
       const mappedMessage = mapSocketMessageToChatMessage(payload);
-      const currentList = state.messagesByConversation[payload.conversationId] || [];
+      const currentList =
+        state.messagesByConversation[payload.conversationId] || [];
 
-      state.messagesByConversation[payload.conversationId] = mergeMessages(currentList, [mappedMessage]);
+      state.messagesByConversation[payload.conversationId] = mergeMessages(
+        currentList,
+        [mappedMessage],
+      );
 
       const conversationIndex = state.conversations.findIndex(
-        (conversation) => conversation.id === payload.conversationId
+        (conversation) => conversation.id === payload.conversationId,
       );
 
       if (conversationIndex === -1) {
-        const participantId = payload.senderId === currentUserId ? payload.receiverId : payload.senderId;
+        const participantId =
+          payload.senderId === currentUserId
+            ? payload.receiverId
+            : payload.senderId;
         state.conversations.unshift({
           id: payload.conversationId,
           participantId,
@@ -422,7 +469,7 @@ const chatSlice = createSlice({
         state.loading = false;
         state.conversations = action.payload.map((conversation) => {
           const existingConversation = state.conversations.find(
-            (currentConversation) => currentConversation.id === conversation.id
+            (currentConversation) => currentConversation.id === conversation.id,
           );
 
           if (!existingConversation) {
@@ -440,21 +487,23 @@ const chatSlice = createSlice({
 
         if (
           state.activeConversationId &&
-          !state.conversations.some((conversation) => conversation.id === state.activeConversationId)
+          !state.conversations.some(
+            (conversation) => conversation.id === state.activeConversationId,
+          )
         ) {
           state.activeConversationId = null;
         }
       })
       .addCase(fetchMyConversations.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Không thể tải danh sách cuộc trò chuyện";
+        state.error =
+          action.payload || "Không thể tải danh sách cuộc trò chuyện";
       })
       .addCase(fetchConversationMessages.fulfilled, (state, action) => {
-        const currentMessages = state.messagesByConversation[action.payload.conversationId] || [];
-        state.messagesByConversation[action.payload.conversationId] = mergeMessages(
-          currentMessages,
-          action.payload.messages
-        );
+        const currentMessages =
+          state.messagesByConversation[action.payload.conversationId] || [];
+        state.messagesByConversation[action.payload.conversationId] =
+          mergeMessages(currentMessages, action.payload.messages);
       })
       .addCase(fetchConversationMessages.rejected, (state, action) => {
         state.error = action.payload || "Không thể tải lịch sử tin nhắn";
@@ -465,7 +514,9 @@ const chatSlice = createSlice({
       })
       .addCase(createConversation.fulfilled, (state, action) => {
         state.loading = false;
-        const exists = state.conversations.some((conversation) => conversation.id === action.payload.id);
+        const exists = state.conversations.some(
+          (conversation) => conversation.id === action.payload.id,
+        );
 
         if (!exists) {
           state.conversations.unshift(action.payload);
@@ -507,11 +558,11 @@ const chatSlice = createSlice({
       })
       .addCase(reactToChatMessage.fulfilled, (state, action) => {
         const mappedMessage = mapSocketMessageToChatMessage(action.payload);
-        const currentMessages = state.messagesByConversation[action.payload.conversationId] || [];
+        const currentMessages =
+          state.messagesByConversation[action.payload.conversationId] || [];
 
-        state.messagesByConversation[action.payload.conversationId] = mergeMessages(currentMessages, [
-          mappedMessage,
-        ]);
+        state.messagesByConversation[action.payload.conversationId] =
+          mergeMessages(currentMessages, [mappedMessage]);
       })
       .addCase(reactToChatMessage.rejected, (state, action) => {
         state.error = action.payload || "Không thể thả cảm xúc";
