@@ -59,6 +59,25 @@ export const createPost = createAsyncThunk<
   }
 });
 
+export const createPostWithImages = createAsyncThunk<
+  ItemResponseType,
+  { payload: ItemRequestPayload; images: File[] },
+  { rejectValue: string }
+>("item/createPostWithImages", async ({ payload, images }, { rejectWithValue }) => {
+  try {
+    const formData = new FormData();
+    formData.append("item", JSON.stringify(payload));
+
+    images.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    return await http.post<ItemResponseType>("/core/api/items", formData);
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error, "Không thể đăng tin kèm ảnh"));
+  }
+});
+
 export const fetchMyPosts = createAsyncThunk<
   ItemResponseType[],
   void,
@@ -168,6 +187,19 @@ const itemSlice = createSlice({
       .addCase(createPost.rejected, (state, action) => {
         state.submitting = false;
         state.error = action.payload || "Không thể đăng tin";
+      })
+
+      .addCase(createPostWithImages.pending, (state) => {
+        state.submitting = true;
+        state.error = null;
+      })
+      .addCase(createPostWithImages.fulfilled, (state, action) => {
+        state.submitting = false;
+        state.myPosts = [action.payload, ...state.myPosts];
+      })
+      .addCase(createPostWithImages.rejected, (state, action) => {
+        state.submitting = false;
+        state.error = action.payload || "Không thể đăng tin kèm ảnh";
       })
 
       .addCase(fetchMyPosts.pending, (state) => {

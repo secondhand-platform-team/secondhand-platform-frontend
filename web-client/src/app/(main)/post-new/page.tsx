@@ -8,6 +8,7 @@ import {
   Select,
   Switch,
   Typography,
+  Upload,
   message,
 } from "antd";
 import {
@@ -25,19 +26,23 @@ import {
 import { useEffect, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
-import { createPost, fetchCategories } from "@/stores/slices/item.slice";
+import { createPostWithImages, fetchCategories } from "@/stores/slices/item.slice";
 import type {
   ItemCondition,
   ItemStatus,
   TransactionType,
 } from "@/types/item/item.type";
-import Image from "next/image";
+import type { District, Province, Ward } from "@/types/province.type";
+import provinceService from "@/config/services/province.service";
+import type { UploadFile } from "antd/es/upload/interface";
 
 const BRAND_GREEN = "#4CAF50";
 const BRAND_GREEN_DARK = "#3f9f46";
 const BRAND_GREEN_SOFT = "#EAF6EC";
 const BORDER_COLOR = "#E3E7ED";
 const PAGE_BG = "#F2F4F7";
+const MAX_IMAGES = 6;
+const MAX_FILE_SIZE_MB = 8;
 
 const conditionOptions: { label: string; value: ItemCondition }[] = [
   { label: "Mới", value: "NEW" },
@@ -53,6 +58,17 @@ export default function PostNewPage() {
   const { isAuth } = useAppSelector((state) => state.auth);
   const { categories, submitting } = useAppSelector((state) => state.item);
   const [freePost, setFreePost] = useState(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [loadingProvince, setLoadingProvince] = useState(false);
+  const [loadingDistrict, setLoadingDistrict] = useState(false);
+
+  const selectedCity = Form.useWatch("city", form);
+  const selectedDistrict = Form.useWatch("district", form);
+  const selectedWard = Form.useWatch("ward", form);
+  const selectedAddress = Form.useWatch("address", form);
 
   useEffect(() => {
     if (!isAuth) {
@@ -67,6 +83,20 @@ export default function PostNewPage() {
     }
 
     dispatch(fetchCategories());
+
+    const loadProvinces = async () => {
+      setLoadingProvince(true);
+      try {
+        const provinceList = await provinceService.getProvinces();
+        setProvinces(provinceList);
+      } catch {
+        message.error("Không thể tải danh sách tỉnh/thành phố");
+      } finally {
+        setLoadingProvince(false);
+      }
+    };
+
+    void loadProvinces();
   }, [dispatch, isAuth]);
 
   if (!isAuth) {
@@ -78,6 +108,90 @@ export default function PostNewPage() {
     value: category.categoryId,
   }));
 
+  const provinceOptions = provinces.map((province) => ({
+    label: province.name,
+    value: province.name,
+  }));
+
+  const districtOptions = districts.map((district) => ({
+    label: district.name,
+    value: district.name,
+  }));
+
+  const wardOptions = wards.map((ward) => ({
+    label: ward.name,
+    value: ward.name,
+  }));
+
+  const onCityChange = async (cityName: string) => {
+    form.setFieldValue("district", undefined);
+    form.setFieldValue("ward", undefined);
+    setWards([]);
+
+    const selectedProvince = provinces.find((province) => province.name === cityName);
+    if (!selectedProvince) {
+      setDistricts([]);
+      return;
+    }
+
+    setLoadingDistrict(true);
+    try {
+      const provinceWithDistricts = await provinceService.getProvinceWithDistricts(selectedProvince.code);
+      setDistricts(provinceWithDistricts.districts || []);
+    } catch {
+      setDistricts([]);
+      message.error("Không thể tải danh sách quận/huyện");
+    } finally {
+      setLoadingDistrict(false);
+    }
+  };
+
+  const onDistrictChange = async (districtName: string) => {
+    form.setFieldValue("ward", undefined);
+    const selectedDistrictData = districts.find((district) => district.name === districtName);
+    if (!selectedDistrictData) {
+      setWards([]);
+      return;
+    }
+
+    try {
+      const districtWithWards = await provinceService.getDistrictWithWards(selectedDistrictData.code);
+      setWards(districtWithWards.wards || []);
+    } catch {
+      setWards([]);
+      message.error("Không thể tải danh sách phường/xã");
+    }
+  };
+
+  const beforeUpload = (file: File) => {
+    const isImage = file.type.startsWith("image/");
+    if (!isImage) {
+      message.error("Chỉ hỗ trợ tệp hình ảnh");
+      return Upload.LIST_IGNORE;
+    }
+
+    const isValidSize = file.size / 1024 / 1024 < MAX_FILE_SIZE_MB;
+    if (!isValidSize) {
+      message.error(`Mỗi ảnh phải nhỏ hơn ${MAX_FILE_SIZE_MB}MB`);
+      return Upload.LIST_IGNORE;
+    }
+
+    if (fileList.length >= MAX_IMAGES) {
+      message.error(`Tối đa ${MAX_IMAGES} ảnh cho mỗi tin đăng`);
+      return Upload.LIST_IGNORE;
+    }
+
+    return false;
+  };
+
+  const fullAddress = [selectedAddress, selectedWard, selectedDistrict, selectedCity]
+    .filter(Boolean)
+    .join(", ");
+
+  const mapEmbedUrl = fullAddress
+    ? `https://www.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed`
+    : "";
+
   const onFinish = async (values: {
     title: string;
     description: string;
@@ -86,10 +200,23 @@ export default function PostNewPage() {
     status: ItemStatus;
     city: string;
     district: string;
+    ward?: string;
     address: string;
     price?: number;
   }) => {
+    if (fileList.length === 0) {
+      message.error("Vui lòng tải lên ít nhất 1 hình ảnh");
+      return;
+    }
+
     const transactionType: TransactionType = freePost ? "GIVE_AWAY" : "SELL";
+    const price = freePost ? 1 : Number(values.price || 0);
+
+    if (!freePost && price <= 0) {
+      message.error("Giá bán phải lớn hơn 0");
+      return;
+    }
+
     const payload = {
       title: values.title,
       description: values.description,
@@ -97,16 +224,21 @@ export default function PostNewPage() {
       condition: values.condition,
       status: values.status,
       transactionType,
-      price: freePost ? 1 : values.price || 0,
+      price,
       location: {
         city: values.city,
         district: values.district,
+        ward: values.ward,
         address: values.address,
       },
     };
 
+    const images = fileList
+      .map((file) => file.originFileObj)
+      .filter((file): file is NonNullable<typeof file> => file !== undefined);
+
     try {
-      await dispatch(createPost(payload)).unwrap();
+      await dispatch(createPostWithImages({ payload, images })).unwrap();
       message.success("Đăng tin thành công");
       router.push("/my-posts");
     } catch (error) {
@@ -128,7 +260,10 @@ export default function PostNewPage() {
           <div style={blockStyle}>
             <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Quản lý</p>
             <div className="space-y-2">
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50">
+              <button
+                onClick={() => router.push("/post-overview")}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+              >
                 <LayoutGrid size={15} /> Tổng quan
               </button>
               <button
@@ -192,23 +327,24 @@ export default function PostNewPage() {
                 <span className="text-xs text-slate-400">Tối đa 6 ảnh</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <div className="flex h-[118px] flex-col items-center justify-center rounded-lg border border-dashed bg-slate-50 text-slate-400" style={{ borderColor: "#D6DCE5" }}>
-                  <ImageIcon size={22} />
-                  <span className="mt-2 text-xs">Tải ảnh lên</span>
-                </div>
-                <div className="h-[118px] overflow-hidden rounded-lg border" style={{ borderColor: BORDER_COLOR }}>
-                  <Image
-                    src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=800&auto=format&fit=crop"
-                    alt="Ảnh minh họa sản phẩm"
-                    width={800}
-                    height={600}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="h-[118px] rounded-lg border bg-slate-100" style={{ borderColor: BORDER_COLOR }} />
-                <div className="h-[118px] rounded-lg border bg-slate-100" style={{ borderColor: BORDER_COLOR }} />
-              </div>
+              <Upload
+                listType="picture-card"
+                fileList={fileList}
+                beforeUpload={beforeUpload}
+                onChange={({ fileList: nextFileList }) => setFileList(nextFileList.slice(0, MAX_IMAGES))}
+                onRemove={(file) => {
+                  setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
+                }}
+                multiple
+                accept="image/*"
+              >
+                {fileList.length >= MAX_IMAGES ? null : (
+                  <div className="flex flex-col items-center text-slate-500">
+                    <ImageIcon size={20} />
+                    <span className="mt-1 text-xs">Tải ảnh lên</span>
+                  </div>
+                )}
+              </Upload>
             </div>
 
             <div className="mt-4" style={blockStyle}>
@@ -220,7 +356,11 @@ export default function PostNewPage() {
               <Form.Item
                 name="title"
                 label={<span className="text-xs font-semibold text-slate-600">Tiêu đề món đồ *</span>}
-                rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
+                rules={[
+                  { required: true, message: "Vui lòng nhập tiêu đề" },
+                  { min: 8, message: "Tiêu đề tối thiểu 8 ký tự" },
+                  { max: 120, message: "Tiêu đề tối đa 120 ký tự" },
+                ]}
                 className="!mb-3"
               >
                 <Input placeholder="VD: iPhone 12 Pro Max 128GB màu Xanh" className="h-[40px]" />
@@ -259,7 +399,13 @@ export default function PostNewPage() {
                 rules={freePost ? [] : [{ required: true, message: "Vui lòng nhập giá" }]}
                 className="!mb-3"
               >
-                <InputNumber min={0} disabled={freePost} className="!h-[40px] !w-full" />
+                <InputNumber
+                  min={0}
+                  disabled={freePost}
+                  addonAfter="VND"
+                  className="!h-[40px] !w-full"
+                  placeholder="Nhập giá bán"
+                />
               </Form.Item>
 
               <Form.Item name="status" initialValue="AVAILABLE" hidden>
@@ -269,7 +415,10 @@ export default function PostNewPage() {
               <Form.Item
                 name="description"
                 label={<span className="text-xs font-semibold text-slate-600">Mô tả chi tiết *</span>}
-                rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
+                rules={[
+                  { required: true, message: "Vui lòng nhập mô tả" },
+                  { min: 20, message: "Mô tả tối thiểu 20 ký tự" },
+                ]}
                 className="!mb-0"
               >
                 <Input.TextArea rows={4} placeholder="Mô tả về tình trạng sản phẩm, lý do bán, các phụ kiện đi kèm..." />
@@ -286,34 +435,87 @@ export default function PostNewPage() {
                 <Form.Item
                   name="city"
                   label={<span className="text-xs font-semibold text-slate-600">Tỉnh / Thành phố *</span>}
-                  rules={[{ required: true, message: "Vui lòng nhập tỉnh/thành" }]}
+                  rules={[{ required: true, message: "Vui lòng chọn tỉnh/thành" }]}
                   className="!mb-3"
                 >
-                  <Input placeholder="Chọn Tỉnh/Thành phố" className="h-[40px]" />
+                  <Select
+                    options={provinceOptions}
+                    loading={loadingProvince}
+                    onChange={onCityChange}
+                    placeholder="Chọn Tỉnh/Thành phố"
+                    className="h-[40px]"
+                    showSearch
+                    optionFilterProp="label"
+                  />
                 </Form.Item>
 
                 <Form.Item
                   name="district"
                   label={<span className="text-xs font-semibold text-slate-600">Quận / Huyện *</span>}
-                  rules={[{ required: true, message: "Vui lòng nhập quận/huyện" }]}
+                  rules={[{ required: true, message: "Vui lòng chọn quận/huyện" }]}
                   className="!mb-3"
                 >
-                  <Input placeholder="Chọn Quận/Huyện" className="h-[40px]" />
+                  <Select
+                    options={districtOptions}
+                    loading={loadingDistrict}
+                    onChange={onDistrictChange}
+                    placeholder="Chọn Quận/Huyện"
+                    className="h-[40px]"
+                    showSearch
+                    optionFilterProp="label"
+                  />
                 </Form.Item>
               </div>
 
               <Form.Item
+                name="ward"
+                label={<span className="text-xs font-semibold text-slate-600">Phường / Xã</span>}
+                className="!mb-3"
+              >
+                <Select
+                  options={wardOptions}
+                  placeholder="Chọn Phường/Xã (nếu có)"
+                  className="h-[40px]"
+                  showSearch
+                  optionFilterProp="label"
+                  disabled={wardOptions.length === 0}
+                />
+              </Form.Item>
+
+              <Form.Item
                 name="address"
-                label={<span className="text-xs font-semibold text-slate-600">Địa chỉ cụ thể</span>}
+                label={<span className="text-xs font-semibold text-slate-600">Địa chỉ cụ thể *</span>}
                 rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
                 className="!mb-3"
               >
                 <Input placeholder="Số nhà, tên đường, phường/xã..." className="h-[40px]" />
               </Form.Item>
 
-              <div className="flex h-[94px] items-center justify-center rounded-lg border bg-slate-100" style={{ borderColor: BORDER_COLOR }}>
-                <Button className="!rounded-md !border !border-[#CDE7D2] !bg-white !text-xs !font-semibold" style={{ color: BRAND_GREEN_DARK }}>
-                  NHẤN ĐỂ CHỈNH VỊ TRÍ
+              <div className="overflow-hidden rounded-lg border" style={{ borderColor: BORDER_COLOR }}>
+                {mapEmbedUrl ? (
+                  <iframe
+                    title="Bản đồ địa chỉ tin đăng"
+                    src={mapEmbedUrl}
+                    className="h-[260px] w-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                ) : (
+                  <div className="flex h-[160px] items-center justify-center bg-slate-100 text-sm text-slate-500">
+                    Chọn địa chỉ để xem bản đồ
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-3 flex justify-end">
+                <Button
+                  href={fullAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}` : undefined}
+                  target="_blank"
+                  disabled={!fullAddress}
+                  className="!rounded-md !border !border-[#CDE7D2] !bg-white !text-xs !font-semibold"
+                  style={{ color: BRAND_GREEN_DARK }}
+                >
+                  MỞ GOOGLE MAPS
                 </Button>
               </div>
             </div>
