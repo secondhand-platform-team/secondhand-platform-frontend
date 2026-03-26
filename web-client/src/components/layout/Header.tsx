@@ -187,7 +187,10 @@ export default function Header({
             onClick={() => {
               if (!showAuthenticatedUi) {
                 onOpenAuth();
+                return;
               }
+
+              router.push("/post-new");
             }}
             className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-primary/90 sm:px-5"
           >
@@ -204,6 +207,11 @@ export default function Header({
                 onClick: ({ key }) => {
                   if (key === "logout") {
                     void handleLogout();
+                    return;
+                  }
+
+                  if (key === "posts") {
+                    router.push("/my-posts");
                   }
                 },
               }}
@@ -251,6 +259,11 @@ export default function Header({
                 onClick: ({ key }) => {
                   if (key === "logout") {
                     void handleLogout();
+                    return;
+                  }
+
+                  if (key === "posts") {
+                    router.push("/my-posts");
                   }
                 },
               }}
