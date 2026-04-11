@@ -4,7 +4,6 @@ import { Dropdown, message } from "antd";
 import {
   Bell,
   ChevronDown,
-  CreditCard,
   FileText,
   Heart,
   KeyRound,
@@ -27,11 +26,7 @@ type SiteHeaderProps = {
   onOpenAuth: () => void;
 };
 
-export default function Header({
-  user,
-  isAuth,
-  onOpenAuth,
-}: SiteHeaderProps) {
+export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
   const dispatch = useAppDispatch();
   const showAuthenticatedUi = isAuth && Boolean(user);
@@ -65,7 +60,9 @@ export default function Header({
       message.success("Đăng xuất thành công!");
       router.replace("/home");
     } catch (error) {
-      message.error(error instanceof Error ? error.message : "Đăng xuất thất bại!");
+      message.error(
+        error instanceof Error ? error.message : "Đăng xuất thất bại!",
+      );
     }
   };
 
@@ -158,16 +155,16 @@ export default function Header({
                 <Bell size={18} />
               </button>
               {!isChat && (
-                  <>
+                <>
                   {/* Chat */}
-              <button
-                onClick={() => router.push("/chat")}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-primary"
-                title="Tin nhắn"
-              >
-                <MessageCircle size={18} />
-              </button>
-                  </>
+                  <button
+                    onClick={() => router.push("/chat")}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-primary"
+                    title="Tin nhắn"
+                  >
+                    <MessageCircle size={18} />
+                  </button>
+                </>
               )}
 
               {/* Favorites */}
@@ -178,8 +175,6 @@ export default function Header({
               >
                 <Heart size={18} />
               </button>
-              
-              
             </div>
           )}
           <button
@@ -189,7 +184,6 @@ export default function Header({
                 onOpenAuth();
                 return;
               }
-
               router.push("/post-new");
             }}
             className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-primary/90 sm:px-5"
