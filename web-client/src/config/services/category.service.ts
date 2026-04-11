@@ -1,39 +1,24 @@
 import http from "@/utils/api";
+import {
+  type DataType,
+  type CategoryAttribute,
+  type Category,
+  type ChildCategory,
+  type CategoryResponse,
+  type ChildCategoriesResponse,
+  type CategoryAttributesResponse,
+} from "@/types/category.type";
 
-export type DataType = "TEXT" | "NUMBER" | "SELECT" | "TEXTAREA" | "DATE";
-
-export interface CategoryAttribute {
-  attributeId: string;
-  code: string;
-  name: string;
-  dataType: DataType;
-  required: boolean;
-  minValueNumber?: number;
-  maxValueNumber?: number;
-  optionsJson?: string;
-  unit?: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  icon?: string;
-}
-
-export interface ChildCategory {
-  categoryId: string;
-  name: string;
-  icon?: string;
-}
-
-export interface CategoryResponse {
-  data: Category;
-}
-
-export type ChildCategoriesResponse = ChildCategory[];
-
-export type CategoryAttributesResponse = CategoryAttribute[];
+// Re-export for backward compatibility
+export type {
+  DataType,
+  CategoryAttribute,
+  Category,
+  ChildCategory,
+  CategoryResponse,
+  ChildCategoriesResponse,
+  CategoryAttributesResponse,
+};
 
 class CategoryService {
   async getCategoryById(categoryId: string) {
