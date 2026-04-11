@@ -50,6 +50,7 @@ export type ItemResponseType = {
   createdAt: string;
   updatedAt: string;
   itemImageList?: Array<{ imageUrl: string; isPrimary?: boolean }>;
+  attributes?: Array<{ code: string; value: string }>;
   paymentUrl?: string;
 };
 

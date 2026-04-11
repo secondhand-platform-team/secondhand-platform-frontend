@@ -130,15 +130,16 @@ export default function CategoryChildrenPage() {
                 ) : (
                     <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                         {filteredProducts.map((item) => (
-                            <article
+                            <Link
                                 key={item.itemId}
-                                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                                href={`/products/${item.itemId}`}
+                                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-primary hover:shadow-md"
                             >
                                 <div className="aspect-square overflow-hidden bg-slate-100">
                                     <img
                                         src={getPrimaryImage(item.itemImageList)}
                                         alt={item.title}
-                                        className="h-full w-full object-cover"
+                                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                                     />
                                 </div>
 
@@ -152,7 +153,7 @@ export default function CategoryChildrenPage() {
                                             : "Toàn quốc"}
                                     </p>
                                 </div>
-                            </article>
+                            </Link>
                         ))}
                     </div>
                 )}
