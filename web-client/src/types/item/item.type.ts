@@ -5,8 +5,10 @@ export type TransactionType = "SELL" | "GIVE_AWAY";
 export type CategoryType = {
   categoryId: string;
   name: string;
+  slug?: string;
   description?: string;
   parentId?: string | null;
+  postingFee?: number;
 };
 
 export type LocationPayload = {
@@ -48,6 +50,7 @@ export type ItemResponseType = {
   createdAt: string;
   updatedAt: string;
   itemImageList?: Array<{ imageUrl: string; isPrimary?: boolean }>;
+  paymentUrl?: string;
 };
 
 export type MessageResponseType = {

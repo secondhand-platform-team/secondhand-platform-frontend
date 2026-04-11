@@ -1,29 +1,16 @@
-/* eslint-disable @next/next/no-img-element */
-
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroSection from "@/components/home/HeroSection";
 import SearchSection from "@/components/home/SearchSection";
 import CategorySection from "@/components/home/CategorySection";
 import FeaturedProductsSection from "@/components/home/FeaturedProductsSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
-import { useAppSelector } from "@/stores/hooks";
-import Header from "./Header";
+import { useAppDispatch, useAppSelector } from "@/stores/hooks";
+import { fetchTopCategories } from "@/stores/slices/category.slide";
+import { getCategoryIconBySlug } from "@/utils/category-icon";
 import Footer from "./Footer";
-
-const categories = [
-  { icon: "/icon-caterogy/device.png", title: "Điện tử" },
-  { icon: "/icon-caterogy/clothes.png", title: "Quần áo" },
-  { icon: "/icon-caterogy/interior.png", title: "Nội thất" },
-  { icon: "/icon-caterogy/book.png", title: "Sách" },
-  {
-    icon: "/icon-caterogy/home_repair_service.png",
-    title: "Gia dụng",
-  },
-  { icon: "/icon-caterogy/other.png", title: "Khác" },
-];
 
 const featuredProducts = [
   {
@@ -61,7 +48,21 @@ const featuredProducts = [
 ];
 
 export default function MarketplaceHome() {
+  const dispatch = useAppDispatch();
+  const { topCategories } = useAppSelector((state) => state.category);
   const [authOpen, setAuthOpen] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchTopCategories());
+  }, [dispatch]);
+
+  const categories = topCategories
+    .filter((category) => Boolean(category.slug))
+    .map((category) => ({
+      slug: category.slug as string,
+      name: category.name,
+      icon: getCategoryIconBySlug(category.slug),
+    }));
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-slate-50 dark:bg-slate-950">
@@ -74,7 +75,8 @@ export default function MarketplaceHome() {
       </main>
 
       <Footer />
-      
+
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );
 }
