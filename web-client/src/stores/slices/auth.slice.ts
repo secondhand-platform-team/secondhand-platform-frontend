@@ -45,6 +45,7 @@ const mapProfileResponseToUser = (profileResponse: UserProfileApiResponseType): 
 	phoneNumber: profileResponse.user.phoneNumber,
 	role: profileResponse.user.role,
 	status: profileResponse.user.status,
+	freeSellUse: profileResponse.user.freeSellUse,
 	fullName: profileResponse.user_profile?.fullName,
 	avatarUrl: profileResponse.user_profile?.avatarUrl,
 });

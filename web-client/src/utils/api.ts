@@ -79,7 +79,7 @@ class HttpClient {
       if (networkError instanceof Error && networkError.name === 'AbortError') {
         if (process.env.NODE_ENV === 'development') {
           console.warn('[API] Request timed out:', url);
-        }
+          }
         throw new Error("Yêu cầu quá thời gian xử lý. Vui lòng thử lại.");
       }
       if (process.env.NODE_ENV === 'development') {
