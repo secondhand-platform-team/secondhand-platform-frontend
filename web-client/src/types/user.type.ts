@@ -8,6 +8,7 @@ export type UserType = {
 	status: boolean;
 	fullName?: string;
 	avatarUrl?: string;
+	freeSellUse?: number;
 };
 
 export type UserProfileType = {
@@ -24,6 +25,7 @@ export type UserInfoApiType = {
 	phoneNumber: string;
 	role: UserRole;
 	status: boolean;
+	freeSellUse: number;
 };
 
 export type UserProfileApiResponseType = {

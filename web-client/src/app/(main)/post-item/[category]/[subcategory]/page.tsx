@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import { message } from "antd";
 import {
   X,
   Image as ImageIcon,
@@ -12,10 +14,15 @@ import {
 import {
   categoryService,
   type CategoryAttribute,
+  type ChildCategory,
 } from "@/config/services/category.service";
-import { itemService, type ItemRequest } from "@/config/services/item.service";
+import { itemService } from "@/config/services/item.service";
+import type { ItemRequest } from "@/types/item.type";
+import { useAppSelector, useAppDispatch } from "@/stores/hooks";
+import { fetchCurrentUser } from "@/stores/slices/auth.slice";
+import PaymentRedirectModal from "@/components/payment/PaymentRedirectModal";
 
-type TransactionType = "SELL" | "GIVEAWAY";
+type TransactionType = "SELL" | "GIVE_AWAY";
 type ConditionType = "NEW" | "LIKE_NEW" | "USED" | "FOR_PARTS";
 
 interface AttributeValue {
@@ -55,14 +62,26 @@ export default function PostItemFormPage() {
   const categoryKey = params?.category || "";
   const subcategoryId = params?.subcategory || "";
 
+  // Get user from auth store
+  const user = useAppSelector((state) => state.auth.user);
+  const dispatch = useAppDispatch();
+
   const categoryLabel = categoryLabelMap[categoryKey] || "Danh mục";
 
   // State cho attributes từ API
   const [apiAttributes, setApiAttributes] = useState<CategoryAttribute[]>([]);
   const [isLoadingAttributes, setIsLoadingAttributes] = useState(true);
   const [attributeError, setAttributeError] = useState<string | null>(null);
+  const [categoryData, setCategoryData] = useState<ChildCategory | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Payment states
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<{
+    transactionId: string;
+    paymentUrl: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
     title: "",
@@ -83,7 +102,7 @@ export default function PostItemFormPage() {
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
-  // Load category attributes từ API
+  // Load category attributes và category data từ API
   useEffect(() => {
     const loadAttributes = async () => {
       try {
@@ -92,8 +111,6 @@ export default function PostItemFormPage() {
 
         const attrs =
           await categoryService.getCategoryAttributes(subcategoryId);
-
-        console.log("Loaded attributes:", attrs);
 
         setApiAttributes(attrs);
 
@@ -106,11 +123,25 @@ export default function PostItemFormPage() {
             dataType: attr.dataType,
           })),
         }));
+
+        // Also load category data to get postingFee
+        try {
+          const response = await categoryService.getCategoryById(subcategoryId);
+          const categoryInfo = response.data || response;
+          const childCategory: ChildCategory = {
+            categoryId: categoryInfo.id,
+            name: categoryInfo.name,
+            icon: categoryInfo.icon,
+            postingFee: categoryInfo.postingFee ?? 0,
+          };
+          setCategoryData(childCategory);
+        } catch {
+          // Silently fail - category fee not loaded, user will still be able to post
+        }
       } catch (error) {
         const errorMsg =
           error instanceof Error ? error.message : "Lỗi tải attributes";
         setAttributeError(errorMsg);
-        console.error("Failed to load attributes:", error);
       } finally {
         setIsLoadingAttributes(false);
       }
@@ -252,10 +283,11 @@ export default function PostItemFormPage() {
       }));
 
       // Map transactionType: SELL → SELL, GIVEAWAY → GIVEWAY
-      const transactionTypeMap: Record<TransactionType, "SELL" | "GIVEWAY"> = {
-        SELL: "SELL",
-        GIVEAWAY: "GIVEWAY",
-      };
+      const transactionTypeMap: Record<TransactionType, "SELL" | "GIVE_AWAY"> =
+        {
+          SELL: "SELL",
+          GIVE_AWAY: "GIVE_AWAY",
+        };
 
       const submitData: ItemRequest = {
         title: formData.title,
@@ -263,13 +295,10 @@ export default function PostItemFormPage() {
         condition: formData.condition,
         categoryId: formData.subcategoryId,
         transactionType: transactionTypeMap[formData.transactionType],
-        price: formData.transactionType === "SELL" ? formData.price : null,
+        price: formData.transactionType === "SELL" ? formData.price : 0,
         location: formData.location,
         attributes,
       };
-
-      console.log("Form submitted with data:", submitData);
-      console.log("Images to upload:", formData.images);
 
       // Send to backend with images
       const response = await itemService.createItem(
@@ -277,15 +306,28 @@ export default function PostItemFormPage() {
         formData.images.length > 0 ? formData.images : undefined,
       );
 
-      console.log("Item created successfully:", response);
+      // Parse response - extract data or use response directly
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const itemResponse: Record<string, unknown> =
+        (response as any)?.data || response;
 
-      // Navigate to home or item detail page
-      alert("✅ Đã tạo tin thành công!");
-      router.push("/home");
+      // Check if payment is required
+      if (itemResponse?.paymentUrl && itemResponse?.transactionId) {
+        // Show payment modal
+        setPaymentInfo({
+          transactionId: itemResponse.transactionId as string,
+          paymentUrl: itemResponse.paymentUrl as string,
+        });
+        setIsPaymentModalOpen(true);
+      } else {
+        // Refresh user data to update freeSellUse
+        await dispatch(fetchCurrentUser()).unwrap();
+        message.success("✅ Đã tạo tin thành công!");
+        router.push("/home");
+      }
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Lỗi không xác định";
-      console.error("Error submitting form:", error);
       setSubmitError(`❌ Lỗi: ${errorMsg}`);
     } finally {
       setIsSubmitting(false);
@@ -341,7 +383,7 @@ export default function PostItemFormPage() {
               Loại giao dịch
             </label>
             <div className="flex gap-3">
-              {(["SELL", "GIVEAWAY"] as const).map((type) => (
+              {(["SELL", "GIVE_AWAY"] as const).map((type) => (
                 <button
                   key={type}
                   type="button"
@@ -358,6 +400,49 @@ export default function PostItemFormPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-lg font-semibold text-slate-900 mb-3">
+              Hình ảnh
+            </label>
+
+            {imagePreviews.length > 0 && (
+              <div className="mb-4 grid grid-cols-3 gap-3">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="group relative h-24 w-full">
+                    <Image
+                      src={preview}
+                      alt="preview"
+                      fill
+                      className="rounded-lg border border-slate-200 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition group-hover:opacity-100"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:bg-slate-100">
+              <ImageIcon size={20} className="text-slate-500" />
+              <span className="text-sm font-medium text-slate-700">
+                Tải ảnh lên
+              </span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
           </div>
 
           {/* Condition */}
@@ -545,7 +630,7 @@ export default function PostItemFormPage() {
                           </label>
                           {renderAttributeField(attr, currentValue)}
                         </div>
-                        {formData.transactionType === "GIVEAWAY" && (
+                        {formData.transactionType === "GIVE_AWAY" && (
                           <button
                             type="button"
                             onClick={() => removeAttribute(attr.code)}
@@ -566,49 +651,67 @@ export default function PostItemFormPage() {
             )}
           </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-lg font-semibold text-slate-900 mb-3">
-              Hình ảnh
-            </label>
+          {/* GIVEAWAY notification */}
+          {formData.transactionType === "GIVE_AWAY" && (
+            <div className="rounded-xl bg-blue-50 p-4 border border-blue-200">
+              <p className="text-sm text-blue-900 font-semibold">
+                ✨ Đăng tin miễn phí
+              </p>
+              <p className="text-xs text-blue-700 mt-1">
+                Loại &quot;Cho miễn phí&quot; không tính vào số lượt đăng tin.
+                Bạn có thể đăng không giới hạn.
+              </p>
+            </div>
+          )}
 
-            {imagePreviews.length > 0 && (
-              <div className="mb-4 grid grid-cols-3 gap-3">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="group relative">
-                    <img
-                      src={preview}
-                      alt="preview"
-                      className="h-24 w-full rounded-lg border border-slate-200 object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition group-hover:opacity-100"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
+          {/* Posting Fee Info - Only for SELL type */}
+          {formData.transactionType === "SELL" && user && categoryData && (
+            <div
+              className={`rounded-xl p-4 border ${
+                (user.freeSellUse ?? 0) > 0
+                  ? "bg-green-50 border-green-200"
+                  : categoryData.postingFee && categoryData.postingFee > 0
+                    ? "bg-orange-50 border-orange-200"
+                    : "bg-green-50 border-green-200"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p
+                    className={`text-sm font-semibold ${
+                      (user.freeSellUse ?? 0) > 0
+                        ? "text-green-900"
+                        : categoryData.postingFee && categoryData.postingFee > 0
+                          ? "text-orange-900"
+                          : "text-green-900"
+                    }`}
+                  >
+                    {(user.freeSellUse ?? 0) > 0
+                      ? "✅ Đăng tin miễn phí"
+                      : categoryData.postingFee && categoryData.postingFee > 0
+                        ? "💰 Cần trả phí"
+                        : "✅ Danh mục miễn phí"}
+                  </p>
+                  <p
+                    className={`text-xs mt-1 ${
+                      (user.freeSellUse ?? 0) > 0
+                        ? "text-green-700"
+                        : categoryData.postingFee && categoryData.postingFee > 0
+                          ? "text-orange-700"
+                          : "text-green-700"
+                    }`}
+                  >
+                    {(user.freeSellUse ?? 0) > 0
+                      ? `Còn ${user.freeSellUse} lần đăng tin miễn phí`
+                      : categoryData.postingFee && categoryData.postingFee > 0
+                        ? `Cần trả ${categoryData.postingFee.toLocaleString("vi-VN")} VNĐ để đăng`
+                        : "Danh mục này cho phép đăng tin miễn phí"}
+                  </p>
+                </div>
               </div>
-            )}
+            </div>
+          )}
 
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:bg-slate-100">
-              <ImageIcon size={20} className="text-slate-500" />
-              <span className="text-sm font-medium text-slate-700">
-                Tải ảnh lên
-              </span>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </label>
-          </div>
-
-          {/* Submit Button */}
           <div className="flex gap-3 pt-4">
             <button
               type="button"
@@ -625,11 +728,33 @@ export default function PostItemFormPage() {
               className="flex-1 rounded-xl bg-primary px-6 py-3 font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting && <Loader size={18} className="animate-spin" />}
-              {isSubmitting ? "Đang gửi..." : "Đăng tin"}
+              {isSubmitting
+                ? "Đang gửi..."
+                : formData.transactionType === "GIVE_AWAY"
+                  ? "Đăng tin (Miễn phí)"
+                  : (user?.freeSellUse ?? 0) > 0
+                    ? `Đăng tin (Miễn phí)`
+                    : categoryData?.postingFee && categoryData.postingFee > 0
+                      ? `Đăng tin (${categoryData.postingFee.toLocaleString("vi-VN")} VNĐ)`
+                      : "Đăng tin"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Payment Redirect Modal */}
+      {paymentInfo && (
+        <PaymentRedirectModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => {
+            setIsPaymentModalOpen(false);
+            setPaymentInfo(null);
+          }}
+          paymentUrl={paymentInfo.paymentUrl}
+          transactionId={paymentInfo.transactionId}
+          itemTitle={formData.title}
+        />
+      )}
     </div>
   );
 }
