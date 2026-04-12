@@ -38,12 +38,40 @@ class ItemService {
     return http.get<ItemResponse>(`core/api/items/${itemId}`);
   }
 
+  async getMyItems() {
+    return http.get<ItemResponse[]>("core/api/items/me");
+  }
+
+  async getAllItems() {
+    return http.get<ItemResponse[]>("core/api/items");
+  }
+
+  async getItemsByCategory(categoryId: string) {
+    return http.get<ItemResponse[]>(`core/api/items/category/${categoryId}`);
+  }
+
   async updateItem(itemId: string, data: Partial<ItemRequest>) {
     return http.put<ItemResponse>(`core/api/items/${itemId}`, data);
   }
 
+  async updateItemStatus(itemId: string, status: string) {
+    return http.patch<ItemResponse>(`core/api/items/${itemId}/status`, { status });
+  }
+
   async deleteItem(itemId: string) {
     return http.delete<void>(`core/api/items/${itemId}`);
+  }
+
+  async addFavorite(itemId: string) {
+    return http.post<{ message: string }>(`core/api/items/${itemId}/favorite`, {});
+  }
+
+  async removeFavorite(itemId: string) {
+    return http.delete<{ message: string }>(`core/api/items/${itemId}/favorite`);
+  }
+
+  async getMyFavorites() {
+    return http.get<ItemResponse[]>("core/api/items/favorites/me");
   }
 }
 

@@ -93,4 +93,5 @@ class ProvinceService {
 }
 
 const provinceService = new ProvinceService();
+export { provinceService };
 export default provinceService;

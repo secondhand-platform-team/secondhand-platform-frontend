@@ -66,6 +66,31 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
     }
   };
 
+  const handleMenuClick = (key: string) => {
+    switch (key) {
+      case "posts":
+        router.push("/my-posts");
+        break;
+      case "overview":
+        router.push("/dashboard");
+        break;
+      case "customers":
+        router.push("/customers");
+        break;
+      case "settings":
+        router.push("/settings");
+        break;
+      case "password":
+        router.push("/change-password");
+        break;
+      case "logout":
+        void handleLogout();
+        break;
+      default:
+        break;
+    }
+  };
+
   const userMenuItems = [
     {
       key: "overview",
@@ -200,9 +225,7 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
               menu={{
                 items: userMenuItems,
                 onClick: ({ key }) => {
-                  if (key === "logout") {
-                    void handleLogout();
-                  }
+                  handleMenuClick(key);
                 },
               }}
             >
@@ -247,9 +270,7 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
               menu={{
                 items: userMenuItems,
                 onClick: ({ key }) => {
-                  if (key === "logout") {
-                    void handleLogout();
-                  }
+                  handleMenuClick(key);
                 },
               }}
             >

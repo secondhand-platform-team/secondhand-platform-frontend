@@ -21,6 +21,7 @@ import type { ItemRequest } from "@/types/item.type";
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { fetchCurrentUser } from "@/stores/slices/auth.slice";
 import PaymentRedirectModal from "@/components/payment/PaymentRedirectModal";
+import LocationSelector from "@/components/location/LocationSelector";
 
 type TransactionType = "SELL" | "GIVE_AWAY";
 type ConditionType = "NEW" | "LIKE_NEW" | "USED" | "FOR_PARTS";
@@ -540,10 +541,10 @@ export default function PostItemFormPage() {
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="block text-sm font-semibold text-slate-900 mb-3">
               Địa điểm
             </label>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <input
                 type="text"
                 value={formData.location.address}
@@ -553,47 +554,22 @@ export default function PostItemFormPage() {
                     location: { ...prev.location, address: e.target.value },
                   }))
                 }
-                placeholder="Địa chỉ cụ thể"
+                placeholder="Địa chỉ cụ thể (tòa nhà, số nhà, tên đường...)"
                 className="w-full rounded-xl border border-slate-200 px-4 py-2.5 transition focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  value={formData.location.ward || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: { ...prev.location, ward: e.target.value },
-                    }))
-                  }
-                  placeholder="Phường/Xã"
-                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                <input
-                  type="text"
-                  value={formData.location.district || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: { ...prev.location, district: e.target.value },
-                    }))
-                  }
-                  placeholder="Quận/Huyện"
-                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                <input
-                  type="text"
-                  value={formData.location.city || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: { ...prev.location, city: e.target.value },
-                    }))
-                  }
-                  placeholder="Thành phố"
-                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+              <LocationSelector
+                value={{
+                  city: formData.location.city,
+                  district: formData.location.district,
+                  ward: formData.location.ward,
+                }}
+                onChange={(location) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    location: { ...prev.location, ...location },
+                  }))
+                }
+              />
             </div>
           </div>
 
