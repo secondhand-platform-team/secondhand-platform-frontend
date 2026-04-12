@@ -2,28 +2,18 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroSection from "@/components/home/HeroSection";
 import SearchSection from "@/components/home/SearchSection";
 import CategorySection from "@/components/home/CategorySection";
 import FeaturedProductsSection from "@/components/home/FeaturedProductsSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
-import { useAppSelector } from "@/stores/hooks";
+import { useAppDispatch, useAppSelector } from "@/stores/hooks";
+import { fetchTopCategories } from "@/stores/slices/category.slice";
+import { getCategoryIconBySlug } from "@/utils/category-icon";
 import Header from "./Header";
 import Footer from "./Footer";
-
-const categories = [
-  { icon: "/icon-caterogy/device.png", title: "Điện tử" },
-  { icon: "/icon-caterogy/clothes.png", title: "Quần áo" },
-  { icon: "/icon-caterogy/interior.png", title: "Nội thất" },
-  { icon: "/icon-caterogy/book.png", title: "Sách" },
-  {
-    icon: "/icon-caterogy/home_repair_service.png",
-    title: "Gia dụng",
-  },
-  { icon: "/icon-caterogy/other.png", title: "Khác" },
-];
 
 const featuredProducts = [
   {
@@ -62,19 +52,33 @@ const featuredProducts = [
 
 export default function MarketplaceHome() {
   const [authOpen, setAuthOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  const { topCategories } = useAppSelector((state) => state.category);
+
+  useEffect(() => {
+    dispatch(fetchTopCategories());
+  }, [dispatch]);
+
+  const categoriesForDisplay = topCategories
+    .filter((cat) => Boolean(cat.slug))
+    .map((cat) => ({
+      slug: cat.slug || "",
+      name: cat.name,
+      icon: getCategoryIconBySlug(cat.slug),
+    }));
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-slate-50 dark:bg-slate-950">
       <main className="grow">
         <HeroSection onOpenAuth={() => setAuthOpen(true)} />
         <SearchSection />
-        <CategorySection categories={categories} />
+        <CategorySection categories={categoriesForDisplay} />
         <FeaturedProductsSection products={featuredProducts} />
         <HowItWorksSection />
       </main>
 
       <Footer />
-      
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </div>
   );
 }
