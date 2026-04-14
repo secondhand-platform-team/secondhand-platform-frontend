@@ -34,13 +34,8 @@ export default function CategoryProductsPage() {
   }>();
   const parentSlug = params?.parentSlug;
   const childSlug = params?.childSlug;
-  const {
-    loading,
-    selectedParent,
-    selectedChild,
-    productsByCategory,
-    error,
-  } = useAppSelector((state) => state.category);
+  const { loading, selectedParent, selectedChild, productsByCategory, error } =
+    useAppSelector((state) => state.category);
   const [searchName, setSearchName] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");

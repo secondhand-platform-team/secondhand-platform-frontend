@@ -87,7 +87,9 @@ export default function ProductDetailPage() {
           const catResponse = await http.get<CategoryType>(
             `core/api/categories/${detailData.categoryId}`,
           );
-          categoryData = !Array.isArray(catResponse) ? catResponse : catResponse[0];
+          categoryData = !Array.isArray(catResponse)
+            ? catResponse
+            : catResponse[0];
           setCategory(categoryData);
         } catch {
           setCategory(null);
@@ -121,9 +123,7 @@ export default function ProductDetailPage() {
         );
       } catch (e) {
         setError(
-          e instanceof Error
-            ? e.message
-            : "Không thể tải chi tiết sản phẩm",
+          e instanceof Error ? e.message : "Không thể tải chi tiết sản phẩm",
         );
       } finally {
         setLoading(false);
@@ -142,9 +142,7 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <p className="text-sm text-slate-500">
-          Đang tải chi tiết sản phẩm...
-        </p>
+        <p className="text-sm text-slate-500">Đang tải chi tiết sản phẩm...</p>
       </section>
     );
   }
@@ -272,18 +270,14 @@ export default function ProductDetailPage() {
             </p>
             <p>
               <span className="text-slate-500">Mã người bán:</span>{" "}
-              <span className="font-medium text-slate-800">
-                {item.userId}
-              </span>
+              <span className="font-medium text-slate-800">{item.userId}</span>
             </p>
           </div>
         </div>
       </div>
 
       <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Mô tả sản phẩm
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900">Mô tả sản phẩm</h2>
         <p className="mt-3 whitespace-pre-line leading-relaxed text-slate-700">
           {item.description || "Người bán chưa bổ sung mô tả."}
         </p>
@@ -317,9 +311,7 @@ export default function ProductDetailPage() {
       </div>
 
       <div className="mt-10">
-        <h2 className="text-xl font-bold text-slate-900">
-          Sản phẩm tương tự
-        </h2>
+        <h2 className="text-xl font-bold text-slate-900">Sản phẩm tương tự</h2>
         <p className="mt-1 text-sm text-slate-500">
           Các sản phẩm cùng danh mục với tin này.
         </p>
