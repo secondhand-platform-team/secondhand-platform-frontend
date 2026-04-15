@@ -16,8 +16,10 @@ import {
   type CategoryAttribute,
   type ChildCategory,
 } from "@/config/services/category.service";
+import provinceService from "@/config/services/province.service";
 import { itemService } from "@/config/services/item.service";
 import type { ItemRequest } from "@/types/item.type";
+import type { District, Province, Ward } from "@/types/province.type";
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { fetchCurrentUser } from "@/stores/slices/auth.slice";
 import PaymentRedirectModal from "@/components/payment/PaymentRedirectModal";
@@ -75,6 +77,11 @@ export default function PostItemFormPage() {
   const [categoryData, setCategoryData] = useState<ChildCategory | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [detailedAddress, setDetailedAddress] = useState("");
 
   // Payment states
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -101,6 +108,18 @@ export default function PostItemFormPage() {
   });
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const buildAddress = ({
+    detail,
+    ward,
+    district,
+    city,
+  }: {
+    detail?: string;
+    ward?: string;
+    district?: string;
+    city?: string;
+  }) => [detail, ward, district, city].filter(Boolean).join(", ");
 
   // Load category attributes và category data từ API
   useEffect(() => {
@@ -151,6 +170,118 @@ export default function PostItemFormPage() {
       loadAttributes();
     }
   }, [subcategoryId]);
+
+  useEffect(() => {
+    const loadProvinces = async () => {
+      try {
+        setIsLoadingLocation(true);
+        const data = await provinceService.getProvinces();
+        setProvinces(data);
+      } catch {
+        setSubmitError("Không tải được dữ liệu địa điểm. Vui lòng thử lại.");
+      } finally {
+        setIsLoadingLocation(false);
+      }
+    };
+
+    loadProvinces();
+  }, []);
+
+  const handleCityChange = async (cityCode: string) => {
+    const selectedProvince = provinces.find(
+      (province) => String(province.code) === cityCode,
+    );
+
+    setFormData((prev) => {
+      const nextCity = selectedProvince?.name || "";
+      return {
+        ...prev,
+        location: {
+          ...prev.location,
+          city: nextCity,
+          district: "",
+          ward: "",
+          address: buildAddress({ detail: detailedAddress, city: nextCity }),
+        },
+      };
+    });
+
+    setDistricts([]);
+    setWards([]);
+
+    if (!selectedProvince) return;
+
+    try {
+      setIsLoadingLocation(true);
+      const provinceDetail = await provinceService.getProvinceWithDistricts(
+        selectedProvince.code,
+      );
+      setDistricts(provinceDetail.districts || []);
+    } catch {
+      setSubmitError("Không tải được quận/huyện. Vui lòng thử lại.");
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
+  const handleDistrictChange = async (districtCode: string) => {
+    const selectedDistrict = districts.find(
+      (district) => String(district.code) === districtCode,
+    );
+
+    setFormData((prev) => {
+      const nextDistrict = selectedDistrict?.name || "";
+      return {
+        ...prev,
+        location: {
+          ...prev.location,
+          district: nextDistrict,
+          ward: "",
+          address: buildAddress({
+            detail: detailedAddress,
+            district: nextDistrict,
+            city: prev.location.city,
+          }),
+        },
+      };
+    });
+
+    setWards([]);
+
+    if (!selectedDistrict) return;
+
+    try {
+      setIsLoadingLocation(true);
+      const districtDetail = await provinceService.getDistrictWithWards(
+        selectedDistrict.code,
+      );
+      setWards(districtDetail.wards || []);
+    } catch {
+      setSubmitError("Không tải được phường/xã. Vui lòng thử lại.");
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
+  const handleWardChange = (wardCode: string) => {
+    const selectedWard = wards.find((ward) => String(ward.code) === wardCode);
+    setFormData((prev) => {
+      const nextWard = selectedWard?.name || "";
+      return {
+        ...prev,
+        location: {
+          ...prev.location,
+          ward: nextWard,
+          address: buildAddress({
+            detail: detailedAddress,
+            ward: nextWard,
+            district: prev.location.district,
+            city: prev.location.city,
+          }),
+        },
+      };
+    });
+  };
 
   const errors = useMemo(() => {
     const errs: Record<string, string> = {};
@@ -306,10 +437,7 @@ export default function PostItemFormPage() {
         formData.images.length > 0 ? formData.images : undefined,
       );
 
-      // Parse response - extract data or use response directly
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const itemResponse: Record<string, unknown> =
-        (response as any)?.data || response;
+      const itemResponse = response as unknown as Record<string, unknown>;
 
       // Check if payment is required
       if (itemResponse?.paymentUrl && itemResponse?.transactionId) {
@@ -546,53 +674,83 @@ export default function PostItemFormPage() {
             <div className="space-y-2">
               <input
                 type="text"
-                value={formData.location.address}
-                onChange={(e) =>
+                value={detailedAddress}
+                onChange={(e) => {
+                  const detail = e.target.value;
+                  setDetailedAddress(detail);
                   setFormData((prev) => ({
                     ...prev,
-                    location: { ...prev.location, address: e.target.value },
-                  }))
-                }
-                placeholder="Địa chỉ cụ thể"
+                    location: {
+                      ...prev.location,
+                      address: buildAddress({
+                        detail,
+                        ward: prev.location.ward,
+                        district: prev.location.district,
+                        city: prev.location.city,
+                      }),
+                    },
+                  }));
+                }}
+                placeholder="Số nhà, tên đường..."
                 className="w-full rounded-xl border border-slate-200 px-4 py-2.5 transition focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  value={formData.location.ward || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: { ...prev.location, ward: e.target.value },
-                    }))
-                  }
-                  placeholder="Phường/Xã"
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <select
+                  value={String(
+                    provinces.find((p) => p.name === formData.location.city)
+                      ?.code || "",
+                  )}
+                  onChange={(e) => void handleCityChange(e.target.value)}
+                  disabled={isLoadingLocation}
                   className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                <input
-                  type="text"
-                  value={formData.location.district || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: { ...prev.location, district: e.target.value },
-                    }))
-                  }
-                  placeholder="Quận/Huyện"
+                >
+                  <option value="">Chọn Tỉnh/Thành phố</option>
+                  {provinces.map((province) => (
+                    <option key={province.code} value={province.code}>
+                      {province.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={String(
+                    districts.find((d) => d.name === formData.location.district)
+                      ?.code || "",
+                  )}
+                  onChange={(e) => void handleDistrictChange(e.target.value)}
+                  disabled={!formData.location.city || isLoadingLocation}
                   className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                <input
-                  type="text"
-                  value={formData.location.city || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: { ...prev.location, city: e.target.value },
-                    }))
-                  }
-                  placeholder="Thành phố"
+                >
+                  <option value="">Chọn Quận/Huyện</option>
+                  {districts.map((district) => (
+                    <option key={district.code} value={district.code}>
+                      {district.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={String(
+                    wards.find((w) => w.name === formData.location.ward)
+                      ?.code || "",
+                  )}
+                  onChange={(e) => handleWardChange(e.target.value)}
+                  disabled={!formData.location.district || isLoadingLocation}
                   className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
+                >
+                  <option value="">Chọn Phường/Xã</option>
+                  {wards.map((ward) => (
+                    <option key={ward.code} value={ward.code}>
+                      {ward.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
+                {formData.location.address ||
+                  "Địa chỉ sẽ hiển thị sau khi bạn chọn địa điểm"}
               </div>
             </div>
           </div>

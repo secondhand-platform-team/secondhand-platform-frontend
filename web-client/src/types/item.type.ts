@@ -27,6 +27,12 @@ export interface ItemRequest {
   attributes: ItemAttributeRequest[];
 }
 
+export interface ItemImageResponse {
+  imageId: string;
+  imageUrl: string;
+  isPrimary: boolean;
+}
+
 export interface ItemResponse {
   itemId: string;
   title: string;
@@ -35,9 +41,13 @@ export interface ItemResponse {
   categoryId: string;
   transactionType: string;
   price: number | null;
+  status?: string;
+  userId?: string;
   location: LocationRequest;
   attributes: ItemAttributeRequest[];
+  itemImageList?: ItemImageResponse[];
   createdAt: string;
+  updatedAt?: string;
   // Payment fields
   transactionId?: string;
   paymentUrl?: string;
