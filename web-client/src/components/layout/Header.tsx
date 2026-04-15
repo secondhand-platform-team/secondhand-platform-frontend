@@ -201,11 +201,21 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                 onClick: ({ key }) => {
                   if (key === "logout") {
                     void handleLogout();
-                    return;
-                  }
-
-                  if (key === "posts") {
+                  } else if (key === "posts") {
                     router.push("/my-posts");
+                    setOpen(false);
+                  } else if (key === "overview") {
+                    router.push("/dashboard");
+                    setOpen(false);
+                  } else if (key === "customers") {
+                    router.push("/customers");
+                    setOpen(false);
+                  } else if (key === "settings") {
+                    router.push("/settings");
+                    setOpen(false);
+                  } else if (key === "password") {
+                    router.push("/change-password");
+                    setOpen(false);
                   }
                 },
               }}
@@ -253,11 +263,16 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                 onClick: ({ key }) => {
                   if (key === "logout") {
                     void handleLogout();
-                    return;
-                  }
-
-                  if (key === "posts") {
+                  } else if (key === "posts") {
                     router.push("/my-posts");
+                  } else if (key === "overview") {
+                    router.push("/dashboard");
+                  } else if (key === "customers") {
+                    router.push("/customers");
+                  } else if (key === "settings") {
+                    router.push("/settings");
+                  } else if (key === "password") {
+                    router.push("/change-password");
                   }
                 },
               }}

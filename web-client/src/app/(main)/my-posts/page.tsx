@@ -1,125 +1,187 @@
 "use client";
 
-import { Button, Card, Empty, Popconfirm, Select, Space, Table, Tag, Typography, message } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
-import { deletePost, fetchMyPosts, updatePostStatus } from "@/stores/slices/item.slice";
-import type { ItemResponseType, ItemStatus } from "@/types/item/item.type";
-
-const statusColor: Record<string, string> = {
-  AVAILABLE: "green",
-  RESERVED: "orange",
-  SOLD: "blue",
-  HIDDEN: "default",
-  ACTIVE: "cyan",
-};
+import { fetchMyItems, clearSelectedItem } from "@/stores/slices/items.slice";
+import { Button, Input, Select, Pagination, message } from "antd";
+import { Plus, RefreshCw } from "lucide-react";
+import PostsGrid from "@/components/my-posts/PostsGrid";
+import PostsDetailModal from "@/components/my-posts/PostsDetailModal";
+import type { ItemWithImages } from "@/config/services/item.service";
 
 export default function MyPostsPage() {
-  const dispatch = useAppDispatch();
   const router = useRouter();
-  const { myPosts, loading } = useAppSelector((state) => state.item);
+  const dispatch = useAppDispatch();
+  const {
+    myItems = [],
+    loading = false,
+    currentPage = 0,
+    totalPages = 0,
+    error,
+  } = useAppSelector((state) => state?.items || {});
+  const { isAuth, user } = useAppSelector((state) => state?.auth || {});
 
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ItemWithImages | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [page, setPage] = useState(0);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  // Check auth and load data
   useEffect(() => {
-    dispatch(fetchMyPosts());
-  }, [dispatch]);
-
-  const onStatusChange = async (itemId: string, status: ItemStatus) => {
-    try {
-      await dispatch(updatePostStatus({ itemId, status })).unwrap();
-      message.success("Đã cập nhật trạng thái tin");
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : "Cập nhật thất bại");
+    if (!isAuth) {
+      message.warning("Vui lòng đăng nhập để xem quản lý tin đăng");
+      router.push("/home");
+      return;
     }
+
+    setPageLoading(false);
+  }, [isAuth, router]);
+
+  // Load items when page mounts or changes
+  useEffect(() => {
+    if (isAuth && !pageLoading) {
+      void dispatch(fetchMyItems({ page, size: 20 }));
+    }
+  }, [isAuth, page, dispatch, pageLoading]);
+
+  const handleViewDetail = (item: ItemWithImages) => {
+    setSelectedItem(item);
+    setDetailOpen(true);
   };
 
-  const onDelete = async (itemId: string) => {
-    try {
-      await dispatch(deletePost(itemId)).unwrap();
-      message.success("Đã xóa tin đăng");
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : "Xóa tin thất bại");
-    }
+  const handleEdit = (item: ItemWithImages) => {
+    // TODO: Implement edit page/modal
+    router.push(`/my-posts/${item.itemId}/edit`);
   };
 
-  const columns: ColumnsType<ItemResponseType> = [
-    {
-      title: "Tiêu đề",
-      dataIndex: "title",
-      key: "title",
-      render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          <Typography.Text strong>{record.title}</Typography.Text>
-          <Typography.Text type="secondary">{record.categoryId}</Typography.Text>
-        </Space>
-      ),
-    },
-    {
-      title: "Giá",
-      dataIndex: "price",
-      key: "price",
-      render: (value: number) => `${value?.toLocaleString("vi-VN")} VND`,
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status: string) => <Tag color={statusColor[status] || "default"}>{status}</Tag>,
-    },
-    {
-      title: "Cập nhật trạng thái",
-      key: "statusAction",
-      render: (_, record) => (
-        <Select
-          value={(record.status as ItemStatus) || "AVAILABLE"}
-          style={{ minWidth: 140 }}
-          onChange={(value) => onStatusChange(record.itemId, value)}
-          options={[
-            { label: "Hiển thị", value: "AVAILABLE" },
-            { label: "Đã bán", value: "SOLD" },
-            { label: "Đã giữ", value: "RESERVED" },
-            { label: "Ẩn tin", value: "HIDDEN" },
-          ]}
-        />
-      ),
-    },
-    {
-      title: "Hành động",
-      key: "actions",
-      render: (_, record) => (
-        <Popconfirm
-          title="Xóa tin đăng này?"
-          okText="Xóa"
-          cancelText="Hủy"
-          onConfirm={() => onDelete(record.itemId)}
-        >
-          <Button danger>Xóa</Button>
-        </Popconfirm>
-      ),
-    },
-  ];
+  const handleRefresh = () => {
+    void dispatch(fetchMyItems({ page, size: 20 }));
+  };
+
+  const handleCreateNew = () => {
+    router.push("/post-item");
+  };
+
+  // Filter items based on search and status
+  const filteredItems = Array.isArray(myItems)
+    ? myItems.filter((item) => {
+        const matchesSearch =
+          !searchText ||
+          item.title.toLowerCase().includes(searchText.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchText.toLowerCase());
+        const matchesStatus = !filterStatus || item.status === filterStatus;
+        return matchesSearch && matchesStatus;
+      })
+    : [];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="mb-4 flex items-center justify-between">
-        <Typography.Title level={2} className="!mb-0">Quản lý tin đăng</Typography.Title>
-        <Button type="primary" onClick={() => router.push("/post-new")}>Đăng tin mới</Button>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 py-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Tin đăng của tôi
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {filteredItems.length} tin đăng
+              </p>
+            </div>
+            <Button
+              type="primary"
+              size="large"
+              icon={<Plus size={18} />}
+              onClick={handleCreateNew}
+            >
+              Đăng tin mới
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        {myPosts.length === 0 && !loading ? (
-          <Empty description="Bạn chưa có tin đăng nào" />
-        ) : (
-          <Table
-            rowKey="itemId"
-            loading={loading}
-            dataSource={myPosts}
-            columns={columns}
-            pagination={{ pageSize: 8 }}
-          />
+      {/* Main Content */}
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        {/* Search & Filter */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="flex-1 max-w-md">
+            <Input.Search
+              placeholder="Tìm kiếm tin đăng..."
+              allowClear
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setPage(0);
+              }}
+              size="large"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Select
+              placeholder="Lọc theo trạng thái"
+              allowClear
+              style={{ width: 150 }}
+              value={filterStatus || undefined}
+              onChange={(value) => {
+                setFilterStatus(value || "");
+                setPage(0);
+              }}
+              options={[
+                { label: "Hoạt động", value: "ACTIVE" },
+                { label: "Nháp", value: "DRAFT" },
+                { label: "Đã đặt cọc", value: "RESERVED" },
+                { label: "Đã bán", value: "SOLD" },
+                { label: "Ẩn", value: "HIDDEN" },
+              ]}
+            />
+            <Button
+              icon={<RefreshCw size={16} />}
+              onClick={handleRefresh}
+              loading={loading}
+            >
+              Làm mới
+            </Button>
+          </div>
+        </div>
+
+        {/* Grid */}
+        <PostsGrid
+          items={filteredItems}
+          loading={loading}
+          onEdit={handleEdit}
+          onViewDetail={handleViewDetail}
+          onRefresh={handleRefresh}
+        />
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center">
+            <Pagination
+              current={page + 1}
+              total={totalPages * 20}
+              pageSize={20}
+              onChange={(newPage) => {
+                setPage(newPage - 1);
+              }}
+            />
+          </div>
         )}
-      </Card>
+      </div>
+
+      {/* Detail Modal */}
+      <PostsDetailModal
+        open={detailOpen}
+        item={selectedItem}
+        loading={false}
+        onClose={() => {
+          setDetailOpen(false);
+          setSelectedItem(null);
+          dispatch(clearSelectedItem());
+        }}
+      />
     </div>
   );
 }
