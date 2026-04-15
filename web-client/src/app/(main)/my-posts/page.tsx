@@ -180,8 +180,4 @@ export default function MyPostsPage() {
       />
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/main
