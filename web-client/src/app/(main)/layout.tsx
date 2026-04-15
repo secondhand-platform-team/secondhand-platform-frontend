@@ -19,7 +19,6 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
       setAuthOpen(true);
     }
   }, [isAuth, pathname, searchParams]);
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header
