@@ -764,6 +764,7 @@ export default function PostNewPage() {
                     <Button
                       href={fullAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}` : undefined}
                       target="_blank"
+                      rel="noopener noreferrer"
                       disabled={!fullAddress}
                       className="!rounded-md !border !border-[#CDE7D2] !bg-white !text-xs !font-semibold"
                       style={{ color: BRAND_GREEN_DARK }}
