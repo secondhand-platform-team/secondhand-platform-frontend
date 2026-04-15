@@ -21,7 +21,13 @@ export default function FavoritesPage() {
       await dispatch(removeFavorite(itemId)).unwrap();
       message.success("Đã xóa khỏi danh sách yêu thích");
     } catch (error) {
-      message.error(error instanceof Error ? error.message : "Không thể xóa yêu thích");
+      if (typeof error === "string") {
+        message.error(error);
+      } else if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error("Không thể xóa yêu thích");
+      }
     }
   };
 
