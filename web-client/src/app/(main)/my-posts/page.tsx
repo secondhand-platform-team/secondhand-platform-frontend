@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
-import { fetchMyItems, clearSelectedItem } from "@/stores/slices/items.slice";
-import { Button, Input, Select, Pagination, message } from "antd";
-import { Plus, RefreshCw } from "lucide-react";
 import PostsGrid from "@/components/my-posts/PostsGrid";
 import PostsDetailModal from "@/components/my-posts/PostsDetailModal";
 import type { ItemWithImages } from "@/config/services/item.service";
