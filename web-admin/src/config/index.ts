@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 const configSchema = z.object({
-  API_ENDPOINT: z.string().url(),
+  // Có thể để trống → dùng Vite proxy (relative URL)
+  API_ENDPOINT: z.string().default(""),
 });
 
 const configProject = configSchema.safeParse({
-  API_ENDPOINT: import.meta.env.VITE_PUBLIC_API_ENDPOINT,
+  API_ENDPOINT: import.meta.env.VITE_PUBLIC_API_ENDPOINT ?? "",
 });
 
 if (!configProject.success) {

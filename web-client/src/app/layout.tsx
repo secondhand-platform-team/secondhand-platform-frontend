@@ -22,10 +22,14 @@ const displayFont = Fraunces({
 export const metadata: Metadata = {
   title: "ReLife",
   icons: {
-    icon: "/logo/icon-logo.png",
+    icon: [
+      { url: "/logo/icon-logo.png", sizes: "32x32", type: "image/png" },
+      { url: "/logo/icon-logo.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: "/logo/icon-logo.png",
+    shortcut: "/logo/icon-logo.png",
   },
 };
-
 export default function RootLayout({
   children,
 }: {

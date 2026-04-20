@@ -1,8 +1,16 @@
 import { configureStore } from '@reduxjs/toolkit'
+import authReducer from './slices/auth.slice'
+import themeReducer from './slices/theme.slice'
+import itemReducer from './slices/item.slice'
+import categoryReducer from './slices/category.slice'
+
 export const makeStore = () => {
   return configureStore({
     reducer: {
-      
+      auth: authReducer,
+      theme: themeReducer,
+      item: itemReducer,
+      category: categoryReducer,
     },
   })
 }

@@ -104,18 +104,17 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-white dark:bg-background-dark/80 backdrop-blur-md">
-      <div className="mx-auto flex w-full max-w-360 items-center justify-between px-3 py-3 sm:px-4 lg:px-5">
+    <header className="sticky top-0 z-50 w-full h-16 border-b border-primary/10 bg-white dark:bg-background-dark/80 backdrop-blur-md">
+      <div className="mx-auto flex h-full w-full max-w-360 items-center justify-between px-3 sm:px-4 lg:px-5">
         <div className="flex items-center gap-6 lg:gap-8">
-          <Link href="/home" className="flex items-center gap-2 text-primary">
-            <img
-              src="/logo/icon-logo.png"
-              alt="Logo Chợ Đồ Cũ"
-              className="h-9 w-9 rounded-lg object-contain"
-            />
-            <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 sm:text-xl">
-              ReLife
-            </h2>
+          <Link href="/home" className="flex items-center group">
+            <div className="relative flex items-center justify-center">
+              <img
+                  src="/logo/icon-logo.png"
+                  alt="Logo ReLife"
+                  className="h-20 w-auto max-w-[120px] object-contain transition-transform duration-300 group-hover:scale-110"
+                />
+            </div>
           </Link>
           <nav className="hidden items-center gap-5 md:flex lg:gap-6">
             <a

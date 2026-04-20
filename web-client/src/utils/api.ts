@@ -90,6 +90,21 @@ class HttpClient {
       clearTimeout(timeoutId);
     }
 
+    // Automatic silent token refresh on 401
+    if (response.status === 401) {
+      const refreshed = await this.tryRefreshToken();
+      if (refreshed) {
+        // Recreate signal for the retry
+        const retryController = new AbortController();
+        const retryTimeout = setTimeout(() => retryController.abort(), timeoutMs);
+        try {
+          response = await fetch(url, { ...config, signal: retryController.signal });
+        } finally {
+          clearTimeout(retryTimeout);
+        }
+      }
+    }
+
     if (!response.ok) {
       try {
         const error = await response.json();
@@ -120,6 +135,25 @@ class HttpClient {
 
   get<T>(endpoint: string, options?: HttpOptions): Promise<T> {
     return this.request("GET", endpoint, undefined, options);
+  }
+
+  /**
+   * Silently calls /auth/api/refresh to rotate tokens via HttpOnly cookies.
+   * Returns true if the refresh was successful.
+   */
+  private async tryRefreshToken(): Promise<boolean> {
+    try {
+      const normalizedBase = this.baseUrl.endsWith("/")
+        ? this.baseUrl.slice(0, -1)
+        : this.baseUrl;
+      const res = await fetch(`${normalizedBase}/auth/api/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   }
 
   post<T>(endpoint: string, data?: RequestData, options?: HttpOptions): Promise<T> {

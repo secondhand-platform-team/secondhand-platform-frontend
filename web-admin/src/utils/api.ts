@@ -5,7 +5,15 @@ type HttpOptions = {
   contentType?: string;
 };
 
-type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+
+// Map service name → Kong gateway prefix
+const SERVICE_PREFIX: Record<string, string> = {
+  auth: "/auth",
+  core: "/core",
+  order: "/order",
+  chat: "/chat",
+};
 
 class HttpClient {
   private baseUrl: string;
@@ -14,34 +22,20 @@ class HttpClient {
     this.baseUrl = baseUrl || envConfig.API_ENDPOINT;
   }
 
-  private getAccessToken(): string | null {
-    // Chỉ lấy access token khi đang ở client
-    if (typeof window === "undefined") return null;
-    // Kiểm tra localStorage có tồn tại không
-    try {
-      return localStorage.getItem("accessToken");
-    } catch {
-      return null;
-    }
-  }
-
   private buildHeaders(options?: HttpOptions, data?: any): Record<string, string> {
     const headers: Record<string, string> = {};
 
-    // Nếu data là FormData, không set Content-Type (browser tự động set với boundary)
     if (!(data instanceof FormData)) {
       headers["Content-Type"] = options?.contentType || "application/json";
     }
 
-    // Thêm access token vào header nếu có
-    const accessToken = this.getAccessToken();
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
-    }
+    // Tokens are stored in HttpOnly cookies — browser sends them automatically.
+    // Do NOT read from localStorage or set Authorization header.
 
-    // Merge với headers tùy chỉnh
     if (options?.headers) {
-      Object.assign(headers, options.headers);
+      // Strip internal X-Service header before sending
+      const { "X-Service": _service, ...rest } = options.headers;
+      Object.assign(headers, rest);
     }
 
     return headers;
@@ -53,25 +47,35 @@ class HttpClient {
     data?: any,
     options?: HttpOptions
   ) {
+    // Determine service prefix from X-Service header
+    const service = options?.headers?.["X-Service"];
+    const prefix = service ? SERVICE_PREFIX[service] || "" : "/auth";
+
     const url = endpoint.startsWith("http")
       ? endpoint
-      : `${this.baseUrl}/api${endpoint.startsWith("/") ? endpoint : `/${endpoint}`
-      }`;
+      : `${this.baseUrl}${prefix}/api${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
     const headers = this.buildHeaders(options, data);
-
     const config: RequestInit = {
       method,
       headers,
+      credentials: "include", // Always send HttpOnly cookies
     };
 
-    // Thêm body cho POST, PUT, DELETE
     if (data && method !== "GET") {
-      // Nếu data là FormData, gửi trực tiếp; nếu không thì JSON.stringify
       config.body = data instanceof FormData ? data : JSON.stringify(data);
     }
 
-    const response: Response = await fetch(url, config);
+    let response: Response = await fetch(url, config);
+
+    // Automatic silent token refresh on 401
+    if (response.status === 401) {
+      const refreshed = await this.tryRefreshToken();
+      if (refreshed) {
+        // Retry original request — cookies are updated by the refresh endpoint
+        response = await fetch(url, config);
+      }
+    }
 
     if (!response.ok) {
       try {
@@ -84,6 +88,8 @@ class HttpClient {
       }
     }
 
+    if (response.status === 204) return {} as T;
+
     try {
       return await response.json();
     } catch (e) {
@@ -92,24 +98,41 @@ class HttpClient {
     }
   }
 
-  get(endpoint: string, options?: HttpOptions) {
-    return this.request("GET", endpoint, undefined, options);
+  /**
+   * Calls /api/refresh to silently rotate tokens.
+   * Returns true if successful.
+   */
+  private async tryRefreshToken(): Promise<boolean> {
+    try {
+      const refreshUrl = `${this.baseUrl}/auth/api/refresh`;
+      const res = await fetch(refreshUrl, {
+        method: "POST",
+        credentials: "include",
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   }
 
-  post(endpoint: string, data?: any, options?: HttpOptions) {
-    return this.request("POST", endpoint, data, options);
+  get<T = any>(endpoint: string, options?: HttpOptions) {
+    return this.request<T>("GET", endpoint, undefined, options);
   }
 
-  put(endpoint: string, data?: any, options?: HttpOptions) {
-    return this.request("PUT", endpoint, data, options);
+  post<T = any>(endpoint: string, data?: any, options?: HttpOptions) {
+    return this.request<T>("POST", endpoint, data, options);
   }
 
-  delete(endpoint: string, data?: any, options?: HttpOptions) {
-    return this.request("DELETE", endpoint, data, options);
+  put<T = any>(endpoint: string, data?: any, options?: HttpOptions) {
+    return this.request<T>("PUT", endpoint, data, options);
   }
 
-  patch(endpoint: string, data?: any, options?: HttpOptions) {
-    return this.request("PUT", endpoint, data, options);
+  delete<T = any>(endpoint: string, data?: any, options?: HttpOptions) {
+    return this.request<T>("DELETE", endpoint, data, options);
+  }
+
+  patch<T = any>(endpoint: string, data?: any, options?: HttpOptions) {
+    return this.request<T>("PATCH", endpoint, data, options);
   }
 }
 
