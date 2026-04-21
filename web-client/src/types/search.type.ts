@@ -4,7 +4,7 @@ export interface SearchHistoryRequest {
 }
 
 export interface SearchHistoryResponse {
-  id: number;
+  id: string;
   searchQuery: string;
   categoryId?: string;
   createdAt: string;

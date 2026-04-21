@@ -62,7 +62,7 @@ class SearchService {
   /**
    * Delete specific search history
    */
-  async deleteSearchHistory(id: number) {
+  async deleteSearchHistory(id: string) {
     return http.delete(`core/api/search-history/${id}`);
   }
 

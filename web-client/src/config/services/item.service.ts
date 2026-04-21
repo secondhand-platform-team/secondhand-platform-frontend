@@ -34,6 +34,32 @@ export interface ItemWithImages extends ItemResponse {
   viewCount?: number;
 }
 
+export interface SearchParams {
+  q?: string;
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  condition?: string;
+  transactionType?: string;
+  city?: string;
+  district?: string;
+  ward?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+  numberOfElements: number;
+}
+
 class ItemService {
   async createItem(data: ItemRequest, images?: File[]) {
     // If there are images, use multipart/form-data
@@ -124,6 +150,43 @@ class ItemService {
     return http.get<PaginatedResponse<ItemWithImages>>(
       `core/api/items/favorites/me?page=${page}&size=${size}`
     );
+  }
+
+  async searchItems(params: SearchParams) {
+    const query = new URLSearchParams();
+    if (params.q) query.set("q", params.q);
+    if (params.categoryId) query.set("categoryId", params.categoryId);
+    if (params.minPrice !== undefined) query.set("minPrice", String(params.minPrice));
+    if (params.maxPrice !== undefined) query.set("maxPrice", String(params.maxPrice));
+    if (params.condition) query.set("condition", params.condition);
+    if (params.transactionType) query.set("transactionType", params.transactionType);
+    if (params.city) query.set("city", params.city);
+    if (params.district) query.set("district", params.district);
+    if (params.ward) query.set("ward", params.ward);
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 12));
+    if (params.sort) query.set("sort", params.sort);
+
+    const response = await http.get<PageResponse<ItemResponse>>(`core/api/items/search?${query.toString()}`);
+    return {
+      ...response,
+      content: response.content.map((item) => ({
+        ...item,
+        images: item.itemImageList || [],
+        favoriteCount: 0,
+        viewCount: 0,
+      })) as ItemWithImages[],
+    } as PageResponse<ItemWithImages>;
+  }
+
+  async getFeaturedItems(limit = 4) {
+    const response = await http.get<ItemResponse[]>(`core/api/items/featured?limit=${limit}`);
+    return (Array.isArray(response) ? response : []).map((item) => ({
+      ...item,
+      images: item.itemImageList || [],
+      favoriteCount: 0,
+      viewCount: 0,
+    })) as ItemWithImages[];
   }
 }
 
