@@ -117,30 +117,30 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
             </div>
           </Link>
           <nav className="hidden items-center gap-5 md:flex lg:gap-6">
-            <a
+            <Link
               className="text-sm font-semibold text-slate-700 transition-colors hover:text-primary"
-              href="#"
+              href="/products"
             >
               Sản phẩm
-            </a>
-            <a
+            </Link>
+            <Link
               className="text-sm font-semibold text-slate-700 transition-colors hover:text-primary"
-              href="#"
+              href="/home#categories"
             >
               Danh mục
-            </a>
-            <a
+            </Link>
+            <Link
               className="text-sm font-semibold text-slate-700 transition-colors hover:text-primary"
-              href="#"
+              href="/community"
             >
               Cộng đồng
-            </a>
-            <a
+            </Link>
+            <Link
               className="text-sm font-semibold text-slate-700 transition-colors hover:text-primary"
-              href="#"
+              href="/contact"
             >
               Liên hệ
-            </a>
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">

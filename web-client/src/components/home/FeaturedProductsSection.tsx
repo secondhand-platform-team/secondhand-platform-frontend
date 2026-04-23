@@ -68,6 +68,7 @@ export default function FeaturedProductsSection() {
             {items.map((item) => (
               <div
                 key={item.itemId}
+                onClick={() => router.push(`/items/${item.itemId}`)}
                 className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-xl dark:bg-slate-800"
               >
                 <div className="aspect-square w-full overflow-hidden bg-slate-200">
