@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/auth.slice";
 import chatReducer from "./slices/chat.slice";
+import itemReducer from "./slices/item.slice";
 import itemsReducer from "./slices/items.slice";
 
 export const makeStore = () => {
@@ -8,6 +9,9 @@ export const makeStore = () => {
     reducer: {
       auth: authReducer,
       chat: chatReducer,
+      // single-item slice (categories, myPosts, favorites)
+      item: itemReducer,
+      // items slice (lists, selectedItem, pagination)
       items: itemsReducer,
     },
   });
