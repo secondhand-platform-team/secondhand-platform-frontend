@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button, Input, Select, Pagination, message } from "antd";
+import { Plus, RefreshCw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import PostsGrid from "@/components/my-posts/PostsGrid";
 import PostsDetailModal from "@/components/my-posts/PostsDetailModal";
 import type { ItemWithImages } from "@/config/services/item.service";
+import { fetchMyItems, clearSelectedItem } from "@/stores/slices/items.slice";
 
 export default function MyPostsPage() {
   const router = useRouter();
