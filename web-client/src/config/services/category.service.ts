@@ -25,6 +25,10 @@ class CategoryService {
     return http.get<CategoryResponse>(`core/api/categories/${categoryId}`);
   }
 
+  async getTopLevelCategories() {
+    return http.get<Category[]>(`core/api/categories/top-level`);
+  }
+
   async getChildCategories(categoryId: string) {
     return http.get<ChildCategoriesResponse>(
       `core/api/categories/${categoryId}/parents`

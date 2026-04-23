@@ -26,6 +26,7 @@ import PaymentRedirectModal from "@/components/payment/PaymentRedirectModal";
 
 type TransactionType = "SELL" | "GIVE_AWAY";
 type ConditionType = "NEW" | "LIKE_NEW" | "USED" | "FOR_PARTS";
+type SubmitTransactionType = "SELL" | "GIVE_AWAY" | "FREE_SELL";
 
 interface AttributeValue {
   code: string;
@@ -69,6 +70,7 @@ export default function PostItemFormPage() {
   const dispatch = useAppDispatch();
 
   const categoryLabel = categoryLabelMap[categoryKey] || "Danh mục";
+  const freeSellRemaining = user?.freeSellUsed ?? user?.freeSellUse ?? 0;
 
   // State cho attributes từ API
   const [apiAttributes, setApiAttributes] = useState<CategoryAttribute[]>([]);
@@ -413,10 +415,9 @@ export default function PostItemFormPage() {
         value: attr.value,
       }));
 
-      // Map transactionType: SELL → SELL, GIVEAWAY → GIVEWAY
-      const transactionTypeMap: Record<TransactionType, "SELL" | "GIVE_AWAY"> =
+      const transactionTypeMap: Record<TransactionType, SubmitTransactionType> =
         {
-          SELL: "SELL",
+          SELL: freeSellRemaining > 0 ? "FREE_SELL" : "SELL",
           GIVE_AWAY: "GIVE_AWAY",
         };
 
@@ -826,7 +827,7 @@ export default function PostItemFormPage() {
           {formData.transactionType === "SELL" && user && categoryData && (
             <div
               className={`rounded-xl p-4 border ${
-                (user.freeSellUse ?? 0) > 0
+                freeSellRemaining > 0
                   ? "bg-green-50 border-green-200"
                   : categoryData.postingFee && categoryData.postingFee > 0
                     ? "bg-orange-50 border-orange-200"
@@ -837,14 +838,14 @@ export default function PostItemFormPage() {
                 <div>
                   <p
                     className={`text-sm font-semibold ${
-                      (user.freeSellUse ?? 0) > 0
+                      freeSellRemaining > 0
                         ? "text-green-900"
                         : categoryData.postingFee && categoryData.postingFee > 0
                           ? "text-orange-900"
                           : "text-green-900"
                     }`}
                   >
-                    {(user.freeSellUse ?? 0) > 0
+                    {freeSellRemaining > 0
                       ? "✅ Đăng tin miễn phí"
                       : categoryData.postingFee && categoryData.postingFee > 0
                         ? "💰 Cần trả phí"
@@ -852,15 +853,15 @@ export default function PostItemFormPage() {
                   </p>
                   <p
                     className={`text-xs mt-1 ${
-                      (user.freeSellUse ?? 0) > 0
+                      freeSellRemaining > 0
                         ? "text-green-700"
                         : categoryData.postingFee && categoryData.postingFee > 0
                           ? "text-orange-700"
                           : "text-green-700"
                     }`}
                   >
-                    {(user.freeSellUse ?? 0) > 0
-                      ? `Còn ${user.freeSellUse} lần đăng tin miễn phí`
+                    {freeSellRemaining > 0
+                      ? `Còn ${freeSellRemaining} lần đăng tin miễn phí`
                       : categoryData.postingFee && categoryData.postingFee > 0
                         ? `Cần trả ${categoryData.postingFee.toLocaleString("vi-VN")} VNĐ để đăng`
                         : "Danh mục này cho phép đăng tin miễn phí"}
@@ -890,7 +891,7 @@ export default function PostItemFormPage() {
                 ? "Đang gửi..."
                 : formData.transactionType === "GIVE_AWAY"
                   ? "Đăng tin (Miễn phí)"
-                  : (user?.freeSellUse ?? 0) > 0
+                  : freeSellRemaining > 0
                     ? `Đăng tin (Miễn phí)`
                     : categoryData?.postingFee && categoryData.postingFee > 0
                       ? `Đăng tin (${categoryData.postingFee.toLocaleString("vi-VN")} VNĐ)`

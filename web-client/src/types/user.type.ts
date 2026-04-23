@@ -9,6 +9,7 @@ export type UserType = {
 	fullName?: string;
 	avatarUrl?: string;
 	freeSellUse?: number;
+	freeSellUsed?: number;
 };
 
 export type UserProfileType = {
@@ -25,7 +26,8 @@ export type UserInfoApiType = {
 	phoneNumber: string;
 	role: UserRole;
 	status: boolean;
-	freeSellUse: number;
+	freeSellUse?: number;
+	freeSellUsed?: number;
 };
 
 export type UserProfileApiResponseType = {
