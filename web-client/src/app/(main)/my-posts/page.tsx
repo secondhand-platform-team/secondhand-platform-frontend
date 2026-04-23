@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Select, Pagination, message } from "antd";
-import { Plus, RefreshCw } from "lucide-react";
+import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import PostsGrid from "@/components/my-posts/PostsGrid";
 import PostsDetailModal from "@/components/my-posts/PostsDetailModal";
@@ -94,7 +94,7 @@ export default function MyPostsPage() {
             <Button
               type="primary"
               size="large"
-              icon={<Plus size={18} />}
+              icon={<PlusOutlined />}
               onClick={handleCreateNew}
             >
               Đăng tin mới
@@ -138,7 +138,7 @@ export default function MyPostsPage() {
               ]}
             />
             <Button
-              icon={<RefreshCw size={16} />}
+              icon={<ReloadOutlined />}
               onClick={handleRefresh}
               loading={loading}
             >

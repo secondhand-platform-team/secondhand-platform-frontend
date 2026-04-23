@@ -5,12 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { message } from "antd";
 import {
-  X,
-  Image as ImageIcon,
-  Trash2,
-  AlertCircle,
-  Loader,
-} from "lucide-react";
+  CloseOutlined,
+  PictureOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  LoadingOutlined,
+  CheckCircleOutlined,
+  DollarOutlined,
+  CheckOutlined,
+} from "@ant-design/icons";
 import {
   categoryService,
   type CategoryAttribute,
@@ -451,13 +454,18 @@ export default function PostItemFormPage() {
       } else {
         // Refresh user data to update freeSellUse
         await dispatch(fetchCurrentUser()).unwrap();
-        message.success("✅ Đã tạo tin thành công!");
+        message.success(
+          <>
+            <CheckCircleOutlined /> Đã tạo tin thành công!
+          </>,
+          2,
+        );
         router.push("/home");
       }
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Lỗi không xác định";
-      setSubmitError(`❌ Lỗi: ${errorMsg}`);
+      setSubmitError(`Lỗi: ${errorMsg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -476,7 +484,7 @@ export default function PostItemFormPage() {
             onClick={() => router.back()}
             className="rounded-lg p-2 text-slate-600 transition hover:bg-slate-200"
           >
-            <X size={24} />
+            <CloseOutlined style={{ fontSize: "24px" }} />
           </button>
         </div>
 
@@ -485,7 +493,10 @@ export default function PostItemFormPage() {
           {/* Error loading attributes */}
           {attributeError && (
             <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
-              <AlertCircle size={20} className="shrink-0 text-red-600" />
+              <ExclamationCircleOutlined
+                className="shrink-0 text-red-600"
+                style={{ fontSize: "20px" }}
+              />
               <div>
                 <p className="font-medium text-red-900">
                   Lỗi tải thông tin danh mục
@@ -498,7 +509,10 @@ export default function PostItemFormPage() {
           {/* Error submitting form */}
           {submitError && (
             <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
-              <AlertCircle size={20} className="shrink-0 text-red-600" />
+              <ExclamationCircleOutlined
+                className="shrink-0 text-red-600"
+                style={{ fontSize: "20px" }}
+              />
               <div>
                 <p className="font-medium text-red-900">Lỗi gửi tin</p>
                 <p className="text-sm text-red-700">{submitError}</p>
@@ -552,7 +566,7 @@ export default function PostItemFormPage() {
                       onClick={() => removeImage(index)}
                       className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition group-hover:opacity-100"
                     >
-                      <X size={16} />
+                      <CloseOutlined style={{ fontSize: "16px" }} />
                     </button>
                   </div>
                 ))}
@@ -560,7 +574,10 @@ export default function PostItemFormPage() {
             )}
 
             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:bg-slate-100">
-              <ImageIcon size={20} className="text-slate-500" />
+              <PictureOutlined
+                className="text-slate-500"
+                style={{ fontSize: "20px" }}
+              />
               <span className="text-sm font-medium text-slate-700">
                 Tải ảnh lên
               </span>
@@ -764,7 +781,10 @@ export default function PostItemFormPage() {
 
             {isLoadingAttributes ? (
               <div className="flex items-center justify-center py-8 text-slate-500">
-                <Loader size={20} className="animate-spin mr-2" />
+                <LoadingOutlined
+                  className="animate-spin mr-2"
+                  style={{ fontSize: "20px" }}
+                />
                 <span>Đang tải...</span>
               </div>
             ) : apiAttributes.length > 0 ? (
@@ -796,7 +816,7 @@ export default function PostItemFormPage() {
                             className="mt-7 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
                             title="Xoá thông tin này"
                           >
-                            <Trash2 size={18} />
+                            <DeleteOutlined style={{ fontSize: "18px" }} />
                           </button>
                         )}
                       </div>
@@ -813,8 +833,9 @@ export default function PostItemFormPage() {
           {/* GIVEAWAY notification */}
           {formData.transactionType === "GIVE_AWAY" && (
             <div className="rounded-xl bg-blue-50 p-4 border border-blue-200">
-              <p className="text-sm text-blue-900 font-semibold">
-                ✨ Đăng tin miễn phí
+              <p className="text-sm text-blue-900 font-semibold flex items-center gap-2">
+                <CheckCircleOutlined style={{ fontSize: "16px" }} />
+                Đăng tin miễn phí
               </p>
               <p className="text-xs text-blue-700 mt-1">
                 Loại &quot;Cho miễn phí&quot; không tính vào số lượt đăng tin.
@@ -837,7 +858,7 @@ export default function PostItemFormPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p
-                    className={`text-sm font-semibold ${
+                    className={`text-sm font-semibold flex items-center gap-2 ${
                       freeSellRemaining > 0
                         ? "text-green-900"
                         : categoryData.postingFee && categoryData.postingFee > 0
@@ -845,11 +866,23 @@ export default function PostItemFormPage() {
                           : "text-green-900"
                     }`}
                   >
-                    {freeSellRemaining > 0
-                      ? "✅ Đăng tin miễn phí"
-                      : categoryData.postingFee && categoryData.postingFee > 0
-                        ? "💰 Cần trả phí"
-                        : "✅ Danh mục miễn phí"}
+                    {freeSellRemaining > 0 ? (
+                      <>
+                        <CheckCircleOutlined style={{ fontSize: "16px" }} />
+                        Đăng tin miễn phí
+                      </>
+                    ) : categoryData.postingFee &&
+                      categoryData.postingFee > 0 ? (
+                      <>
+                        <DollarOutlined style={{ fontSize: "16px" }} />
+                        Cần trả phí
+                      </>
+                    ) : (
+                      <>
+                        <CheckOutlined style={{ fontSize: "16px" }} />
+                        Danh mục miễn phí
+                      </>
+                    )}
                   </p>
                   <p
                     className={`text-xs mt-1 ${
@@ -886,7 +919,12 @@ export default function PostItemFormPage() {
               disabled={Object.keys(errors).length > 0 || isSubmitting}
               className="flex-1 rounded-xl bg-primary px-6 py-3 font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSubmitting && <Loader size={18} className="animate-spin" />}
+              {isSubmitting && (
+                <LoadingOutlined
+                  className="animate-spin"
+                  style={{ fontSize: "18px" }}
+                />
+              )}
               {isSubmitting
                 ? "Đang gửi..."
                 : formData.transactionType === "GIVE_AWAY"

@@ -1,6 +1,12 @@
 "use client";
 
-import { CreditCard, X, ExternalLink } from "lucide-react";
+import {
+  CloseOutlined,
+  CreditCardOutlined,
+  LinkOutlined,
+  ExclamationCircleOutlined,
+  PayCircleOutlined,
+} from "@ant-design/icons";
 
 interface PaymentRedirectModalProps {
   isOpen: boolean;
@@ -28,11 +34,12 @@ export default function PaymentRedirectModal({
             onClick={onClose}
             className="absolute left-4 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
           >
-            <X size={20} />
+            <CloseOutlined style={{ fontSize: "20px" }} />
           </button>
 
-          <h1 className="text-center text-2xl font-bold text-slate-900">
-            🔐 Thanh toán VNPay
+          <h1 className="text-center text-2xl font-bold  flex items-center justify-center gap-2">
+            <PayCircleOutlined style={{ fontSize: "24px", color: "#3B82F6" }} />
+            Thanh toán VNPay
           </h1>
         </div>
 
@@ -70,10 +77,14 @@ export default function PaymentRedirectModal({
           </div>
 
           {/* Info message */}
-          <div className="rounded-xl bg-amber-50 p-3 border border-amber-200">
+          <div className="rounded-xl bg-amber-50 p-3 border border-amber-200 flex gap-2">
+            <ExclamationCircleOutlined
+              className="shrink-0 text-amber-600"
+              style={{ fontSize: "16px", marginTop: "2px" }}
+            />
             <p className="text-xs text-amber-700">
-              ⚠️ Bạn sẽ được chuyển đến trang thanh toán VNPay. Sau khi thanh
-              toán thành công, tin của bạn sẽ được đăng tải ngay lập tức.
+              Bạn sẽ được chuyển đến trang thanh toán VNPay. Sau khi thanh toán
+              thành công, tin của bạn sẽ được đăng tải ngay lập tức.
             </p>
           </div>
 
@@ -91,9 +102,9 @@ export default function PaymentRedirectModal({
               rel="noopener noreferrer"
               className="flex-1 rounded-xl bg-primary px-4 py-3 font-semibold text-white transition hover:bg-primary/90 flex items-center justify-center gap-2"
             >
-              <CreditCard size={18} />
+              <CreditCardOutlined style={{ fontSize: "18px" }} />
               <span>Thanh toán</span>
-              <ExternalLink size={16} />
+              <LinkOutlined style={{ fontSize: "16px" }} />
             </a>
           </div>
 
