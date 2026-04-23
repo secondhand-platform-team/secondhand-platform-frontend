@@ -110,10 +110,10 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
           <Link href="/home" className="flex items-center group">
             <div className="relative flex items-center justify-center">
               <img
-                  src="/logo/icon-logo.png"
-                  alt="Logo ReLife"
-                  className="h-20 w-auto max-w-[120px] object-contain transition-transform duration-300 group-hover:scale-110"
-                />
+                src="/logo/icon-logo.png"
+                alt="Logo ReLife"
+                className="h-20 w-auto max-w-[120px] object-contain transition-transform duration-300 group-hover:scale-110"
+              />
             </div>
           </Link>
           <nav className="hidden items-center gap-5 md:flex lg:gap-6">
@@ -183,7 +183,7 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                 onOpenAuth();
                 return;
               }
-              router.push("/post-new");
+              router.push("/post-item");
             }}
             className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-primary/90 sm:px-5"
           >
