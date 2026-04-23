@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { itemService, type ItemWithImages, type PageResponse } from "@/config/services/item.service";
+import { type ItemWithImages, type PageResponse } from "@/config/services/item.service";
+import { categoryService } from "@/config/services/category.service";
 import provinceService from "@/config/services/province.service";
 import type { Province, District, Ward } from "@/types/province.type";
 import http from "@/utils/api";
@@ -57,9 +58,11 @@ function timeAgo(dateStr: string): string {
   return Math.floor(hours / 24) + " ngày trước";
 }
 
-export default function SearchPage() {
+export default function CategoryPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const params = useParams();
+  const catId = (Array.isArray(params.categoryId) ? params.categoryId[0] : params.categoryId) || "";
 
   const [items, setItems] = useState<ItemWithImages[]>([]);
   const [pageInfo, setPageInfo] = useState<Omit<PageResponse<ItemWithImages>, "content"> | null>(null);
@@ -67,6 +70,7 @@ export default function SearchPage() {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
 
+  const [currentCategory, setCurrentCategory] = useState<CategoryType | null>(null);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [allCategories, setAllCategories] = useState<CategoryType[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -137,12 +141,18 @@ export default function SearchPage() {
 
   // Load categories and provinces on mount
   useEffect(() => {
+    if (!catId) return;
+
+    http.get<CategoryType>(`/core/api/categories/${catId}`)
+      .then(setCurrentCategory)
+      .catch(() => setCurrentCategory(null));
+
     Promise.all([
-      http.get<CategoryType[]>("/core/api/categories/top-level"),
+      http.get<CategoryType[]>(`/core/api/categories/${catId}/children`),
       http.get<CategoryType[]>("/core/api/categories"),
     ])
-      .then(([topLevel, all]) => {
-        setCategories(Array.isArray(topLevel) ? topLevel : []);
+      .then(([childrenLevel, all]) => {
+        setCategories(Array.isArray(childrenLevel) ? childrenLevel : []);
         setAllCategories(Array.isArray(all) ? all : []);
       })
       .catch(() => {
@@ -150,7 +160,7 @@ export default function SearchPage() {
         setAllCategories([]);
       });
     provinceService.getProvinces().then(setProvinces).catch(() => {});
-  }, []);
+  }, [catId]);
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams();
@@ -169,12 +179,12 @@ export default function SearchPage() {
   }, [keyword, selectedCategories, minPrice, maxPrice, condition, transactionType, city, district, ward, sort, page]);
 
   const fetchItems = useCallback(async () => {
+    if (!catId) return;
     setLoading(true);
     try {
-      const effectiveCategoryId = selectedCategories.length > 0 ? selectedCategories[0] : undefined;
-      const response = await itemService.searchItems({
+      const effectiveCategoryId = selectedCategories.length > 0 ? selectedCategories[0] : catId;
+      const response = await categoryService.searchItemsByCategory(effectiveCategoryId, {
         q: keyword || undefined,
-        categoryId: effectiveCategoryId || undefined,
         minPrice: minPrice ? Number(minPrice) : undefined,
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
         condition: condition || undefined,
@@ -199,9 +209,9 @@ export default function SearchPage() {
 
   useEffect(() => {
     fetchItems();
-    router.replace("/search?" + buildQueryString(), { scroll: false });
+    router.replace(`/category/${catId}?` + buildQueryString(), { scroll: false });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchItems]);
+  }, [fetchItems, catId]);
 
   const handleApplyFilters = () => {
     setSelectedCategories(pendingCategories);
@@ -396,7 +406,7 @@ export default function SearchPage() {
           <nav className="mb-4 flex items-center gap-2 text-sm text-slate-500">
             <Link href="/home" className="hover:text-primary">Trang chủ</Link>
             <span>›</span>
-            <span className="text-slate-700 dark:text-slate-300">Tất cả sản phẩm</span>
+            <span className="text-slate-700 dark:text-slate-300">{currentCategory?.name || "Danh mục"}</span>
           </nav>
 
           {/* Search input box */}
@@ -430,7 +440,7 @@ export default function SearchPage() {
 
           <div className="mb-5">
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {keyword ? "Kết quả tìm kiếm: \"" + keyword + "\"" : "Khám phá sản phẩm"}
+              {keyword ? "Kết quả tìm kiếm: \"" + keyword + "\"" : (currentCategory?.name || "Sản phẩm")}
             </h1>
             <p className="mt-1 text-sm text-slate-500">Tìm thấy {totalElements.toLocaleString("vi-VN")} sản phẩm đang được rao bán</p>
           </div>
