@@ -83,7 +83,8 @@ class ItemService {
     return {
       ...response,
       images: response.itemImageList || [],
-      favoriteCount: 0,
+      favoriteCount: response.favoriteCount ?? 0,
+      isFavorited: response.isFavorited ?? false,
       viewCount: 0,
     } as ItemWithImages;
   }
@@ -98,7 +99,8 @@ class ItemService {
         items.map((item) => ({
           ...item,
           images: item.itemImageList || [],
-          favoriteCount: 0,
+          favoriteCount: item.favoriteCount ?? 0,
+          isFavorited: item.isFavorited ?? false,
           viewCount: 0,
         }));
 
@@ -173,7 +175,8 @@ class ItemService {
       content: response.content.map((item) => ({
         ...item,
         images: item.itemImageList || [],
-        favoriteCount: 0,
+        favoriteCount: item.favoriteCount ?? 0,
+        isFavorited: item.isFavorited ?? false,
         viewCount: 0,
       })) as ItemWithImages[],
     } as PageResponse<ItemWithImages>;
@@ -184,7 +187,8 @@ class ItemService {
     return (Array.isArray(response) ? response : []).map((item) => ({
       ...item,
       images: item.itemImageList || [],
-      favoriteCount: 0,
+      favoriteCount: item.favoriteCount ?? 0,
+      isFavorited: item.isFavorited ?? false,
       viewCount: 0,
     })) as ItemWithImages[];
   }

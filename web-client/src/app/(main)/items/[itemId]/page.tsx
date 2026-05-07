@@ -6,7 +6,8 @@ import Link from "next/link";
 import { itemService, type ItemWithImages } from "@/config/services/item.service";
 import { categoryService } from "@/config/services/category.service";
 import type { CategoryType } from "@/types/item/item.type";
-import { MapPin, Heart, Share2, ZoomIn, Info, MessageCircle, Phone, ChevronRight, ShieldCheck, Star } from "lucide-react";
+import { MapPin, Share2, ZoomIn, Info, MessageCircle, Phone, ChevronRight, ShieldCheck, Star } from "lucide-react";
+import FavoriteButton from "@/components/item/FavoriteButton";
 
 const CONDITIONS: Record<string, string> = {
   NEW: "Mới",
@@ -35,7 +36,7 @@ export default function ItemDetailPage() {
         setItem(data);
         if (data.categoryId) {
           categoryService.getCategoryById(data.categoryId)
-            .then(setCategory)
+            .then((res) => setCategory(res as any))
             .catch(() => {});
           
           itemService.searchItems({ categoryId: data.categoryId, size: 5 })
@@ -197,7 +198,13 @@ export default function ItemDetailPage() {
                 </span>
                 <div className="flex gap-2">
                   <button className="text-slate-400 hover:text-primary bg-slate-50 dark:bg-slate-700 hover:bg-primary/10 transition p-2 rounded-full"><Share2 className="w-4 h-4" /></button>
-                  <button className="text-slate-400 hover:text-red-500 bg-slate-50 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-500/10 transition p-2 rounded-full"><Heart className="w-4 h-4" /></button>
+                  <FavoriteButton
+                    itemId={item.itemId}
+                    initialIsFavorited={item.isFavorited}
+                    initialFavoriteCount={item.favoriteCount}
+                    showCount={true}
+                    className="text-slate-400 hover:text-red-500 bg-slate-50 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-500/10 transition p-2 px-3.5 rounded-full"
+                  />
                 </div>
               </div>
               
