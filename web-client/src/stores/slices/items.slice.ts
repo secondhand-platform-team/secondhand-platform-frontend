@@ -268,8 +268,17 @@ const itemsSlice = createSlice({
       })
       .addCase(toggleItemFavorite.fulfilled, (state, action) => {
         const item = state.myItems.find((item) => item.itemId === action.payload.itemId);
-        if (item && item.favoriteCount !== undefined) {
-          item.favoriteCount += action.payload.isFavorited ? 1 : -1;
+        if (item) {
+          item.isFavorited = action.payload.isFavorited;
+          if (item.favoriteCount !== undefined) {
+            item.favoriteCount += action.payload.isFavorited ? 1 : -1;
+          }
+        }
+        if (state.selectedItem && state.selectedItem.itemId === action.payload.itemId) {
+          state.selectedItem.isFavorited = action.payload.isFavorited;
+          if (state.selectedItem.favoriteCount !== undefined) {
+            state.selectedItem.favoriteCount += action.payload.isFavorited ? 1 : -1;
+          }
         }
       })
       .addCase(toggleItemFavorite.rejected, (state, action) => {

@@ -8,7 +8,8 @@ import provinceService from "@/config/services/province.service";
 import type { Province, District, Ward } from "@/types/province.type";
 import http from "@/utils/api";
 import type { CategoryType } from "@/types/item/item.type";
-import { MapPin, Heart, ChevronLeft, ChevronRight, SlidersHorizontal, X, ChevronDown, Search } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight, SlidersHorizontal, X, ChevronDown, Search } from "lucide-react";
+import FavoriteButton from "@/components/item/FavoriteButton";
 
 const CONDITIONS = [
   { value: "", label: "Tất cả" },
@@ -499,7 +500,14 @@ export default function SearchPage() {
                         <img src={getImageUrl(item)} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = "/icon-other/san-pham-khac.png"; }} />
                         {(item.transactionType === "GIVE_AWAY" || item.price === 0) && (<span className="absolute left-2 top-2 rounded-md bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white">MIỄN PHÍ</span>)}
                         {item.condition === "NEW" && <span className="absolute left-2 top-2 rounded-md bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">MỚI</span>}
-                        <button type="button" className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-slate-400 hover:text-red-500 transition-colors"><Heart className="w-4 h-4" /></button>
+                        <div className="absolute right-2 top-2 z-10">
+                          <FavoriteButton
+                            itemId={item.itemId}
+                            initialIsFavorited={item.isFavorited}
+                            initialFavoriteCount={item.favoriteCount}
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-sm transition hover:scale-110"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-1 flex-col p-3">
                         <h3 className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-slate-100">{item.title}</h3>

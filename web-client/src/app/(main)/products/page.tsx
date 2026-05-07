@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { itemService, type ItemWithImages } from "@/config/services/item.service";
-import { categoryService } from "@/config/services/category.service";
-import type { CategoryType } from "@/types/item/item.type";
-import { Heart, MapPin, ChevronRight, Zap, Star, Gift } from "lucide-react";
+import { categoryService, type Category } from "@/config/services/category.service";
+import { MapPin, ChevronRight, Zap, Star, Gift } from "lucide-react";
+import FavoriteButton from "@/components/item/FavoriteButton";
 
 function formatPrice(price: number | null | undefined): string {
   if (price == null || price === 0) return "Miễn phí";
@@ -30,7 +30,7 @@ export default function ProductsPage() {
   const [newItems, setNewItems] = useState<ItemWithImages[]>([]);
   const [featuredItems, setFeaturedItems] = useState<ItemWithImages[]>([]);
   const [freeItems, setFreeItems] = useState<ItemWithImages[]>([]);
-  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,13 +64,14 @@ export default function ProductsPage() {
             Mới
           </div>
         )}
-        <button
-          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm z-10"
-          type="button"
-          onClick={(e) => { e.stopPropagation(); /* Add to favorite logic */ }}
-        >
-          <Heart className="w-4 h-4" />
-        </button>
+        <div className="absolute right-3 top-3 z-10">
+          <FavoriteButton
+            itemId={item.itemId}
+            initialIsFavorited={item.isFavorited}
+            initialFavoriteCount={item.favoriteCount}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm transition hover:scale-110"
+          />
+        </div>
       </div>
       <div className="flex flex-1 flex-col p-4">
         <h3 className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">

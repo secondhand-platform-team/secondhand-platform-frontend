@@ -51,4 +51,6 @@ export interface ItemResponse {
   // Payment fields
   transactionId?: string;
   paymentUrl?: string;
+  isFavorited?: boolean;
+  favoriteCount?: number;
 }

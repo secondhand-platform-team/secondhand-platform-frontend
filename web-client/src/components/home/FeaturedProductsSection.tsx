@@ -3,8 +3,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { itemService, type ItemWithImages } from "@/config/services/item.service";
+import FavoriteButton from "@/components/item/FavoriteButton";
 
 function formatPrice(price: number | null | undefined): string {
   if (price == null || price === 0) return "Miễn phí";
@@ -85,13 +86,14 @@ export default function FeaturedProductsSection() {
                       Tặng miễn phí
                     </div>
                   )}
-                  <button
-                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
-                    type="button"
-                    aria-label="Yêu thích"
-                  >
-                    <Heart className="w-4 h-4" />
-                  </button>
+                  <div className="absolute right-3 top-3 z-10">
+                    <FavoriteButton
+                      itemId={item.itemId}
+                      initialIsFavorited={item.isFavorited}
+                      initialFavoriteCount={item.favoriteCount}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-sm transition hover:scale-110"
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-1 flex-col p-4">
                   <h3 className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-slate-100 sm:text-base">
