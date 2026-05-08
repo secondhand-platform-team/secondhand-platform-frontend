@@ -1,10 +1,11 @@
 "use client";
+import type { ItemWithImages } from "@/types/item.type";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { itemService, type ItemWithImages } from "@/config/services/item.service";
-import { categoryService, type Category } from "@/config/services/category.service";
+import { itemService,  } from "@/stores/slices/items.slice";
+import { categoryService, type Category } from "@/stores/slices/category.slice";
 import { MapPin, ChevronRight, Zap, Star, Gift } from "lucide-react";
 import FavoriteButton from "@/components/item/FavoriteButton";
 
@@ -26,7 +27,7 @@ function getLocation(item: ItemWithImages): string {
 
 export default function ProductsPage() {
   const router = useRouter();
-  
+
   const [newItems, setNewItems] = useState<ItemWithImages[]>([]);
   const [featuredItems, setFeaturedItems] = useState<ItemWithImages[]>([]);
   const [freeItems, setFreeItems] = useState<ItemWithImages[]>([]);
@@ -39,7 +40,7 @@ export default function ProductsPage() {
       itemService.getFeaturedItems(8).then(res => setFeaturedItems(res)),
       itemService.searchItems({ transactionType: "GIVE_AWAY", size: 4 }).then(res => setFreeItems(res.content)),
       categoryService.getTopLevelCategories().then(res => setCategories(res))
-    ]).catch(() => {}).finally(() => setLoading(false));
+    ]).catch(() => { }).finally(() => setLoading(false));
   }, []);
 
   const ProductCard = ({ item }: { item: ItemWithImages }) => (
@@ -60,7 +61,7 @@ export default function ProductsPage() {
           </div>
         )}
         {item.condition === "NEW" && item.price !== 0 && item.transactionType !== "GIVE_AWAY" && (
-          <div className="absolute left-3 top-3 rounded-lg bg-blue-500 px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-md z-10">
+          <div className="absolute left-3 top-3 rounded-lg bg-emerald-500 px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-md z-10">
             Mới
           </div>
         )}
@@ -116,7 +117,7 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
       {/* Banner Section */}
-      <div 
+      <div
         className="relative overflow-hidden bg-cover bg-center text-white"
         style={{
           backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url('https://lh3.googleusercontent.com/aida-public/AB6AXuCKciJ7gRuZ4xQOky6eYhBiCMnXyTu0OfXzxSfN3-DnMipW0XuqBGC7eJUr2PAg_weBoO2-t6oA1JXRr-2Bdx2NyNlaJUnxv_qPCtp_B9Ifh7LVo8bow5JXeaOMbOR62FqDJW73uVthyle6J8oiDgjRowDmVW3-7hGSqbDw4jWfx42GQ3UiA-tWP0vXBeP7l4uOK-37A_5mLDp9irAh2aPmDVF6QK2TRtqQ-BxTyF9KsBUwJV6WAJW88Dh8gqwCUWC-1hDwNEp2WK2F')",
@@ -125,7 +126,7 @@ export default function ProductsPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 flex flex-col items-center text-center gap-8 relative z-10">
           <div className="max-w-3xl space-y-6">
             <h1 className="text-3xl md:text-5xl font-black leading-tight tracking-tight drop-shadow-md">
-              Khám Phá Thế Giới Đồ Cũ <br className="hidden md:block"/> Chất Lượng Cao
+              Khám Phá Thế Giới Đồ Cũ <br className="hidden md:block" /> Chất Lượng Cao
             </h1>
             <p className="text-slate-200 text-base md:text-lg mx-auto leading-relaxed drop-shadow-md">
               Từ đồ điện tử, thời trang đến đồ gia dụng. Mua sắm thông minh, tiết kiệm chi phí và bảo vệ môi trường cùng ReLife.
@@ -147,9 +148,9 @@ export default function ProductsPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-4 flex items-center gap-3 overflow-x-auto scrollbar-hide">
           <span className="text-sm font-bold text-slate-400 uppercase tracking-wider shrink-0 px-2">Danh mục:</span>
           {categories.map(cat => (
-            <Link 
-              key={cat.categoryId} 
-              href={`/category/${cat.categoryId}`}
+            <Link
+              key={cat.categoryId || cat.id}
+              href={`/category/${cat.categoryId || cat.id}`}
               className="shrink-0 bg-slate-50 dark:bg-slate-700 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 text-slate-700 dark:text-slate-300 font-semibold text-sm px-4 py-2 rounded-xl transition-colors"
             >
               {cat.name}
@@ -159,7 +160,7 @@ export default function ProductsPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 space-y-16">
-        
+
         {/* Flash Sale / Bán chạy (Mới nhất) */}
         <section>
           <SectionHeader title="Hàng Mới Lên Kệ" icon={Zap} colorClass="bg-gradient-to-br from-amber-400 to-orange-500" linkHref="/search?sort=newest" />
@@ -175,7 +176,7 @@ export default function ProductsPage() {
 
         {/* Nổi bật / Đặc biệt */}
         <section>
-          <SectionHeader title="Sản Phẩm Nổi Bật" icon={Star} colorClass="bg-gradient-to-br from-blue-500 to-indigo-600" linkHref="/search" />
+          <SectionHeader title="Sản Phẩm Nổi Bật" icon={Star} colorClass="bg-gradient-to-br from-emerald-500 to-teal-600" linkHref="/search" />
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
             {featuredItems.map(item => <ProductCard key={item.itemId} item={item} />)}
           </div>

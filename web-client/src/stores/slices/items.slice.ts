@@ -1,12 +1,158 @@
 "use client";
-
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { itemService, type ItemWithImages, type PaginatedResponse } from "@/config/services/item.service";
-import type { ItemRequest } from "@/types/item.type";
+import http from "@/utils/api";
+import type { ItemRequest, ItemResponse, ItemWithImages, PaginatedResponse } from "@/types/item.type";
+
+export interface SearchParams {
+  q?: string;
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  condition?: string;
+  transactionType?: string;
+  city?: string;
+  district?: string;
+  ward?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+  numberOfElements: number;
+}
+
+class ItemService {
+  async createItem(data: ItemRequest, images?: File[]) {
+    if (images && images.length > 0) {
+      const formData = new FormData();
+      formData.append("item", new Blob([JSON.stringify(data)], { type: "application/json" }));
+      images.forEach((image) => {
+        formData.append("images", image);
+      });
+      return http.post<ItemResponse>("core/api/items", formData);
+    }
+    return http.post<ItemResponse>("core/api/items/json", data as unknown as Record<string, unknown>);
+  }
+
+  async getItem(itemId: string) {
+    const response = await http.get<ItemResponse>(`core/api/items/${itemId}`);
+    return {
+      ...response,
+      images: response.itemImageList || [],
+      favoriteCount: response.favoriteCount ?? 0,
+      isFavorited: response.isFavorited ?? false,
+      viewCount: 0,
+    } as ItemWithImages;
+  }
+
+  async getMyItems(page = 0, size = 20) {
+    const endpoint = `core/api/items/me?page=${page}&size=${size}`;
+    const response = await http.get<PaginatedResponse<ItemResponse> | ItemResponse[]>(endpoint);
+    
+    const mapItemsWithImages = (items: ItemResponse[]): ItemWithImages[] =>
+      items.map((item) => ({
+        ...item,
+        images: item.itemImageList || [],
+        favoriteCount: item.favoriteCount ?? 0,
+        isFavorited: item.isFavorited ?? false,
+      }));
+
+    if (Array.isArray(response)) {
+      const mappedItems = mapItemsWithImages(response);
+      return {
+        content: mappedItems,
+        totalElements: mappedItems.length,
+        totalPages: 1,
+        currentPage: page,
+        pageSize: size,
+      } as PaginatedResponse<ItemWithImages>;
+    }
+
+    const paginatedResponse = response as PaginatedResponse<ItemResponse>;
+    return {
+      ...paginatedResponse,
+      content: mapItemsWithImages(paginatedResponse.content),
+    } as PaginatedResponse<ItemWithImages>;
+  }
+
+  async updateItem(itemId: string, data: Partial<ItemRequest>) {
+    return http.put<ItemWithImages>(`core/api/items/${itemId}`, data);
+  }
+
+  async updateItemStatus(itemId: string, status: string) {
+    return http.patch<ItemWithImages>(`core/api/items/${itemId}/status`, { status });
+  }
+
+  async deleteItem(itemId: string) {
+    return http.delete<void>(`core/api/items/${itemId}`);
+  }
+
+  async addFavorite(itemId: string) {
+    return http.post<void>(`core/api/items/${itemId}/favorite`, {});
+  }
+
+  async removeFavorite(itemId: string) {
+    return http.delete<void>(`core/api/items/${itemId}/favorite`);
+  }
+
+  async getMyFavorites(page = 0, size = 20) {
+    return http.get<PaginatedResponse<ItemWithImages>>(`core/api/items/favorites/me?page=${page}&size=${size}`);
+  }
+
+  async searchItems(params: SearchParams) {
+    const query = new URLSearchParams();
+    if (params.q) query.set("q", params.q);
+    if (params.categoryId) query.set("categoryId", params.categoryId);
+    if (params.minPrice) query.set("minPrice", params.minPrice.toString());
+    if (params.maxPrice) query.set("maxPrice", params.maxPrice.toString());
+    if (params.condition) query.set("condition", params.condition);
+    if (params.transactionType) query.set("transactionType", params.transactionType);
+    if (params.city) query.set("city", params.city);
+    if (params.district) query.set("district", params.district);
+    if (params.ward) query.set("ward", params.ward);
+    if (params.page !== undefined) query.set("page", params.page.toString());
+    if (params.size !== undefined) query.set("size", params.size.toString());
+    if (params.sort) query.set("sort", params.sort);
+
+    const response = await http.get<PageResponse<ItemResponse>>(`core/api/items/search?${query.toString()}`);
+    return {
+      ...response,
+      content: response.content.map((item) => ({
+        ...item,
+        images: item.itemImageList || [],
+        favoriteCount: item.favoriteCount ?? 0,
+        isFavorited: item.isFavorited ?? false,
+      })),
+    } as PageResponse<ItemWithImages>;
+  }
+
+  async getFeaturedItems(limit = 4) {
+    const response = await http.get<ItemResponse[]>(`core/api/items/featured?limit=${limit}`);
+    return (Array.isArray(response) ? response : []).map((item) => ({
+      ...item,
+      images: item.itemImageList || [],
+      favoriteCount: item.favoriteCount ?? 0,
+      isFavorited: item.isFavorited ?? false,
+    })) as ItemWithImages[];
+  }
+}
+
+export const itemService = new ItemService();
 
 type ItemsState = {
-  myItems: ItemWithImages[];
+  items: ItemWithImages[];
+  myPosts: ItemWithImages[];
+  myFavorites: ItemWithImages[];
   selectedItem: ItemWithImages | null;
+  categories: any[];
   totalElements: number;
   totalPages: number;
   currentPage: number;
@@ -17,8 +163,11 @@ type ItemsState = {
 };
 
 const initialState: ItemsState = {
-  myItems: [],
+  items: [],
+  myPosts: [],
+  myFavorites: [],
   selectedItem: null,
+  categories: [],
   totalElements: 0,
   totalPages: 0,
   currentPage: 0,
@@ -29,26 +178,44 @@ const initialState: ItemsState = {
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
+  if (error instanceof Error && error.message) return error.message;
   return fallback;
 };
 
 export const fetchMyItems = createAsyncThunk<
   PaginatedResponse<ItemWithImages>,
-  { page?: number; size?: number },
+  { page?: number; size?: number } | void,
   { rejectValue: string }
->("items/fetchMyItems", async ({ page = 0, size = 20 }, { rejectWithValue }) => {
+>("items/fetchMyItems", async (params, { rejectWithValue }) => {
   try {
-    console.log("🔄 Fetching items from API - page:", page, "size:", size);
-    const response = await itemService.getMyItems(page, size);
-    console.log("✅ Items fetched successfully:", response);
-    return response;
+    const { page = 0, size = 20 } = params || {};
+    return await itemService.getMyItems(page, size);
   } catch (error) {
-    const errMsg = getErrorMessage(error, "Không thể tải danh sách tin đăng");
-    console.error("❌ Error fetching items:", errMsg, error);
-    return rejectWithValue(errMsg);
+    return rejectWithValue(getErrorMessage(error, "Không thể tải danh sách tin"));
+  }
+});
+
+export const fetchMyFavorites = createAsyncThunk<
+  PaginatedResponse<ItemWithImages>,
+  void,
+  { rejectValue: string }
+>("items/fetchMyFavorites", async (_, { rejectWithValue }) => {
+  try {
+    return await itemService.getMyFavorites(0, 50);
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error, "Không thể tải yêu thích"));
+  }
+});
+
+export const fetchCategories = createAsyncThunk<
+  any[],
+  void,
+  { rejectValue: string }
+>("items/fetchCategories", async (_, { rejectWithValue }) => {
+  try {
+    return await http.get<any[]>("/core/api/categories");
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error, "Không thể tải danh mục"));
   }
 });
 
@@ -60,19 +227,19 @@ export const fetchItemDetail = createAsyncThunk<
   try {
     return await itemService.getItem(itemId);
   } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Không thể tải chi tiết tin đăng"));
+    return rejectWithValue(getErrorMessage(error, "Không thể tải chi tiết tin"));
   }
 });
 
 export const createNewItem = createAsyncThunk<
-  ItemWithImages,
-  { data: ItemRequest; images?: File[] },
+  ItemResponse,
+  { payload: ItemRequest; images?: File[] },
   { rejectValue: string }
->("items/createNewItem", async ({ data, images }, { rejectWithValue }) => {
+>("items/createNewItem", async ({ payload, images }, { rejectWithValue }) => {
   try {
-    return await itemService.createItem(data, images);
+    return await itemService.createItem(payload, images);
   } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Tạo tin đăng thất bại"));
+    return rejectWithValue(getErrorMessage(error, "Không thể đăng tin"));
   }
 });
 
@@ -84,7 +251,7 @@ export const updateExistingItem = createAsyncThunk<
   try {
     return await itemService.updateItem(itemId, data);
   } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Cập nhật tin đăng thất bại"));
+    return rejectWithValue(getErrorMessage(error, "Không thể cập nhật tin"));
   }
 });
 
@@ -96,7 +263,7 @@ export const updateItemStatusThunk = createAsyncThunk<
   try {
     return await itemService.updateItemStatus(itemId, status);
   } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Cập nhật trạng thái thất bại"));
+    return rejectWithValue(getErrorMessage(error, "Không thể cập nhật trạng thái tin"));
   }
 });
 
@@ -109,7 +276,7 @@ export const deleteItemThunk = createAsyncThunk<
     await itemService.deleteItem(itemId);
     return itemId;
   } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Xóa tin đăng thất bại"));
+    return rejectWithValue(getErrorMessage(error, "Không thể xóa tin"));
   }
 });
 
@@ -126,7 +293,7 @@ export const toggleItemFavorite = createAsyncThunk<
     }
     return { itemId, isFavorited: !isFavorited };
   } catch (error) {
-    return rejectWithValue(getErrorMessage(error, "Không thể cập nhật yêu thích"));
+    return rejectWithValue(getErrorMessage(error, "Không thể cập nhật trạng thái yêu thích"));
   }
 });
 
@@ -142,39 +309,36 @@ const itemsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch My Items
     builder
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.categories = action.payload;
+      })
+      .addCase(fetchMyFavorites.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyFavorites.fulfilled, (state, action) => {
+        state.loading = false;
+        state.myFavorites = action.payload.content || (action.payload as any);
+        state.items = state.myFavorites;
+      })
+      .addCase(fetchMyFavorites.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Lỗi";
+      })
       .addCase(fetchMyItems.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchMyItems.fulfilled, (state, action) => {
-        console.log("✅ Redux fulfilled - updating state:", {
-          loading: false,
-          itemsCount: action.payload.content?.length,
-          totalElements: action.payload.totalElements,
-        });
         state.loading = false;
-        state.myItems = Array.isArray(action.payload.content) ? action.payload.content : [];
-        state.totalElements = action.payload.totalElements ?? 0;
-        state.totalPages = action.payload.totalPages ?? 0;
-        state.currentPage = action.payload.currentPage ?? 0;
-        state.pageSize = action.payload.pageSize ?? 20;
-        state.error = null;
-        
-        console.log("✅ State updated with items:", {
-          myItems_count: state.myItems.length,
-          myItems: state.myItems,
-          totalElements: state.totalElements,
-        });
+        state.items = action.payload.content || (action.payload as any);
+        state.myPosts = state.items;
       })
       .addCase(fetchMyItems.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Lỗi tải dữ liệu";
-      });
-
-    // Fetch Item Detail
-    builder
+        state.error = action.payload || "Không thể tải danh sách tin";
+      })
       .addCase(fetchItemDetail.pending, (state) => {
         state.itemLoading = true;
         state.error = null;
@@ -185,95 +349,96 @@ const itemsSlice = createSlice({
       })
       .addCase(fetchItemDetail.rejected, (state, action) => {
         state.itemLoading = false;
-        state.error = action.payload || "Lỗi tải chi tiết";
-      });
-
-    // Create Item
-    builder
+        state.error = action.payload || "Không thể tải chi tiết tin";
+      })
       .addCase(createNewItem.pending, (state) => {
-        state.itemLoading = true;
+        state.loading = true;
         state.error = null;
       })
       .addCase(createNewItem.fulfilled, (state, action) => {
-        state.itemLoading = false;
-        state.myItems.unshift(action.payload);
+        state.loading = false;
+        state.myPosts = [action.payload as any, ...state.myPosts];
+        state.items = state.myPosts;
       })
       .addCase(createNewItem.rejected, (state, action) => {
-        state.itemLoading = false;
-        state.error = action.payload || "Lỗi tạo tin";
-      });
-
-    // Update Item
-    builder
+        state.loading = false;
+        state.error = action.payload || "Không thể đăng tin";
+      })
       .addCase(updateExistingItem.pending, (state) => {
-        state.itemLoading = true;
+        state.loading = true;
         state.error = null;
       })
       .addCase(updateExistingItem.fulfilled, (state, action) => {
-        state.itemLoading = false;
-        const index = state.myItems.findIndex((item) => item.itemId === action.payload.itemId);
+        state.loading = false;
+        const index = state.items.findIndex((i) => i.itemId === action.payload.itemId);
         if (index !== -1) {
-          state.myItems[index] = action.payload;
+          state.items[index] = action.payload;
         }
-        state.selectedItem = action.payload;
       })
       .addCase(updateExistingItem.rejected, (state, action) => {
-        state.itemLoading = false;
-        state.error = action.payload || "Lỗi cập nhật";
-      });
-
-    // Update Status
-    builder
+        state.loading = false;
+        state.error = action.payload || "Không thể cập nhật tin";
+      })
       .addCase(updateItemStatusThunk.pending, (state) => {
-        state.itemLoading = true;
+        state.loading = true;
         state.error = null;
       })
       .addCase(updateItemStatusThunk.fulfilled, (state, action) => {
-        state.itemLoading = false;
-        const index = state.myItems.findIndex((item) => item.itemId === action.payload.itemId);
+        state.loading = false;
+        const index = state.items.findIndex((i) => i.itemId === action.payload.itemId);
         if (index !== -1) {
-          state.myItems[index] = action.payload;
+          state.items[index] = action.payload;
         }
         if (state.selectedItem?.itemId === action.payload.itemId) {
           state.selectedItem = action.payload;
         }
       })
       .addCase(updateItemStatusThunk.rejected, (state, action) => {
-        state.itemLoading = false;
-        state.error = action.payload || "Lỗi cập nhật trạng thái";
-      });
-
-    // Delete Item
-    builder
+        state.loading = false;
+        state.error = action.payload || "Không thể cập nhật trạng thái tin";
+      })
       .addCase(deleteItemThunk.pending, (state) => {
-        state.itemLoading = true;
+        state.loading = true;
         state.error = null;
       })
       .addCase(deleteItemThunk.fulfilled, (state, action) => {
-        state.itemLoading = false;
-        state.myItems = state.myItems.filter((item) => item.itemId !== action.payload);
+        state.loading = false;
+        state.items = state.items.filter((i) => i.itemId !== action.payload);
         if (state.selectedItem?.itemId === action.payload) {
           state.selectedItem = null;
         }
       })
       .addCase(deleteItemThunk.rejected, (state, action) => {
-        state.itemLoading = false;
-        state.error = action.payload || "Lỗi xóa";
-      });
-
-    // Toggle Favorite
-    builder
+        state.loading = false;
+        state.error = action.payload || "Không thể xóa tin";
+      })
       .addCase(toggleItemFavorite.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
       .addCase(toggleItemFavorite.fulfilled, (state, action) => {
-        const item = state.myItems.find((item) => item.itemId === action.payload.itemId);
+        state.loading = false;
+        const item = state.items.find((i) => i.itemId === action.payload.itemId);
         if (item) {
           item.isFavorited = action.payload.isFavorited;
           if (item.favoriteCount !== undefined) {
             item.favoriteCount += action.payload.isFavorited ? 1 : -1;
           }
         }
+        
+        // Also update myFavorites array
+        const favIndex = state.myFavorites.findIndex((i) => i.itemId === action.payload.itemId);
+        if (favIndex !== -1) {
+          if (!action.payload.isFavorited) {
+            // If unfavorited, remove from list
+            state.myFavorites.splice(favIndex, 1);
+          } else {
+            // This case shouldn't normally happen in a "Favorites" list view, 
+            // but for completeness:
+            state.myFavorites[favIndex].isFavorited = true;
+          }
+        }
+
         if (state.selectedItem && state.selectedItem.itemId === action.payload.itemId) {
           state.selectedItem.isFavorited = action.payload.isFavorited;
           if (state.selectedItem.favoriteCount !== undefined) {
@@ -282,7 +447,8 @@ const itemsSlice = createSlice({
         }
       })
       .addCase(toggleItemFavorite.rejected, (state, action) => {
-        state.error = action.payload || "Lỗi cập nhật";
+        state.loading = false;
+        state.error = action.payload || "Không thể cập nhật trạng thái yêu thích";
       });
   },
 });

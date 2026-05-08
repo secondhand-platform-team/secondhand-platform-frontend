@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
-import { message } from "antd";
+import { App } from "antd";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import { toggleItemFavorite } from "@/stores/slices/items.slice";
 
@@ -12,6 +12,7 @@ type FavoriteButtonProps = {
   initialFavoriteCount?: number;
   className?: string;
   showCount?: boolean;
+  showLabel?: boolean;
 };
 
 export default function FavoriteButton({
@@ -20,8 +21,10 @@ export default function FavoriteButton({
   initialFavoriteCount = 0,
   className = "",
   showCount = false,
+  showLabel = false,
 }: FavoriteButtonProps) {
   const dispatch = useAppDispatch();
+  const { message: messageApi } = App.useApp();
   const isAuth = useAppSelector((state) => state.auth.isAuth);
 
   const [faved, setFaved] = useState(initialIsFavorited);
@@ -41,7 +44,7 @@ export default function FavoriteButton({
     e.stopPropagation(); // Prevent navigating to detail page if embedded in a card
 
     if (!isAuth) {
-      message.warning("Vui lòng đăng nhập để lưu sản phẩm yêu thích!");
+      messageApi.warning("Vui lòng đăng nhập để lưu sản phẩm yêu thích!");
       return;
     }
 
@@ -60,15 +63,15 @@ export default function FavoriteButton({
       ).unwrap();
 
       if (targetFaved) {
-        message.success("Đã thêm vào danh sách yêu thích!");
+        messageApi.success("Đã thêm vào danh sách yêu thích!");
       } else {
-        message.success("Đã xóa khỏi danh sách yêu thích!");
+        messageApi.success("Đã xóa khỏi danh sách yêu thích!");
       }
     } catch (err) {
       // Revert optimistic updates on error
       setFaved(faved);
       setCount(count);
-      message.error(err instanceof Error ? err.message : "Thao tác thất bại!");
+      messageApi.error(err instanceof Error ? err.message : "Thao tác thất bại!");
     }
   };
 
@@ -97,6 +100,13 @@ export default function FavoriteButton({
           }`}
         />
       </div>
+      {showLabel && (
+        <span className={`text-sm font-semibold transition-colors duration-300 ${
+          faved ? "text-red-500" : "text-slate-500"
+        }`}>
+          {faved ? "Đã thích" : "Yêu thích"}
+        </span>
+      )}
       {showCount && count > 0 && (
         <span
           className={`text-xs font-semibold transition-colors duration-300 ${

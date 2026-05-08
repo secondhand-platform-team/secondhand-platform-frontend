@@ -19,7 +19,7 @@ import {
   MapPin,
   DollarSign,
 } from "lucide-react";
-import type { ItemWithImages } from "@/config/services/item.service";
+import type { ItemWithImages } from "@/types/item.type";
 
 interface PostsDetailModalProps {
   open: boolean;
@@ -30,7 +30,7 @@ interface PostsDetailModalProps {
 
 const statusConfig: Record<string, { color: string; label: string }> = {
   ACTIVE: { color: "green", label: "Hoạt động" },
-  DRAFT: { color: "blue", label: "Nháp" },
+  DRAFT: { color: "green", label: "Nháp" },
   RESERVED: { color: "orange", label: "Đã đặt cọc" },
   SOLD: { color: "red", label: "Đã bán" },
   HIDDEN: { color: "default", label: "Ẩn" },
@@ -45,10 +45,10 @@ const conditionConfig: Record<string, string> = {
 };
 
 const transactionTypeConfig: Record<string, { label: string; color: string }> =
-  {
-    SELL: { label: "Bán", color: "blue" },
-    GIVE_AWAY: { label: "Cho tặng", color: "green" },
-  };
+{
+  SELL: { label: "Bán", color: "green" },
+  GIVE_AWAY: { label: "Cho tặng", color: "green" },
+};
 
 export default function PostsDetailModal({
   open,
@@ -138,7 +138,7 @@ export default function PostsDetailModal({
                         }}
                       />
                       {img.isPrimary && (
-                        <Tag color="blue" className="absolute top-2 left-2">
+                        <Tag color="green" className="absolute top-2 left-2">
                           Chính
                         </Tag>
                       )}
@@ -290,15 +290,15 @@ export default function PostsDetailModal({
             {item.paymentUrl && (
               <>
                 <Divider />
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                  <p className="text-sm font-semibold text-blue-900 mb-2">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded">
+                  <p className="text-sm font-semibold text-emerald-900 mb-2">
                     Thông tin thanh toán
                   </p>
-                  <p className="text-sm text-blue-800">
+                  <p className="text-sm text-emerald-800">
                     Transaction ID: {item.transactionId || "N/A"}
                   </p>
                   {item.paymentInitiatedAt && (
-                    <p className="text-sm text-blue-800">
+                    <p className="text-sm text-emerald-800">
                       Thời gian thanh toán:{" "}
                       {new Date(item.paymentInitiatedAt).toLocaleDateString(
                         "vi-VN",

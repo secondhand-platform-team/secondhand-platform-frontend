@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import http from "@/utils/api";
-import type { CategoryType } from "@/types/item/item.type";
+import type { CategoryType } from "@/types/category.type";
 import {
   Laptop, Shirt, Home, Car, Activity, Book, Gamepad2, Sparkles, Package, Box
 } from "lucide-react";

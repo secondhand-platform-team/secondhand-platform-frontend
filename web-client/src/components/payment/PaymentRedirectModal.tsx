@@ -38,7 +38,7 @@ export default function PaymentRedirectModal({
           </button>
 
           <h1 className="text-center text-2xl font-bold  flex items-center justify-center gap-2">
-            <PayCircleOutlined style={{ fontSize: "24px", color: "#3B82F6" }} />
+            <PayCircleOutlined style={{ fontSize: "24px", color: "#10B981" }} />
             Thanh toán VNPay
           </h1>
         </div>
@@ -46,11 +46,11 @@ export default function PaymentRedirectModal({
         {/* Content */}
         <div className="px-6 pb-8 pt-6 space-y-6">
           {/* Info box */}
-          <div className="rounded-2xl bg-blue-50 p-4 border border-blue-200">
-            <p className="text-sm text-blue-700 font-medium mb-2">
+          <div className="rounded-2xl bg-emerald-50 p-4 border border-emerald-200">
+            <p className="text-sm text-emerald-700 font-medium mb-2">
               Cần thanh toán để đăng tin
             </p>
-            <p className="text-xs text-blue-600">
+            <p className="text-xs text-emerald-600">
               Bạn hết số lượt đăng tin miễn phí. Vui lòng thanh toán để tiếp tục
               đăng tin sản phẩm này.
             </p>

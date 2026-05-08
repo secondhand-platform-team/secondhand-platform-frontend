@@ -2,20 +2,20 @@
 
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatWindow from "@/components/chat/ChatWindow";
-import chatSocketService from "@/config/services/chatSocket.service";
+import { chatSocketService } from "@/stores/slices/chat.slice";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
-    connectChatSocket,
-    createConversation,
-    disconnectChatSocket,
-    fetchConversationMessages,
-    fetchMyConversations,
-    reactToChatMessage,
-    receiveSocketMessage,
-    sendChatMessage,
-    setActiveConversation,
-    setParticipantOnlineStatus,
-    upsertConversation,
+  connectChatSocket,
+  createConversation,
+  disconnectChatSocket,
+  fetchConversationMessages,
+  fetchMyConversations,
+  reactToChatMessage,
+  receiveSocketMessage,
+  sendChatMessage,
+  setActiveConversation,
+  setParticipantOnlineStatus,
+  upsertConversation,
 } from "@/stores/slices/chat.slice";
 import { ChatMessage, ReplyMessage } from "@/types/message.type";
 import { Empty } from "antd";

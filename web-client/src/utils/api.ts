@@ -106,14 +106,17 @@ class HttpClient {
     }
 
     if (!response.ok) {
+      let errorMsg = `HTTP Error: ${response.status}`;
       try {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP Error: ${response.status}`);
-      } catch (e) {
-        const errorMsg =
-          e instanceof Error ? e.message : `HTTP Error: ${response.status}`;
-        throw new Error(errorMsg);
+        const errorText = await response.text();
+        if (errorText) {
+          const error = JSON.parse(errorText);
+          errorMsg = error.message || errorMsg;
+        }
+      } catch {
+        // ignore parse errors on error responses
       }
+      throw new Error(errorMsg);
     }
 
     if (response.status === 204) {

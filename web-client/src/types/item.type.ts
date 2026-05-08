@@ -53,4 +53,29 @@ export interface ItemResponse {
   paymentUrl?: string;
   isFavorited?: boolean;
   favoriteCount?: number;
+  paymentInitiatedAt?: string;
 }
+
+export type ItemStatus = "AVAILABLE" | "RESERVED" | "SOLD" | "HIDDEN" | "ACTIVE" | "DRAFT" | "EXPIRED";
+export type ItemCondition = "NEW" | "LIKE_NEW" | "USED" | "FOR_PARTS";
+export type TransactionType = "SELL" | "GIVE_AWAY";
+
+export type ItemWithImages = ItemResponse & {
+  images?: ItemImageResponse[];
+  favoriteCount?: number;
+  isFavorited?: boolean;
+  viewCount?: number;
+};
+
+export type PaginatedResponse<T> = {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  currentPage?: number;
+  pageSize?: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+  numberOfElements: number;
+};

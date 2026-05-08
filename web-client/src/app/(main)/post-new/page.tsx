@@ -33,24 +33,24 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
-  createPostWithImages,
-  deletePost,
+  createNewItem,
+  deleteItemThunk,
   fetchCategories,
   fetchMyFavorites,
-  fetchMyPosts,
-  removeFavorite,
-  updatePostStatus,
-} from "@/stores/slices/item.slice";
+  fetchMyItems,
+  toggleItemFavorite,
+  updateItemStatusThunk,
+} from "@/stores/slices/items.slice";
 import type {
   ItemCondition,
-  ItemResponseType,
+  ItemResponse,
   ItemStatus,
   TransactionType,
-} from "@/types/item/item.type";
+} from "@/types/item.type";
 import type { District, Province, Ward } from "@/types/province.type";
-import provinceService from "@/config/services/province.service";
 import type { UploadFile } from "antd/es/upload/interface";
 import type { ColumnsType } from "antd/es/table";
+import provinceService from "@/services/province.service";
 
 const BRAND_GREEN = "#4CAF50";
 const BRAND_GREEN_DARK = "#3f9f46";
@@ -74,7 +74,7 @@ export default function PostNewPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { isAuth } = useAppSelector((state) => state.auth);
-  const { categories, submitting, myPosts, myFavorites, loading } = useAppSelector((state) => state.item);
+  const { categories, myPosts, myFavorites, loading } = useAppSelector((state) => state.items);
   const [activeTab, setActiveTab] = useState<ManageTab>("create");
   const [freePost, setFreePost] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -124,7 +124,7 @@ export default function PostNewPage() {
     }
 
     if (activeTab === "overview" || activeTab === "posts") {
-      dispatch(fetchMyPosts());
+      dispatch(fetchMyItems());
     }
 
     if (activeTab === "overview" || activeTab === "favorites") {
@@ -264,6 +264,7 @@ export default function PostNewPage() {
         ward: values.ward,
         address: values.address,
       },
+      attributes: [],
     };
 
     const images = fileList
@@ -271,10 +272,10 @@ export default function PostNewPage() {
       .filter((file): file is NonNullable<typeof file> => file !== undefined);
 
     try {
-      await dispatch(createPostWithImages({ payload, images })).unwrap();
+      await dispatch(createNewItem({ payload, images })).unwrap();
       message.success("Đăng tin thành công");
       setActiveTab("posts");
-      dispatch(fetchMyPosts());
+      dispatch(fetchMyItems());
     } catch (error) {
       message.error(error instanceof Error ? error.message : "Không thể đăng tin");
     }
@@ -282,7 +283,7 @@ export default function PostNewPage() {
 
   const onStatusChange = async (itemId: string, status: ItemStatus) => {
     try {
-      await dispatch(updatePostStatus({ itemId, status })).unwrap();
+      await dispatch(updateItemStatusThunk({ itemId, status })).unwrap();
       message.success("Đã cập nhật trạng thái tin");
     } catch (error) {
       message.error(error instanceof Error ? error.message : "Cập nhật thất bại");
@@ -291,7 +292,7 @@ export default function PostNewPage() {
 
   const onDeletePost = async (itemId: string) => {
     try {
-      await dispatch(deletePost(itemId)).unwrap();
+      await dispatch(deleteItemThunk(itemId)).unwrap();
       message.success("Đã xóa tin đăng");
     } catch (error) {
       message.error(error instanceof Error ? error.message : "Xóa tin thất bại");
@@ -300,7 +301,7 @@ export default function PostNewPage() {
 
   const onRemoveFavorite = async (itemId: string) => {
     try {
-      await dispatch(removeFavorite(itemId)).unwrap();
+      await dispatch(toggleItemFavorite({ itemId, isFavorited: true })).unwrap();
       message.success("Đã bỏ yêu thích");
     } catch (error) {
       message.error(error instanceof Error ? error.message : "Không thể bỏ yêu thích");
@@ -310,7 +311,7 @@ export default function PostNewPage() {
   const statusColor: Record<string, string> = {
     AVAILABLE: "green",
     RESERVED: "orange",
-    SOLD: "blue",
+    SOLD: "green",
     HIDDEN: "default",
     ACTIVE: "cyan",
   };
@@ -330,7 +331,7 @@ export default function PostNewPage() {
     if (post.status === "HIDDEN") postStats.hidden += 1;
   });
 
-  const postColumns: ColumnsType<ItemResponseType> = [
+  const postColumns: ColumnsType<ItemResponse> = [
     {
       title: "Tiêu đề",
       dataIndex: "title",
@@ -780,7 +781,7 @@ export default function PostNewPage() {
                   </Button>
                   <Button
                     htmlType="submit"
-                    loading={submitting}
+                    loading={loading}
                     icon={<Rocket size={16} />}
                     className="!h-[48px] !rounded-[10px] !border-0 !font-semibold !text-white"
                     style={{ background: BRAND_GREEN }}

@@ -62,11 +62,11 @@ export default function PaymentFailedPage() {
           </div>
 
           {/* Redirect info */}
-          <div className="mb-6 p-3 bg-blue-50 rounded-xl border border-blue-200 flex items-center gap-2">
-            <Clock size={16} className="text-blue-600 shrink-0" />
-            <p className="text-sm text-blue-700">
-              Quay lại trong{" "}
-              <span className="font-bold text-blue-900">{redirectIn}</span> giây
+          <div className="mb-6 p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2">
+            <Clock size={16} className="text-emerald-600 shrink-0" />
+            <p className="text-sm text-emerald-700">
+              Tự động chuyển hướng sau{" "}
+              <span className="font-bold text-emerald-900">{redirectIn}</span> giây
             </p>
           </div>
 

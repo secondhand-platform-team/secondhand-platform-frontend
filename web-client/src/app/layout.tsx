@@ -3,6 +3,7 @@ import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/stores/provider";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
+import { ConfigProvider, App } from "antd";
 import NextTopLoader from "nextjs-toploader";
 // import GoogleAuthProviderWrapper from "@/components/auth/GoogleAuthProvider";
 // import AntdConfigProvider from "@/components/common/AntdConfigProvider";
@@ -39,18 +40,29 @@ export default function RootLayout({
     <html lang="vi" suppressHydrationWarning>
       <body className={`${bodyFont.variable} ${displayFont.variable}`} suppressHydrationWarning>
         <AntdRegistry>
-            <NextTopLoader
-              color="#22c55e"
-              showSpinner={false}
-              height={3}
-              crawlSpeed={200}
-              speed={200}
-              easing="ease"
-              shadow="0 0 10px #22c55e,0 0 5px #22c55e"
-            />
+          <ConfigProvider
+            theme={{
+              token: {
+                colorPrimary: "#10b981",
+                borderRadius: 12,
+              },
+            }}
+          >
+            <App>
+              <NextTopLoader
+                color="#22c55e"
+                showSpinner={false}
+                height={3}
+                crawlSpeed={200}
+                speed={200}
+                easing="ease"
+                shadow="0 0 10px #22c55e,0 0 5px #22c55e"
+              />
               <ReduxProvider>
-                  {children}
+                {children}
               </ReduxProvider>
+            </App>
+          </ConfigProvider>
         </AntdRegistry>
       </body>
     </html>

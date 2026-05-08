@@ -15,7 +15,7 @@ export default function ContactPage() {
 
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 text-center transition-transform hover:-translate-y-1 hover:shadow-md hover:border-primary/50">
-            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
               <Phone className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Tổng đài CSKH</h3>

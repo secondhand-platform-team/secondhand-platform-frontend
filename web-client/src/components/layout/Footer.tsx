@@ -38,11 +38,11 @@ export default function Footer() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
             Khám phá
           </p>
-          <div className="mt-5 grid gap-3 text-sm text-slate-600">
-            <a href="#categories" className="transition hover:text-slate-950">Danh mục nổi bật</a>
-            <a href="#featured" className="transition hover:text-slate-950">Sản phẩm nổi bật</a>
-            <a href="#hero" className="transition hover:text-slate-950">Đăng tin miễn phí</a>
-            <a href="#auth" className="transition hover:text-slate-950">Chính sách giao dịch</a>
+          <div className="mt-5 grid gap-3 text-sm">
+            <a href="#categories" className="transition hover:!text-slate-950" style={{ color: "#4b5563" }}>Danh mục nổi bật</a>
+            <a href="#featured" className="transition hover:!text-slate-950" style={{ color: "#4b5563" }}>Sản phẩm nổi bật</a>
+            <a href="#hero" className="transition hover:!text-slate-950" style={{ color: "#4b5563" }}>Đăng tin miễn phí</a>
+            <a href="#auth" className="transition hover:!text-slate-950" style={{ color: "#4b5563" }}>Chính sách giao dịch</a>
           </div>
         </div>
 
@@ -51,11 +51,11 @@ export default function Footer() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
             Hỗ trợ
           </p>
-          <div className="mt-5 grid gap-3 text-sm text-slate-600">
-            <a href="#footer" className="transition hover:text-slate-950">Trung tâm trợ giúp</a>
-            <a href="#footer" className="transition hover:text-slate-950">Mẹo an toàn</a>
-            <a href="#footer" className="transition hover:text-slate-950">Liên hệ</a>
-            <a href="#footer" className="transition hover:text-slate-950">Câu hỏi thường gặp</a>
+          <div className="mt-5 grid gap-3 text-sm">
+            <a href="#footer" className="transition hover:!text-slate-950" style={{ color: "#4b5563" }}>Trung tâm trợ giúp</a>
+            <a href="#footer" className="transition hover:!text-slate-950" style={{ color: "#4b5563" }}>Mẹo an toàn</a>
+            <a href="#footer" className="transition hover:!text-slate-950" style={{ color: "#4b5563" }}>Liên hệ</a>
+            <a href="#footer" className="transition hover:!text-slate-950" style={{ color: "#4b5563" }}>Câu hỏi thường gặp</a>
           </div>
         </div>
 

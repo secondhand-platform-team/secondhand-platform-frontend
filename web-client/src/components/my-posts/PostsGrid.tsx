@@ -1,4 +1,5 @@
 "use client";
+import type { ItemWithImages } from "@/types/item.type";
 
 import {
   Card,
@@ -12,7 +13,7 @@ import {
   Spin,
 } from "antd";
 import { Edit, Trash2, MoreVertical, Clock, Eye } from "lucide-react";
-import type { ItemWithImages } from "@/config/services/item.service";
+
 import { useState } from "react";
 import { useAppDispatch } from "@/stores/hooks";
 import {
@@ -31,7 +32,7 @@ interface PostsGridProps {
 
 const statusConfig: Record<string, { color: string; label: string }> = {
   ACTIVE: { color: "green", label: "Đang bán" },
-  DRAFT: { color: "blue", label: "Nháp" },
+  DRAFT: { color: "green", label: "Nháp" },
   RESERVED: { color: "orange", label: "Đã đặt cọc" },
   SOLD: { color: "red", label: "Đã bán" },
   HIDDEN: { color: "default", label: "Ẩn" },
@@ -39,10 +40,10 @@ const statusConfig: Record<string, { color: string; label: string }> = {
 };
 
 const transactionTypeConfig: Record<string, { label: string; color: string }> =
-  {
-    SELL: { label: "Bán", color: "blue" },
-    GIVE_AWAY: { label: "Cho tặng", color: "green" },
-  };
+{
+  SELL: { label: "Bán", color: "green" },
+  GIVE_AWAY: { label: "Cho tặng", color: "green" },
+};
 
 export default function PostsGrid({
   items,
@@ -214,7 +215,7 @@ export default function PostsGrid({
             }
           >
             {/* Title */}
-            <Tooltip title={item.title} overlayMaxWidth={300}>
+            <Tooltip title={item.title} overlayInnerStyle={{ maxWidth: 300 }}>
               <h3 className="font-semibold text-base mb-2 line-clamp-2 text-gray-900">
                 {item.title}
               </h3>

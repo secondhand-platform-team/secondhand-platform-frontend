@@ -82,7 +82,17 @@ const ChatWindow = ({
       <header className="flex items-center justify-between border-b border-(--line) bg-white px-4 py-3">
         <div className="flex items-center gap-3">
           <Badge dot={conversation.isOnline} color="#22c55e" offset={[-4, 36]}>
-            <Avatar src={conversation.avatar} size={44} />
+            {conversation.avatar ? (
+              <Avatar src={conversation.avatar} size={44} />
+            ) : (
+              <Avatar size={44} style={{ backgroundColor: '#10b981', fontWeight: 700, fontSize: 16 }}>
+                {(() => {
+                  const parts = conversation.name?.split(/\s+/).filter(Boolean) || [];
+                  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                  return parts[0]?.[0]?.toUpperCase() || "U";
+                })()}
+              </Avatar>
+            )}
           </Badge>
           <div>
             <Typography.Text strong className="block text-base">

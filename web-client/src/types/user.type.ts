@@ -10,6 +10,10 @@ export type UserType = {
 	avatarUrl?: string;
 	freeSellUse?: number;
 	freeSellUsed?: number;
+	city?: string;
+	district?: string;
+	ward?: string;
+	address?: string;
 };
 
 export type UserProfileType = {
@@ -18,6 +22,10 @@ export type UserProfileType = {
 	dateOfBirth?: string;
 	gender?: string;
 	bio?: string;
+	city?: string;
+	district?: string;
+	ward?: string;
+	address?: string;
 };
 
 export type UserInfoApiType = {

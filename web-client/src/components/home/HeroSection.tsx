@@ -1,10 +1,28 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useAppSelector } from "@/stores/hooks";
+
 type HeroSectionProps = {
   onOpenAuth: () => void;
 };
 
 export default function HeroSection({ onOpenAuth }: HeroSectionProps) {
+  const router = useRouter();
+  const { isAuth } = useAppSelector((state) => state.auth);
+
+  const handleViewProducts = () => {
+    router.push("/search");
+  };
+
+  const handlePostItem = () => {
+    if (isAuth) {
+      router.push("/post-new");
+    } else {
+      onOpenAuth();
+    }
+  };
+
   return (
     <section className="relative h-125 w-full overflow-hidden" id="hero">
       <div
@@ -23,12 +41,15 @@ export default function HeroSection({ onOpenAuth }: HeroSectionProps) {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
-            onClick={onOpenAuth}
+            onClick={handleViewProducts}
             className="cursor-pointer rounded-lg bg-primary px-6 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:scale-105"
           >
-            Xem sản phẩm
+            Xem tin ngay
           </button>
-          <button className="rounded-lg border border-white/20 bg-white/10 px-6 py-3 text-base font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 cursor-pointer">
+          <button
+            onClick={handlePostItem}
+            className="rounded-lg border border-white/20 bg-white/10 px-6 py-3 text-base font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 cursor-pointer"
+          >
             Đăng tin ngay
           </button>
         </div>

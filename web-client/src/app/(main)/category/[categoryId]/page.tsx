@@ -3,12 +3,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { type ItemWithImages, type PageResponse } from "@/config/services/item.service";
-import { categoryService } from "@/config/services/category.service";
-import provinceService from "@/config/services/province.service";
+import {  type PageResponse } from "@/stores/slices/items.slice";
+import { categoryService } from "@/stores/slices/category.slice";
+import provinceService from "@/services/province.service";
 import type { Province, District, Ward } from "@/types/province.type";
 import http from "@/utils/api";
-import type { CategoryType } from "@/types/item/item.type";
+import type { ItemWithImages } from "@/types/item.type";
+import type { Category, CategoryType } from "@/types/category.type";
 import { MapPin, Heart, ChevronLeft, ChevronRight, SlidersHorizontal, X, ChevronDown, Search } from "lucide-react";
 
 const CONDITIONS = [
@@ -159,7 +160,7 @@ export default function CategoryPage() {
         setCategories([]);
         setAllCategories([]);
       });
-    provinceService.getProvinces().then(setProvinces).catch(() => {});
+    provinceService.getProvinces().then(setProvinces).catch(() => { });
   }, [catId]);
 
   const buildQueryString = useCallback(() => {
@@ -204,13 +205,13 @@ export default function CategoryPage() {
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, selectedCategories, activeTabCategory, minPrice, maxPrice, condition, transactionType, city, district, ward, page, sort]);
 
   useEffect(() => {
     fetchItems();
     router.replace(`/category/${catId}?` + buildQueryString(), { scroll: false });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchItems, catId]);
 
   const handleApplyFilters = () => {
@@ -508,7 +509,7 @@ export default function CategoryPage() {
                       <div className="relative aspect-square overflow-hidden bg-slate-100 dark:bg-slate-700">
                         <img src={getImageUrl(item)} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = "/icon-other/san-pham-khac.png"; }} />
                         {(item.transactionType === "GIVE_AWAY" || item.price === 0) && (<span className="absolute left-2 top-2 rounded-md bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white">MIỄN PHÍ</span>)}
-                        {item.condition === "NEW" && <span className="absolute left-2 top-2 rounded-md bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">MỚI</span>}
+                        {item.condition === "NEW" && <span className="absolute left-2 top-2 rounded-md bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white">MỚI</span>}
                         <button type="button" className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-slate-400 hover:text-red-500 transition-colors"><Heart className="w-4 h-4" /></button>
                       </div>
                       <div className="flex flex-1 flex-col p-3">
@@ -531,7 +532,7 @@ export default function CategoryPage() {
                   <button onClick={() => { setPage(page - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} disabled={page === 0} className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed" type="button"><ChevronLeft className="w-4 h-4" /></button>
                   {getPaginationPages().map((p, i) =>
                     p === "..." ? <span key={"e" + i} className="flex h-9 w-9 items-center justify-center text-slate-400 text-sm">...</span>
-                    : <button key={p} onClick={() => { setPage(p as number); window.scrollTo({ top: 0, behavior: "smooth" }); }} className={"flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium " + (page === p ? "bg-primary text-white border border-primary" : "border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50")} type="button">{(p as number) + 1}</button>
+                      : <button key={p} onClick={() => { setPage(p as number); window.scrollTo({ top: 0, behavior: "smooth" }); }} className={"flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium " + (page === p ? "bg-primary text-white border border-primary" : "border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50")} type="button">{(p as number) + 1}</button>
                   )}
                   <button onClick={() => { setPage(page + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} disabled={page >= totalPages - 1} className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed" type="button"><ChevronRight className="w-4 h-4" /></button>
                 </div>
@@ -677,7 +678,7 @@ function LocationModal({ onClose, onApply, initialCity, initialDistrict, initial
       .then((d) => setWards(d.wards ?? []))
       .catch(() => setWards([]))
       .finally(() => setLoadingWards(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selDistrict]);
 
   const provinceOptions = provinces.map((p) => ({ label: p.name, value: p.name }));

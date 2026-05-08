@@ -1,18 +1,18 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/auth.slice";
 import chatReducer from "./slices/chat.slice";
-import itemReducer from "./slices/item.slice";
 import itemsReducer from "./slices/items.slice";
+import searchReducer from "./slices/search.slice";
+import cartReducer from "./slices/cart.slice";
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
       auth: authReducer,
       chat: chatReducer,
-      // single-item slice (categories, myPosts, favorites)
-      item: itemReducer,
-      // items slice (lists, selectedItem, pagination)
       items: itemsReducer,
+      search: searchReducer,
+      cart: cartReducer,
     },
   });
 };

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { searchService } from "@/config/services/search.service";
+import { searchService } from "@/stores/slices/search.slice";
 
 export default function TrendingSearches() {
   const router = useRouter();

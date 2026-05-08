@@ -27,7 +27,7 @@ const ReplyPreview = ({
   {/* 🌿 Thanh xanh */}
   <div
     className={`w-[3px] ${
-      isMe ? "bg-blue-100/50" : "bg-slate-400"
+      isMe ? "bg-emerald-100/50" : "bg-slate-400"
     }`}
   />
 
@@ -35,7 +35,7 @@ const ReplyPreview = ({
   <div
     className={`flex-1 px-2.5 py-2 ${
       isMe
-        ? "bg-blue-100/70 text-slate-700"
+        ? "bg-emerald-100/70 text-slate-700"
         : "bg-slate-100 text-slate-600"
     }`}
   >

@@ -89,10 +89,10 @@ export default function PaymentSuccessPage() {
 
           {/* Redirect info */}
           {!isLoading && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <p className="text-sm text-blue-700">
-                Bạn sẽ được chuyển hướng về trang chủ trong{" "}
-                <span className="font-bold text-blue-900">{redirectIn}</span>{" "}
+            <div className="mb-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+              <p className="text-sm text-emerald-700">
+                Hệ thống sẽ tự động chuyển hướng về trang chủ sau{" "}
+                <span className="font-bold text-emerald-900">{redirectIn}</span>{" "}
                 giây
               </p>
             </div>

@@ -18,14 +18,15 @@ import {
   categoryService,
   type CategoryAttribute,
   type ChildCategory,
-} from "@/config/services/category.service";
-import provinceService from "@/config/services/province.service";
-import { itemService } from "@/config/services/item.service";
+} from "@/stores/slices/category.slice";
+import provinceService from "@/services/province.service";
+import { itemService } from "@/stores/slices/items.slice";
 import type { ItemRequest } from "@/types/item.type";
 import type { District, Province, Ward } from "@/types/province.type";
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { fetchCurrentUser } from "@/stores/slices/auth.slice";
 import PaymentRedirectModal from "@/components/payment/PaymentRedirectModal";
+import { Sparkles } from "lucide-react";
 
 type TransactionType = "SELL" | "GIVE_AWAY";
 type ConditionType = "NEW" | "LIKE_NEW" | "USED" | "FOR_PARTS";
@@ -419,10 +420,10 @@ export default function PostItemFormPage() {
       }));
 
       const transactionTypeMap: Record<TransactionType, SubmitTransactionType> =
-        {
-          SELL: freeSellRemaining > 0 ? "FREE_SELL" : "SELL",
-          GIVE_AWAY: "GIVE_AWAY",
-        };
+      {
+        SELL: freeSellRemaining > 0 ? "FREE_SELL" : "SELL",
+        GIVE_AWAY: "GIVE_AWAY",
+      };
 
       const submitData: ItemRequest = {
         title: formData.title,
@@ -533,11 +534,10 @@ export default function PostItemFormPage() {
                   onClick={() =>
                     setFormData((prev) => ({ ...prev, transactionType: type }))
                   }
-                  className={`flex-1 rounded-xl py-3 px-4 font-semibold transition ${
-                    formData.transactionType === type
-                      ? "bg-primary text-white"
-                      : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`flex-1 rounded-xl py-3 px-4 font-semibold transition ${formData.transactionType === type
+                    ? "bg-primary text-white"
+                    : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
                 >
                   {type === "SELL" ? "Bán" : "Cho miễn phí"}
                 </button>
@@ -625,11 +625,10 @@ export default function PostItemFormPage() {
                 setFormData((prev) => ({ ...prev, title: e.target.value }))
               }
               placeholder="Nhập tiêu đề sản phẩm"
-              className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${
-                errors.title
-                  ? "border-red-300 focus:ring-red-200"
-                  : "border-slate-200 focus:ring-primary/20"
-              }`}
+              className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${errors.title
+                ? "border-red-300 focus:ring-red-200"
+                : "border-slate-200 focus:ring-primary/20"
+                }`}
             />
             {errors.title && (
               <p className="mt-1 text-sm text-red-600">{errors.title}</p>
@@ -653,11 +652,10 @@ export default function PostItemFormPage() {
                 }
                 placeholder="0"
                 min="0"
-                className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${
-                  errors.price
-                    ? "border-red-300 focus:ring-red-200"
-                    : "border-slate-200 focus:ring-primary/20"
-                }`}
+                className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${errors.price
+                  ? "border-red-300 focus:ring-red-200"
+                  : "border-slate-200 focus:ring-primary/20"
+                  }`}
               />
               {errors.price && (
                 <p className="mt-1 text-sm text-red-600">{errors.price}</p>
@@ -832,14 +830,12 @@ export default function PostItemFormPage() {
 
           {/* GIVEAWAY notification */}
           {formData.transactionType === "GIVE_AWAY" && (
-            <div className="rounded-xl bg-blue-50 p-4 border border-blue-200">
-              <p className="text-sm text-blue-900 font-semibold flex items-center gap-2">
-                <CheckCircleOutlined style={{ fontSize: "16px" }} />
-                Đăng tin miễn phí
+            <div className="rounded-xl bg-emerald-50 p-4 border border-emerald-200">
+              <p className="text-sm text-emerald-900 font-semibold flex items-center gap-2">
+                <Sparkles className="w-4 h-4" /> Mẹo đăng tin hiệu quả
               </p>
-              <p className="text-xs text-blue-700 mt-1">
-                Loại &quot;Cho miễn phí&quot; không tính vào số lượt đăng tin.
-                Bạn có thể đăng không giới hạn.
+              <p className="text-xs text-emerald-700 mt-1">
+                Sử dụng hình ảnh rõ nét và mô tả chi tiết để tăng khả năng tiếp cận người mua lên đến 80%.
               </p>
             </div>
           )}
@@ -847,24 +843,22 @@ export default function PostItemFormPage() {
           {/* Posting Fee Info - Only for SELL type */}
           {formData.transactionType === "SELL" && user && categoryData && (
             <div
-              className={`rounded-xl p-4 border ${
-                freeSellRemaining > 0
-                  ? "bg-green-50 border-green-200"
-                  : categoryData.postingFee && categoryData.postingFee > 0
-                    ? "bg-orange-50 border-orange-200"
-                    : "bg-green-50 border-green-200"
-              }`}
+              className={`rounded-xl p-4 border ${freeSellRemaining > 0
+                ? "bg-green-50 border-green-200"
+                : categoryData.postingFee && categoryData.postingFee > 0
+                  ? "bg-orange-50 border-orange-200"
+                  : "bg-green-50 border-green-200"
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p
-                    className={`text-sm font-semibold flex items-center gap-2 ${
-                      freeSellRemaining > 0
-                        ? "text-green-900"
-                        : categoryData.postingFee && categoryData.postingFee > 0
-                          ? "text-orange-900"
-                          : "text-green-900"
-                    }`}
+                    className={`text-sm font-semibold flex items-center gap-2 ${freeSellRemaining > 0
+                      ? "text-green-900"
+                      : categoryData.postingFee && categoryData.postingFee > 0
+                        ? "text-orange-900"
+                        : "text-green-900"
+                      }`}
                   >
                     {freeSellRemaining > 0 ? (
                       <>
@@ -885,13 +879,12 @@ export default function PostItemFormPage() {
                     )}
                   </p>
                   <p
-                    className={`text-xs mt-1 ${
-                      freeSellRemaining > 0
-                        ? "text-green-700"
-                        : categoryData.postingFee && categoryData.postingFee > 0
-                          ? "text-orange-700"
-                          : "text-green-700"
-                    }`}
+                    className={`text-xs mt-1 ${freeSellRemaining > 0
+                      ? "text-green-700"
+                      : categoryData.postingFee && categoryData.postingFee > 0
+                        ? "text-orange-700"
+                        : "text-green-700"
+                      }`}
                   >
                     {freeSellRemaining > 0
                       ? `Còn ${freeSellRemaining} lần đăng tin miễn phí`

@@ -1,4 +1,5 @@
 "use client";
+import type { ItemWithImages } from "@/types/item.type";
 
 import {
   Table,
@@ -12,7 +13,7 @@ import {
   Spin,
 } from "antd";
 import { Edit, Eye, Trash2, MoreVertical, Clock } from "lucide-react";
-import type { ItemWithImages } from "@/config/services/item.service";
+
 import { useState } from "react";
 import { useAppDispatch } from "@/stores/hooks";
 import {
@@ -35,7 +36,7 @@ const statusConfig: Record<
   { color: string; label: string; icon?: React.ReactNode }
 > = {
   ACTIVE: { color: "green", label: "Hoạt động" },
-  DRAFT: { color: "blue", label: "Nháp" },
+  DRAFT: { color: "green", label: "Nháp" },
   RESERVED: { color: "orange", label: "Đã đặt cọc" },
   SOLD: { color: "red", label: "Đã bán" },
   HIDDEN: { color: "default", label: "Ẩn" },
@@ -50,10 +51,10 @@ const conditionConfig: Record<string, string> = {
 };
 
 const transactionTypeConfig: Record<string, { label: string; color: string }> =
-  {
-    SELL: { label: "Bán", color: "blue" },
-    GIVE_AWAY: { label: "Cho tặng", color: "green" },
-  };
+{
+  SELL: { label: "Bán", color: "green" },
+  GIVE_AWAY: { label: "Cho tặng", color: "green" },
+};
 
 export default function PostsTable({
   items,
@@ -184,7 +185,7 @@ export default function PostsTable({
       key: "title",
       width: 250,
       render: (text: string) => (
-        <Tooltip title={text} overlayMaxWidth={400}>
+        <Tooltip title={text} overlayInnerStyle={{ maxWidth: 400 }}>
           <span className="line-clamp-2">{text}</span>
         </Tooltip>
       ),

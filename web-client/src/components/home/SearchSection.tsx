@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { searchService } from "@/config/services/search.service";
+import { searchService } from "@/stores/slices/search.slice";
 import type { SearchHistoryResponse } from "@/types/search.type";
 
 const ANIMATED_PLACEHOLDERS = [
@@ -90,7 +90,7 @@ export default function SearchSection() {
     }
     try {
       setIsLoading(true);
-      searchService.saveSearchHistory({ searchQuery: trimmedQuery }).catch(() => {});
+      searchService.saveSearchHistory({ searchQuery: trimmedQuery }).catch(() => { });
       setSearchQuery("");
       setShowSuggestions(false);
       router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);

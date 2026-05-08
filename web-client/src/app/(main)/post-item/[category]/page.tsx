@@ -6,7 +6,7 @@ import { X, ChevronRight, AlertCircle, Loader } from "lucide-react";
 import {
   categoryService,
   type ChildCategory,
-} from "@/config/services/category.service";
+} from "@/stores/slices/category.slice";
 
 const categoryLabelMap: Record<string, string> = {
   vehicles: "Xe cộ",

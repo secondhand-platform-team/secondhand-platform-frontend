@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { searchService } from "@/config/services/search.service";
+import { searchService } from "@/stores/slices/search.slice";
 import type { SearchHistoryResponse } from "@/types/search.type";
 
 export default function RecentSearches() {
@@ -31,7 +31,7 @@ export default function RecentSearches() {
     router.push(`/search?q=${encodeURIComponent(query)}`);
   };
 
-  const handleDeleteSearch = async (id: number, e: React.MouseEvent) => {
+  const handleDeleteSearch = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       await searchService.deleteSearchHistory(id);

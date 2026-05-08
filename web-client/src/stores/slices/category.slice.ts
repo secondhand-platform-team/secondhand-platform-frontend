@@ -1,5 +1,6 @@
 import http from "@/utils/api";
-import { type SearchParams, type PageResponse, type ItemWithImages } from "./item.service";
+import { type SearchParams } from "@/stores/slices/items.slice";
+import type { ItemWithImages, PaginatedResponse as PageResponse } from "@/types/item.type";
 import type { ItemResponse } from "@/types/item.type";
 import {
   type DataType,

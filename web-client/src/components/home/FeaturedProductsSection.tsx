@@ -1,11 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
+import type { ItemWithImages } from "@/types/item.type";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin } from "lucide-react";
-import { itemService, type ItemWithImages } from "@/config/services/item.service";
+import { itemService,  } from "@/stores/slices/items.slice";
 import FavoriteButton from "@/components/item/FavoriteButton";
+import { useAppSelector } from "@/stores/hooks";
 
 function formatPrice(price: number | null | undefined): string {
   if (price == null || price === 0) return "Miễn phí";
@@ -27,9 +29,10 @@ export default function FeaturedProductsSection() {
   const router = useRouter();
   const [items, setItems] = useState<ItemWithImages[]>([]);
   const [loading, setLoading] = useState(true);
+  const currentUserId = useAppSelector((state) => state.auth.user?.userId);
 
   useEffect(() => {
-    itemService.getFeaturedItems(4)
+    itemService.getFeaturedItems(8)
       .then(setItems)
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
@@ -66,7 +69,7 @@ export default function FeaturedProductsSection() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {items.map((item) => (
+            {items.filter((item) => !currentUserId || item.userId !== currentUserId).slice(0, 4).map((item) => (
               <div
                 key={item.itemId}
                 onClick={() => router.push(`/items/${item.itemId}`)}

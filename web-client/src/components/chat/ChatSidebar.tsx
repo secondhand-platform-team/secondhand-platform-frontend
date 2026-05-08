@@ -69,7 +69,17 @@ const ChatSidebar = ({
               />
 
               <Badge dot={conversation.isOnline} offset={[-3, 35]} color="#22c55e">
-                <Avatar src={conversation.avatar} size={44} />
+                {conversation.avatar ? (
+                  <Avatar src={conversation.avatar} size={44} />
+                ) : (
+                  <Avatar size={44} style={{ backgroundColor: '#10b981', fontWeight: 700, fontSize: 16 }}>
+                    {(() => {
+                      const parts = conversation.name?.split(/\s+/).filter(Boolean) || [];
+                      if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                      return parts[0]?.[0]?.toUpperCase() || "U";
+                    })()}
+                  </Avatar>
+                )}
               </Badge>
 
               <div className="min-w-0 flex-1">

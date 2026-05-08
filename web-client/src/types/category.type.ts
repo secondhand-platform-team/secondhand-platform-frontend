@@ -14,17 +14,18 @@ export interface CategoryAttribute {
 
 export interface Category {
   id: string;
+  categoryId: string;
   name: string;
   description?: string;
   icon?: string;
-  postingFee?: number; // Phí đăng tin, 0 nếu free
+  postingFee?: number;
 }
 
 export interface ChildCategory {
   categoryId: string;
   name: string;
   icon?: string;
-  postingFee?: number; // Phí đăng tin, 0 nếu free
+  postingFee?: number;
 }
 
 export interface CategoryResponse {
@@ -34,3 +35,10 @@ export interface CategoryResponse {
 export type ChildCategoriesResponse = ChildCategory[];
 
 export type CategoryAttributesResponse = CategoryAttribute[];
+
+export type CategoryType = {
+  categoryId: string;
+  name: string;
+  description?: string;
+  parentId?: string | null;
+};

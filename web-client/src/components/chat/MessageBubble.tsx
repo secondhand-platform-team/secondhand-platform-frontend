@@ -80,7 +80,17 @@ const MessageBubble = ({
   return (
     <div className={`flex w-full ${isMine ? "justify-end" : "justify-start"}`}>
       <div className={`group flex max-w-[72%] items-end gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
-        {!isMine && showAvatar ? <Avatar src={avatar} size={30} /> : <div className="w-7.5" />}
+        {!isMine && showAvatar ? (
+          avatar ? <Avatar src={avatar} size={30} /> : (
+            <Avatar size={30} style={{ backgroundColor: '#10b981', fontWeight: 700, fontSize: 12 }}>
+              {(() => {
+                const parts = participantName?.split(/\s+/).filter(Boolean) || [];
+                if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                return parts[0]?.[0]?.toUpperCase() || "U";
+              })()}
+            </Avatar>
+          )
+        ) : <div className="w-7.5" />}
 
         <div className={`min-w-0 ${isMine ? "items-end" : "items-start"} relative`}>
           <div
@@ -173,7 +183,9 @@ const MessageBubble = ({
           {statusLabel ? (
             <div className="mt-0.5 flex items-center justify-end gap-1 px-1">
               <Typography.Text className="text-[11px] text-slate-400">{statusLabel}</Typography.Text>
-              {statusLabel === "Đã xem" ? <Avatar src={statusAvatar} size={14} /> : null}
+              {statusLabel === "Đã xem" ? (
+                statusAvatar ? <Avatar src={statusAvatar} size={14} /> : <Avatar size={14} style={{ backgroundColor: '#10b981', fontWeight: 700, fontSize: 8 }}>{participantName?.[0]?.toUpperCase() || "U"}</Avatar>
+              ) : null}
             </div>
           ) : null}
         </div>

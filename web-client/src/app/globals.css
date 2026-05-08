@@ -38,8 +38,12 @@ body {
 }
 
 a {
-  color: inherit;
-  text-decoration: none;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+a:visited {
+  color: inherit !important;
 }
 
 button,

@@ -11,6 +11,7 @@ import {
   Typography,
   message,
   ConfigProvider,
+  App,
 } from "antd";
 import {
   LockOutlined,
@@ -50,14 +51,28 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const dispatch = useAppDispatch();
   const { loading, error, isAuth } = useAppSelector((s) => s.auth);
 
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "forgot_password">("login");
 
   const [loginForm, setLoginForm] = useState(defaultLogin);
   const [registerForm, setRegisterForm] = useState(defaultRegister);
 
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [messageApi, contextHolder] = message.useMessage();
+  const { message: messageApi } = App.useApp();
+
+  useEffect(() => {
+    if (formError) {
+      messageApi.error(formError);
+      setFormError(null);
+    }
+  }, [formError, messageApi]);
+
+  useEffect(() => {
+    if (error) {
+      messageApi.error(error);
+      dispatch(clearAuthError());
+    }
+  }, [error, messageApi, dispatch]);
 
   useEffect(() => {
     if (open) {
@@ -67,8 +82,11 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   }, [open, dispatch]);
 
   useEffect(() => {
-    if (open && isAuth) onClose();
-  }, [isAuth, open, onClose]);
+    if (open && isAuth) {
+      messageApi.success("Đăng nhập thành công!");
+      onClose();
+    }
+  }, [isAuth, open, onClose, messageApi]);
 
   const closeModal = () => {
     setFormError(null);
@@ -86,7 +104,6 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
     try {
       await dispatch(loginUser(loginForm)).unwrap();
-                    message.success("Đăng nhập thành công!");
     } catch {}
   };
 
@@ -99,29 +116,21 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     }
 
     try {
-      const res = await dispatch(registerUser(registerForm)).unwrap();
+      await dispatch(registerUser(registerForm)).unwrap();
 
-      message.success("Đăng ký thành công!");
+      messageApi.success("Đăng ký thành công!");
       setMode("login");
     } catch {}
   };
 
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: "#10b981",
-          borderRadius: 12,
-        },
-      }}
-    >
-      {contextHolder}
-
+    <>
+      {/* Removed local ConfigProvider and contextHolder as they are now provided by App wrapper in RootLayout */}
       <Modal
         open={open}
         footer={null}
         onCancel={closeModal}
-        destroyOnClose
+        destroyOnHidden
         centered
         width={820}
         className="!rounded-2xl overflow-hidden"
@@ -180,42 +189,48 @@ items-center justify-center p-12 overflow-hidden">
                 >
                   {mode === "login"
                     ? "Chào mừng quay lại"
-                    : "Tạo tài khoản"}
+                    : mode === "register"
+                    ? "Tạo tài khoản"
+                    : "Khôi phục mật khẩu"}
                 </Typography.Title>
 
                 <Typography.Text className="text-slate-400">
                   {mode === "login"
                     ? "Đăng nhập để tiếp tục"
-                    : "Tham gia cộng đồng mua sắm bền vững"}
+                    : mode === "register"
+                    ? "Tham gia cộng đồng mua sắm bền vững"
+                    : "Nhập email hoặc số điện thoại để lấy lại mật khẩu"}
                 </Typography.Text>
               </div>
 
               {/* SWITCH */}
 
-              <div className="bg-slate-200/60 dark:bg-slate-800 rounded-xl p-1 flex mb-6">
+              {mode !== "forgot_password" && (
+                <div className="bg-slate-200/60 dark:bg-slate-800 rounded-xl p-1 flex mb-6">
 
-                <button
-                  onClick={() => setMode("login")}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-                    mode === "login"
-                      ? "bg-white dark:bg-slate-700 shadow text-emerald-600"
-                      : "text-slate-500"
-                  }`}
-                >
-                  Đăng nhập
-                </button>
+                  <button
+                    onClick={() => setMode("login")}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
+                      mode === "login"
+                        ? "bg-white dark:bg-slate-700 shadow text-emerald-600"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    Đăng nhập
+                  </button>
 
-                <button
-                  onClick={() => setMode("register")}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-                    mode === "register"
-                      ? "bg-white dark:bg-slate-700 shadow text-emerald-600"
-                      : "text-slate-500"
-                  }`}
-                >
-                  Đăng ký
-                </button>
-              </div>
+                  <button
+                    onClick={() => setMode("register")}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
+                      mode === "register"
+                        ? "bg-white dark:bg-slate-700 shadow text-emerald-600"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    Đăng ký
+                  </button>
+                </div>
+              )}
 
               <AnimatePresence mode="wait">
 
@@ -227,17 +242,16 @@ items-center justify-center p-12 overflow-hidden">
                   transition={{ duration: 0.25 }}
                 >
 
-                  {(formError || error) && (
-                    <Alert
-                      message={formError || error}
-                      type="error"
-                      showIcon
-                      className="mb-4 rounded-xl"
-                    />
-                  )}
-
                   <form
-                    onSubmit={mode === "login" ? handleLogin : handleRegister}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (mode === "login") handleLogin(e);
+                      else if (mode === "register") handleRegister(e);
+                      else {
+                        messageApi.success("Đã gửi hướng dẫn khôi phục mật khẩu đến " + loginForm.email);
+                        setMode("login");
+                      }
+                    }}
                     className="space-y-4"
                   >
 
@@ -259,21 +273,21 @@ items-center justify-center p-12 overflow-hidden">
 
                     <Input
                       size="large"
-                      placeholder="Email"
-                      prefix={<MailOutlined />}
+                      placeholder={mode === "register" ? "Email" : "Email hoặc Số điện thoại"}
+                      prefix={mode === "register" ? <MailOutlined /> : <UserOutlined />}
                       value={
-                        mode === "login"
-                          ? loginForm.email
-                          : registerForm.email
+                        mode === "register"
+                          ? registerForm.email
+                          : loginForm.email
                       }
                       onChange={(e) =>
-                        mode === "login"
-                          ? setLoginForm({
-                              ...loginForm,
+                        mode === "register"
+                          ? setRegisterForm({
+                              ...registerForm,
                               email: e.target.value,
                             })
-                          : setRegisterForm({
-                              ...registerForm,
+                          : setLoginForm({
+                              ...loginForm,
                               email: e.target.value,
                             })
                       }
@@ -296,28 +310,43 @@ items-center justify-center p-12 overflow-hidden">
                       />
                     )}
 
-                    <Input.Password
-                      size="large"
-                      placeholder="Mật khẩu"
-                      prefix={<LockOutlined />}
-                      value={
-                        mode === "login"
-                          ? loginForm.password
-                          : registerForm.password
-                      }
-                      onChange={(e) =>
-                        mode === "login"
-                          ? setLoginForm({
-                              ...loginForm,
-                              password: e.target.value,
-                            })
-                          : setRegisterForm({
-                              ...registerForm,
-                              password: e.target.value,
-                            })
-                      }
-                      className="!rounded-xl h-11"
-                    />
+                    {mode !== "forgot_password" && (
+                      <Input.Password
+                        size="large"
+                        placeholder="Mật khẩu"
+                        prefix={<LockOutlined />}
+                        value={
+                          mode === "login"
+                            ? loginForm.password
+                            : registerForm.password
+                        }
+                        onChange={(e) =>
+                          mode === "login"
+                            ? setLoginForm({
+                                ...loginForm,
+                                password: e.target.value,
+                              })
+                            : setRegisterForm({
+                                ...registerForm,
+                                password: e.target.value,
+                              })
+                        }
+                        className="!rounded-xl h-11"
+                      />
+                    )}
+
+                    {mode === "login" && (
+                      <div className="flex justify-end">
+                        <span
+                          className="text-sm text-emerald-600 font-semibold cursor-pointer hover:underline"
+                          onClick={() => {
+                            setMode("forgot_password");
+                          }}
+                        >
+                          Quên mật khẩu?
+                        </span>
+                      </div>
+                    )}
 
                     {mode === "register" && (
                       <Input.Password
@@ -344,14 +373,27 @@ items-center justify-center p-12 overflow-hidden">
                       icon={<ArrowRightOutlined />}
                       className="h-12 !rounded-xl font-bold mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 border-none"
                     >
-                      {mode === "login" ? "Đăng nhập" : "Tạo tài khoản"}
+                      {mode === "login" ? "Đăng nhập" : mode === "register" ? "Tạo tài khoản" : "Gửi yêu cầu"}
                     </Button>
 
-                    <Divider plain>Hoặc</Divider>
+                    {mode === "forgot_password" && (
+                      <div className="text-center mt-4">
+                        <span
+                          className="text-sm text-slate-500 font-semibold cursor-pointer hover:text-emerald-600 hover:underline transition"
+                          onClick={() => setMode("login")}
+                        >
+                          Quay lại đăng nhập
+                        </span>
+                      </div>
+                    )}
 
-                    {/* SOCIAL */}
+                    {mode !== "forgot_password" && (
+                      <>
+                        <Divider plain>Hoặc</Divider>
 
-                    <div className="flex gap-3">
+                        {/* SOCIAL */}
+
+                        <div className="flex gap-3">
 
                       <Button
                         className="flex-1 h-11 !rounded-xl flex items-center justify-center gap-2 border border-slate-200 bg-white"
@@ -371,6 +413,8 @@ items-center justify-center p-12 overflow-hidden">
                       </Button>
 
                     </div>
+                    </>
+                    )}
 
                   </form>
                 </motion.div>
@@ -381,6 +425,6 @@ items-center justify-center p-12 overflow-hidden">
           </div>
         </div>
       </Modal>
-    </ConfigProvider>
+    </>
   );
 }

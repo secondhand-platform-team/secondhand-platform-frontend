@@ -49,6 +49,10 @@ const mapProfileResponseToUser = (profileResponse: UserProfileApiResponseType): 
 	freeSellUse: profileResponse.user.freeSellUse ?? profileResponse.user.freeSellUsed ?? 0,
 	fullName: profileResponse.user_profile?.fullName,
 	avatarUrl: profileResponse.user_profile?.avatarUrl,
+	city: profileResponse.user_profile?.city,
+	district: profileResponse.user_profile?.district,
+	ward: profileResponse.user_profile?.ward,
+	address: profileResponse.user_profile?.address,
 });
 
 export const fetchCurrentUser = createAsyncThunk<

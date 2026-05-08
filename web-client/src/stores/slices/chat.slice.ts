@@ -1,16 +1,258 @@
 "use client";
+import http from "@/utils/api";
+import type {
+  ChatConversationApiResponse,
+  CreateConversationRequest,
+  CreateConversationResponse,
+} from "@/types/conversation.type";
+import type { ChatMessageSocketResponse, MessageHistoryApiResponse } from "@/types/message.type";
+import type { UserProfileApiResponseType } from "@/types/user.type";
+class ChatService {
+  async createConversation(payload: CreateConversationRequest) {
+    return http.post<CreateConversationResponse>("/auth/api/chat/conversations", payload);
+  }
 
-import chatService from "@/config/services/chat.service";
-import chatSocketService from "@/config/services/chatSocket.service";
+  async getMyConversations() {
+    return http.get<ChatConversationApiResponse[]>("/chat/api/conversations/me");
+  }
+
+  async getConversationMessages(conversationId: string) {
+    return http.get<MessageHistoryApiResponse[]>(`/chat/api/conversations/${conversationId}/messages`);
+  }
+
+  async reactToMessage(messageId: string, emoji: string) {
+    return http.post<ChatMessageSocketResponse>(`/chat/api/messages/${messageId}/reactions`, { emoji });
+  }
+
+  async getUserProfileByUserId(userId: string) {
+    return http.get<UserProfileApiResponseType>(`/auth/api/users/${userId}/profile`);
+  }
+}
+
+export const chatService = new ChatService();
+
+import envConfig from "@/config";
+
+import { Client } from "@stomp/stompjs";
+
+type MessageHandler = (message: ChatMessageSocketResponse) => void;
+type ConversationEventHandler = (event: unknown) => void;
+type PresenceHandler = (event: { userId: string; isOnline: boolean }) => void;
+
+class ChatSocketService {
+  private client: Client | null = null;
+  private subscriptions = new Map<string, () => void>();
+  private currentUserId: string | null = null;
+
+  private resolveWebSocketUrl() {
+    const normalized = envConfig.NEXT_PUBLIC_API_ENDPOINT.replace(/\/+$/, "");
+
+    if (normalized.startsWith("https://")) {
+      return `${normalized.replace("https://", "wss://")}/chat/ws-chat`;
+    }
+
+    if (normalized.startsWith("http://")) {
+      return `${normalized.replace("http://", "ws://")}/chat/ws-chat`;
+    }
+
+    return `${normalized}/auth/chat/ws-chat`;
+  }
+
+  connect(onConnected?: () => void, onError?: (error: string) => void) {
+    if (this.client?.connected) {
+      onConnected?.();
+      return;
+    }
+
+    if (this.client?.active) {
+      return;
+    }
+
+    this.client = new Client({
+      brokerURL: this.resolveWebSocketUrl(),
+      connectHeaders: this.currentUserId ? { userId: this.currentUserId } : undefined,
+      reconnectDelay: 3000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
+      onConnect: () => {
+        onConnected?.();
+      },
+      onStompError: (frame) => {
+        onError?.(frame.headers.message || "Không thể kết nối websocket chat");
+      },
+      onWebSocketError: () => {
+        onError?.("Kết nối websocket chat bị lỗi");
+      },
+      onWebSocketClose: () => {
+        this.subscriptions.clear();
+      },
+    });
+
+    this.client.activate();
+  }
+
+  setCurrentUserId(userId: string | null) {
+    this.currentUserId = userId;
+  }
+
+  async ensureConnected(timeoutMs = 5000) {
+    if (this.client?.connected) {
+      return;
+    }
+
+    if (!this.client?.active) {
+      this.connect();
+    }
+
+    const start = Date.now();
+
+    while (!this.client?.connected) {
+      if (Date.now() - start >= timeoutMs) {
+        throw new Error("Websocket chat chưa kết nối");
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  disconnect() {
+    this.subscriptions.forEach((unsubscribe) => unsubscribe());
+    this.subscriptions.clear();
+
+    if (this.client?.active) {
+      this.client.deactivate();
+    }
+
+    this.client = null;
+  }
+
+  isConnected() {
+    return this.client?.connected ?? false;
+  }
+
+  subscribeConversation(conversationId: string, handler: MessageHandler) {
+    if (!this.client?.connected) {
+      return () => undefined;
+    }
+
+    const destination = `/topic/conversations/${conversationId}`;
+
+    if (this.subscriptions.has(destination)) {
+      this.subscriptions.get(destination)?.();
+    }
+
+    const subscription = this.client.subscribe(destination, (frame) => {
+      const payload = JSON.parse(frame.body) as ChatMessageSocketResponse;
+      handler(payload);
+    });
+
+    const unsubscribe = () => {
+      try {
+        if (this.client?.connected) {
+          subscription.unsubscribe();
+        }
+      } catch {
+      }
+      this.subscriptions.delete(destination);
+    };
+
+    this.subscriptions.set(destination, unsubscribe);
+    return unsubscribe;
+  }
+
+  subscribeUserConversations(userId: string, handler: ConversationEventHandler) {
+    if (!this.client?.connected) {
+      return () => undefined;
+    }
+
+    const destination = `/topic/users/${userId}/conversations`;
+
+    if (this.subscriptions.has(destination)) {
+      this.subscriptions.get(destination)?.();
+    }
+
+    const subscription = this.client.subscribe(destination, (frame) => {
+      try {
+        handler(JSON.parse(frame.body) as unknown);
+      } catch {
+        handler(frame.body);
+      }
+    });
+
+    const unsubscribe = () => {
+      try {
+        if (this.client?.connected) {
+          subscription.unsubscribe();
+        }
+      } catch {
+      }
+      this.subscriptions.delete(destination);
+    };
+
+    this.subscriptions.set(destination, unsubscribe);
+    return unsubscribe;
+  }
+
+  subscribePresence(handler: PresenceHandler) {
+    if (!this.client?.connected) {
+      return () => undefined;
+    }
+
+    const destination = "/topic/presence";
+
+    if (this.subscriptions.has(destination)) {
+      this.subscriptions.get(destination)?.();
+    }
+
+    const subscription = this.client.subscribe(destination, (frame) => {
+      try {
+        handler(JSON.parse(frame.body) as { userId: string; isOnline: boolean });
+      } catch {
+      }
+    });
+
+    const unsubscribe = () => {
+      try {
+        if (this.client?.connected) {
+          subscription.unsubscribe();
+        }
+      } catch {
+      }
+      this.subscriptions.delete(destination);
+    };
+
+    this.subscriptions.set(destination, unsubscribe);
+    return unsubscribe;
+  }
+
+  sendMessage(payload: SendChatMessagePayload) {
+    if (!this.client?.connected) {
+      throw new Error("Websocket chat chưa kết nối");
+    }
+
+    this.client.publish({
+      destination: "/app/chat.send",
+      body: JSON.stringify({
+        conversationId: payload.conversationId,
+        senderId: payload.senderId,
+        receiverId: payload.receiverId,
+        content: payload.content,
+        type: payload.type || "TEXT",
+        replyToMessageId: payload.replyToMessageId,
+      }),
+    });
+  }
+}
+
+export const chatSocketService = new ChatSocketService();
+
+
 import type { RootState } from "@/stores/store";
 import type {
   ChatConversation,
-  ChatConversationApiResponse,
 } from "@/types/conversation.type";
 import type {
   ChatMessage,
-  ChatMessageSocketResponse,
-  MessageHistoryApiResponse,
   MessageType,
   ReplyMessage,
   SendChatMessagePayload,
@@ -81,8 +323,7 @@ const formatConversationTime = (dateTime?: string | null) => {
 
 const buildParticipantName = (participantId: string) =>
   `Người dùng ${participantId.slice(0, 8)}`;
-const buildParticipantAvatar = (participantId: string) =>
-  `https://i.pravatar.cc/120?u=${encodeURIComponent(participantId)}`;
+const buildParticipantAvatar = (_participantId: string) => "";
 
 const mapConversationApiToView = (
   conversation: ChatConversationApiResponse,
@@ -99,8 +340,8 @@ const mapConversationApiToView = (
   isOnline: Boolean(conversation.isOnline),
   time: formatConversationTime(
     conversation.lastMessageAt ||
-      conversation.updatedAt ||
-      conversation.createdAt,
+    conversation.updatedAt ||
+    conversation.createdAt,
   ),
   lastMessage: conversation.lastMessage || "Bắt đầu cuộc trò chuyện",
   unreadCount: 0,
@@ -478,8 +719,8 @@ const chatSlice = createSlice({
 
           return {
             ...conversation,
-            name: existingConversation.name || conversation.name,
-            avatar: existingConversation.avatar || conversation.avatar,
+            name: conversation.name || existingConversation.name,
+            avatar: conversation.avatar || existingConversation.avatar,
             isOnline: conversation.isOnline,
             unreadCount: existingConversation.unreadCount,
           };
