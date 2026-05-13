@@ -1,7 +1,7 @@
 "use client";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import http from "@/utils/api";
-import type { ItemRequest, ItemResponse, ItemWithImages, PaginatedResponse } from "@/types/item.type";
+import type { ItemRequest, ItemResponse, ItemWithImages, PaginatedResponse, ReportRequest, ReportResponse } from "@/types/item.type";
 
 export interface SearchParams {
   q?: string;
@@ -143,7 +143,20 @@ class ItemService {
       isFavorited: item.isFavorited ?? false,
     })) as ItemWithImages[];
   }
+
+  async reportItem(data: ReportRequest, images?: File[]) {
+    if (images && images.length > 0) {
+      const formData = new FormData();
+      formData.append("report", new Blob([JSON.stringify(data)], { type: "application/json" }));
+      images.forEach((image) => {
+        formData.append("images", image);
+      });
+      return http.post<ReportResponse>("core/api/reports", formData);
+    }
+    return http.post<ReportResponse>("core/api/reports", data);
+  }
 }
+
 
 export const itemService = new ItemService();
 
@@ -294,6 +307,18 @@ export const toggleItemFavorite = createAsyncThunk<
     return { itemId, isFavorited: !isFavorited };
   } catch (error) {
     return rejectWithValue(getErrorMessage(error, "Không thể cập nhật trạng thái yêu thích"));
+  }
+});
+
+export const reportItemThunk = createAsyncThunk<
+  ReportResponse,
+  { data: ReportRequest; images?: File[] },
+  { rejectValue: string }
+>("items/reportItem", async ({ data, images }, { rejectWithValue }) => {
+  try {
+    return await itemService.reportItem(data, images);
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error, "Không thể báo cáo bài viết"));
   }
 });
 
@@ -449,6 +474,17 @@ const itemsSlice = createSlice({
       .addCase(toggleItemFavorite.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Không thể cập nhật trạng thái yêu thích";
+      })
+      .addCase(reportItemThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(reportItemThunk.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(reportItemThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Không thể báo cáo bài viết";
       });
   },
 });

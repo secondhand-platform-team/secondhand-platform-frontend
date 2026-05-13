@@ -14,6 +14,7 @@ const initialState: ItemState = {
   error: null,
 };
 
+// 1. Thunk lấy danh sách
 export const fetchAllItems = createAsyncThunk<
   ItemResponse[],
   void,
@@ -29,12 +30,29 @@ export const fetchAllItems = createAsyncThunk<
   }
 });
 
+// 2. Thunk xóa item (Tương ứng với @DeleteMapping("/{itemId}"))
+export const deleteItem = createAsyncThunk<
+  string, // Trả về itemId đã xóa để cập nhật UI
+  string, // Tham số truyền vào là itemId
+  { rejectValue: string }
+>("item/deleteItem", async (itemId, { rejectWithValue }) => {
+  try {
+    await http.delete(`/items/${itemId}`, {
+      headers: { "X-Service": "core" },
+    });
+    return itemId; // Trả về ID để lọc khỏi danh sách trong state
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Không thể xóa tin đăng");
+  }
+});
+
 const itemSlice = createSlice({
   name: "item",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Xử lý fetchAllItems
       .addCase(fetchAllItems.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -46,6 +64,21 @@ const itemSlice = createSlice({
       .addCase(fetchAllItems.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Lỗi";
+      })
+
+      // 3. Xử lý deleteItem
+      .addCase(deleteItem.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteItem.fulfilled, (state, action) => {
+        state.loading = false;
+        // Lọc bỏ item đã xóa khỏi state.items để UI cập nhật ngay lập tức
+        // ItemResponse sử dụng `itemId` làm khóa, không phải `id`.
+        state.items = state.items.filter((item) => item.itemId !== action.payload);
+      })
+      .addCase(deleteItem.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Lỗi khi xóa";
       });
   },
 });

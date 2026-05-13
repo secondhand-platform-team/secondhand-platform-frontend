@@ -49,7 +49,7 @@ class HttpClient {
   ) {
     // Determine service prefix from X-Service header
     const service = options?.headers?.["X-Service"];
-    const prefix = service ? SERVICE_PREFIX[service] || "" : "/auth";
+    const prefix = service ? SERVICE_PREFIX[service] || "" : "/core";
 
     const url = endpoint.startsWith("http")
       ? endpoint
@@ -104,7 +104,7 @@ class HttpClient {
    */
   private async tryRefreshToken(): Promise<boolean> {
     try {
-      const refreshUrl = `${this.baseUrl}/auth/api/refresh`;
+      const refreshUrl = `${this.baseUrl}/core/api/refresh`;
       const res = await fetch(refreshUrl, {
         method: "POST",
         credentials: "include",

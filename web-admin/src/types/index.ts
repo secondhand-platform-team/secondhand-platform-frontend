@@ -2,3 +2,4 @@
 export * from "./user.type";
 export * from "./item.type";
 export * from "./category.type";
+export * from "./report.type";

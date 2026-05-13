@@ -21,6 +21,7 @@ import {
 import { useAppDispatch, useAppSelector } from "../../stores/hooks";
 import { fetchAllItems } from "../../stores/slices/item.slice";
 import { fetchAllCategories } from "../../stores/slices/category.slice";
+import { fetchPendingCount } from "../../stores/slices/report.slice";
 import type { ItemResponse } from "../../types";
 
 const { Title, Text } = Typography;
@@ -51,19 +52,29 @@ const DashboardPage = () => {
   const dispatch = useAppDispatch();
   const { items, loading } = useAppSelector((s) => s.item);
   const { categories } = useAppSelector((s) => s.category);
+  const { pendingCount } = useAppSelector((s) => s.report);
 
   useEffect(() => {
     dispatch(fetchAllItems());
     dispatch(fetchAllCategories());
+    dispatch(fetchPendingCount());
   }, [dispatch]);
 
   // Tính metrics từ items
   const metrics = useMemo(() => {
     const active = items.filter((i) => i.status === "ACTIVE").length;
-    const sold = items.filter((i) => i.status === "SOLD" || i.status === "GIFTED").length;
+    const sold = items.filter(
+      (i) => i.status === "SOLD" || i.status === "GIFTED",
+    ).length;
     const flagged = items.filter((i) => i.status === "FLAGGED").length;
-    return { total: items.length, active, sold, flagged };
-  }, [items]);
+    return {
+      total: items.length,
+      active,
+      sold,
+      flagged,
+      pendingReports: pendingCount,
+    };
+  }, [items, pendingCount]);
 
   // Tính danh mục phổ biến
   const categoryStats = useMemo(() => {
@@ -86,14 +97,19 @@ const DashboardPage = () => {
   const typeCounts = useMemo(() => {
     const sell = items.filter((i) => i.transactionType === "SELL").length;
     const gift = items.filter((i) => i.transactionType === "GIFT").length;
-    const exchange = items.filter((i) => i.transactionType === "EXCHANGE").length;
+    const exchange = items.filter(
+      (i) => i.transactionType === "EXCHANGE",
+    ).length;
     return { sell, gift, exchange };
   }, [items]);
 
   // Tin đăng gần đây
   const recentItems = useMemo(() => {
     return [...items]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
       .slice(0, 5);
   }, [items]);
 
@@ -104,9 +120,13 @@ const DashboardPage = () => {
       key: "title",
       render: (_: any, record: ItemResponse) => (
         <div>
-          <Text strong style={{ fontSize: 13 }}>{record.title}</Text>
+          <Text strong style={{ fontSize: 13 }}>
+            {record.title}
+          </Text>
           <br />
-          <Text type="secondary" style={{ fontSize: 11 }}>{record.userId?.slice(0, 8)}...</Text>
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            {record.userId?.slice(0, 8)}...
+          </Text>
         </div>
       ),
     },
@@ -187,9 +207,13 @@ const DashboardPage = () => {
           <Card>
             <Statistic
               title="Vi phạm chờ xử lý"
-              value={metrics.flagged}
+              value={metrics.pendingReports}
               prefix={<WarningOutlined style={{ color: "#D85A30" }} />}
-              styles={{ content: { color: metrics.flagged > 0 ? "#D85A30" : undefined } }}
+              styles={{
+                content: {
+                  color: metrics.pendingReports > 0 ? "#D85A30" : undefined,
+                },
+              }}
             />
           </Card>
         </Col>
@@ -198,33 +222,50 @@ const DashboardPage = () => {
       {/* Row 2: Chart + Categories */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={14}>
-          <Card
-            title="Phân loại giao dịch"
-            extra={<a>Chi tiết →</a>}
-          >
+          <Card title="Phân loại giao dịch" extra={<a>Chi tiết →</a>}>
             <Row gutter={16}>
               <Col span={8}>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 28, fontWeight: 600, color: "#d4a017" }}>{typeCounts.sell}</div>
+                  <div
+                    style={{ fontSize: 28, fontWeight: 600, color: "#d4a017" }}
+                  >
+                    {typeCounts.sell}
+                  </div>
                   <Tag color="gold">Bán</Tag>
                 </div>
               </Col>
               <Col span={8}>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 28, fontWeight: 600, color: "#7F77DD" }}>{typeCounts.gift}</div>
+                  <div
+                    style={{ fontSize: 28, fontWeight: 600, color: "#7F77DD" }}
+                  >
+                    {typeCounts.gift}
+                  </div>
                   <Tag color="purple">Tặng</Tag>
                 </div>
               </Col>
               <Col span={8}>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 28, fontWeight: 600, color: "#1D9E75" }}>{typeCounts.exchange}</div>
+                  <div
+                    style={{ fontSize: 28, fontWeight: 600, color: "#1D9E75" }}
+                  >
+                    {typeCounts.exchange}
+                  </div>
                   <Tag color="cyan">Trao đổi</Tag>
                 </div>
               </Col>
             </Row>
 
             {/* Mini bar chart using Ant Progress */}
-            <div style={{ marginTop: 16, display: "flex", gap: 8, alignItems: "flex-end", height: 100 }}>
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                gap: 8,
+                alignItems: "flex-end",
+                height: 100,
+              }}
+            >
               {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((day, i) => {
                 const h = [50, 76, 62, 86, 68, 42, 35][i];
                 return (
@@ -238,7 +279,9 @@ const DashboardPage = () => {
                         transition: "height 0.3s",
                       }}
                     />
-                    <Text type="secondary" style={{ fontSize: 11 }}>{day}</Text>
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                      {day}
+                    </Text>
                   </div>
                 );
               })}
@@ -251,7 +294,13 @@ const DashboardPage = () => {
               {categoryStats.length > 0 ? (
                 categoryStats.map((cat, i) => (
                   <div key={cat.name}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: 4,
+                      }}
+                    >
                       <Space>
                         <div
                           style={{

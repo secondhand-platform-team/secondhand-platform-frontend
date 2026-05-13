@@ -21,24 +21,57 @@ const { Sider } = Layout;
 const { Text } = Typography;
 
 const menuItems = [
-  { type: "group" as const, label: "TỔNG QUAN", key: "g1", children: [
-    { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
-    { key: "/analytics", icon: <BarChartOutlined />, label: "Phân tích & Báo cáo" },
-  ]},
-  { type: "group" as const, label: "QUẢN LÝ", key: "g2", children: [
-    { key: "/users", icon: <UserOutlined />, label: "Người dùng" },
-    { key: "/items", icon: <FileTextOutlined />, label: "Tin đăng" },
-    { key: "/transactions", icon: <SwapOutlined />, label: "Giao dịch" },
-    { key: "/payments", icon: <CreditCardOutlined />, label: "Thanh toán" },
-  ]},
-  { type: "group" as const, label: "KIỂM DUYỆT", key: "g3", children: [
-    { key: "/reports", icon: <WarningOutlined />, label: "Báo cáo vi phạm" },
-    { key: "/approvals", icon: <CheckCircleOutlined />, label: "Phê duyệt tin" },
-    { key: "/categories", icon: <AppstoreOutlined />, label: "Danh mục" },
-  ]},
-  { type: "group" as const, label: "HỆ THỐNG", key: "g4", children: [
-    { key: "/settings", icon: <SettingOutlined />, label: "Cài đặt" },
-  ]},
+  {
+    type: "group" as const,
+    label: "TỔNG QUAN",
+    key: "g1",
+    children: [
+      { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
+      {
+        key: "/analytics",
+        icon: <BarChartOutlined />,
+        label: "Phân tích & Báo cáo",
+      },
+    ],
+  },
+  {
+    type: "group" as const,
+    label: "QUẢN LÝ",
+    key: "g2",
+    children: [
+      { key: "/users", icon: <UserOutlined />, label: "Người dùng" },
+      { key: "/items", icon: <FileTextOutlined />, label: "Tin đăng" },
+      { key: "/transactions", icon: <SwapOutlined />, label: "Giao dịch" },
+      { key: "/payments", icon: <CreditCardOutlined />, label: "Thanh toán" },
+    ],
+  },
+  {
+    type: "group" as const,
+    label: "KIỂM DUYỆT",
+    key: "g3",
+    children: [
+      { key: "/reports", icon: <WarningOutlined />, label: "Báo cáo vi phạm" },
+      {
+        key: "/my-reports",
+        icon: <FileTextOutlined />,
+        label: "Báo cáo của tôi",
+      },
+      {
+        key: "/approvals",
+        icon: <CheckCircleOutlined />,
+        label: "Phê duyệt tin",
+      },
+      { key: "/categories", icon: <AppstoreOutlined />, label: "Danh mục" },
+    ],
+  },
+  {
+    type: "group" as const,
+    label: "HỆ THỐNG",
+    key: "g4",
+    children: [
+      { key: "/settings", icon: <SettingOutlined />, label: "Cài đặt" },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -121,8 +154,6 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           style={{ border: "none" }}
         />
       </div>
-
-      
     </Sider>
   );
 };
