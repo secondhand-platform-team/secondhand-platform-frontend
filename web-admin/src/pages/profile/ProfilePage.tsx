@@ -12,7 +12,6 @@ import {
   Form,
   Input,
   DatePicker,
-  Select,
   Divider,
   Space,
   Tag,
@@ -53,7 +52,6 @@ const ProfilePage = () => {
   const toggleTheme = useThemeToggle();
   const [editing, setEditing] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
-  const [editingGender, setEditingGender] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState("");
@@ -103,7 +101,6 @@ const ProfilePage = () => {
 
   const handleCancelEdit = () => {
     setEditing(false);
-    setEditingGender(false);
     form.resetFields();
   };
 

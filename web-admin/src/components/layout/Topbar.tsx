@@ -81,7 +81,7 @@ const Topbar = ({ title = "Dashboard" }: TopbarProps) => {
       }}
     >
       <Text strong style={{ fontSize: 18, fontFamily: "'Fraunces', serif" }}>
-        {/* {title} */}
+        {title}
       </Text>
 
       <Space size="middle">
