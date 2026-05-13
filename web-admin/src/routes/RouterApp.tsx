@@ -6,6 +6,9 @@ import DashboardPage from "../pages/dashboard/DashboardPage";
 import ProfilePage from "../pages/profile/ProfilePage";
 import ReportPage from "../pages/reports/ReportPage";
 import MyReportsPage from "../pages/reports/MyReportsPage";
+import AnalyticsPage from "../pages/analytics/AnalyticsPage";
+import UsersPage from "../pages/users/UsersPage";
+import CategoriesPage from "../pages/categories/CategoriesPage";
 
 const router = createBrowserRouter([
   {
@@ -21,15 +24,15 @@ const router = createBrowserRouter([
         children: [
           { path: "dashboard", element: <DashboardPage /> },
           { path: "profile", element: <ProfilePage /> },
-          { path: "analytics", element: <DashboardPage /> },
-          { path: "users", element: <DashboardPage /> },
+          { path: "analytics", element: <AnalyticsPage /> },
+          { path: "users", element: <UsersPage /> },
           { path: "items", element: <DashboardPage /> },
           { path: "transactions", element: <DashboardPage /> },
           { path: "payments", element: <DashboardPage /> },
           { path: "reports", element: <ReportPage /> },
           { path: "my-reports", element: <MyReportsPage /> },
           { path: "approvals", element: <DashboardPage /> },
-          { path: "categories", element: <DashboardPage /> },
+          { path: "categories", element: <CategoriesPage /> },
           { path: "settings", element: <DashboardPage /> },
         ],
       },
