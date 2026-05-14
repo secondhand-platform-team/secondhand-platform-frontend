@@ -91,9 +91,9 @@ const LoginPageInner = () => {
               />
             </Form.Item>
 
-            <Form.Item name="remember" valuePropName="checked">
+            {/* <Form.Item name="remember" valuePropName="checked">
               <Checkbox>Ghi nhớ phiên đăng nhập</Checkbox>
-            </Form.Item>
+            </Form.Item> */}
 
             <Button
               type="primary"

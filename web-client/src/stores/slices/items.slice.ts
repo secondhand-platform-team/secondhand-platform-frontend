@@ -145,15 +145,19 @@ class ItemService {
   }
 
   async reportItem(data: ReportRequest, images?: File[]) {
-    if (images && images.length > 0) {
+    if (data instanceof FormData) {
       const formData = new FormData();
-      formData.append("report", new Blob([JSON.stringify(data)], { type: "application/json" }));
-      images.forEach((image) => {
-        formData.append("images", image);
+      formData.append("reason", data.get("reason") as string);
+      formData.append("description", data.get("description") as string);
+      formData.append("targetId", data.get("targetId") as string);
+      formData.append("targetType", data.get("targetType") as string);
+      const evidenceFiles = data.getAll("evidenceFiles");
+      evidenceFiles.forEach((file) => {
+        formData.append("evidenceFiles", file);
       });
       return http.post<ReportResponse>("core/api/reports", formData);
     }
-    return http.post<ReportResponse>("core/api/reports", data);
+    return http.post<ReportResponse>("core/api/reports", data as any);
   }
 }
 

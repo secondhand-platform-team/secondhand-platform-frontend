@@ -48,12 +48,20 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifOpen]);
 
+  const [mounted, setMounted] = useState(false);
+  
+  // Đảm bảo UI khớp giữa Server và Client để tránh Hydration error
   useEffect(() => {
-    if (isAuth) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isAuth && mounted) {
       dispatch(fetchMyCart());
     }
-  }, [isAuth, dispatch]);
-  const showAuthenticatedUi = isAuth && Boolean(user);
+  }, [isAuth, dispatch, mounted]);
+
+  const showAuthenticatedUi = mounted && isAuth && Boolean(user);
   const displayName = user?.fullName?.trim() || user?.email || "Người dùng";
   const router = useRouter();
   const pathname = usePathname();

@@ -32,18 +32,79 @@ export default function FeaturedProductsSection() {
   const currentUserId = useAppSelector((state) => state.auth.user?.userId);
 
   useEffect(() => {
-    itemService.getFeaturedItems(8)
-      .then(setItems)
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
-  }, []);
+    const fetchAIRecommendations = async () => {
+      try {
+        let recentItemNames: string[] = [];
+        let cartItemIds: string[] = [];
+        
+        if (currentUserId) {
+          const headers = { "Authorization": `Bearer ${localStorage.getItem("access_token")}` };
+          
+          // 1. Lấy lịch sử xem của user để làm "thói quen"
+          try {
+            const historyRes = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/core/api/view-history/recent`, { headers });
+            if (historyRes.ok) {
+              const historyData = await historyRes.json();
+              recentItemNames = (Array.isArray(historyData) ? historyData : [])
+                .map((h: any) => h.item?.title)
+                .filter(Boolean);
+            }
+          } catch (e) {}
+
+          // 2. Lấy giỏ hàng của user
+          try {
+            const cartRes = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/order/api/carts/me`, { headers });
+            if (cartRes.ok) {
+              const cartData = await cartRes.json();
+              if (cartData && Array.isArray(cartData.cartItems)) {
+                cartItemIds = cartData.cartItems.map((c: any) => c.itemId).filter(Boolean);
+              }
+            }
+          } catch (e) {}
+        }
+
+        // 3. Gọi AI-Service để lấy gợi ý
+        const aiRes = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/ai/recommend`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            recent_items: recentItemNames,
+            cart_item_ids: cartItemIds,
+            limit: 8
+          })
+        });
+
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          const recommendedItems = (Array.isArray(aiData.items) ? aiData.items : []).map((item: any) => ({
+            ...item,
+            images: item.itemImageList || [{ imageUrl: item.image_url }],
+            favoriteCount: item.favoriteCount ?? 0,
+            isFavorited: item.isFavorited ?? false,
+          }));
+          setItems(recommendedItems);
+        } else {
+          const fallbackItems = await itemService.getFeaturedItems(4);
+          setItems(fallbackItems);
+        }
+      } catch (err) {
+        const fallbackItems = await itemService.getFeaturedItems(4);
+        setItems(fallbackItems);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAIRecommendations();
+  }, [currentUserId]);
 
   return (
     <section className="bg-primary/5 py-12 dark:bg-primary/5" id="featured">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-            Sản phẩm nổi bật
+            Gợi ý cho bạn ✨
           </h2>
           <button
             onClick={() => router.push("/search")}
