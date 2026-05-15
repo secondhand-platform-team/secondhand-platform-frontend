@@ -50,48 +50,63 @@ const AnalyticsPage = () => {
   // Fetch metrics and dashboard details
   const fetchAnalytics = async () => {
     try {
-      // Fetch user metrics from auth-service admin stats
+      // Fetch user metrics from auth-service
       const userStats = await http.get("/admin/statistics", {
         headers: { "X-Service": "auth" },
       });
 
-      // Construct a very high fidelity dashboard statistics object
+      // Fetch order/revenue metrics from order-service
+      const orderStats = await http.get("/orders/admin/statistics", {
+        headers: { "X-Service": "order" },
+      });
+
+      // Process daily revenue data for the chart
+      const processedRevenueData = orderStats.dailyRevenue?.map((item: any[]) => ({
+        label: new Date(item[0]).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }),
+        value: item[1] || 0
+      })) || [];
+
+      // Process top sellers
+      const processedTopSellers = orderStats.topSellers?.map((item: any[]) => ({
+        sellerId: String(item[0]),
+        fullName: "Người bán " + String(item[0]).substring(0, 5),
+        email: "ID: " + String(item[0]).substring(0, 8),
+        revenue: Number(item[1]),
+        ordersCount: Number(item[2])
+      })) || [];
+
+      // Process top products
+      const processedTopProducts = orderStats.topProducts?.map((item: any[]) => ({
+        itemId: String(item[0]),
+        title: String(item[1]),
+        price: 0,
+        views: 0,
+        ordersCount: Number(item[2])
+      })) || [];
+
       setStats({
-        totalRevenue: 452900000,
-        revenueGrowth: 18.4,
-        totalOrders: 148,
-        orderGrowth: 12.3,
-        totalUsers: userStats.totalUsers || 24,
-        userGrowth: 15.6,
-        refundRate: 1.2,
-        refundChange: -0.4,
-        revenueData: [
-          { label: "Tuần 1", value: 92000000 },
-          { label: "Tuần 2", value: 120000000 },
-          { label: "Tuần 3", value: 110000000 },
-          { label: "Tuần 4", value: 130900000 },
+        totalRevenue: orderStats.totalRevenue || 0,
+        revenueGrowth: 0, // Need historical data for growth
+        totalOrders: orderStats.totalOrders || 0,
+        orderGrowth: 0,
+        totalUsers: userStats.totalUsers || 0,
+        userGrowth: 0,
+        refundRate: 0,
+        refundChange: 0,
+        revenueData: processedRevenueData.length > 0 ? processedRevenueData : [
+          { label: "N/A", value: 0 }
         ],
         categories: [
-          { name: "Điện thoại & Máy tính bảng", value: 45, color: "#1890ff" },
-          { name: "Laptop & Thiết bị IT", value: 25, color: "#2f54eb" },
-          { name: "Thời trang & Phụ kiện", value: 15, color: "#722ed1" },
-          { name: "Đồ gia dụng", value: 15, color: "#fa8c16" },
+          { name: "Điện tử", value: 40, color: "#1890ff" },
+          { name: "Phương tiện", value: 30, color: "#2f54eb" },
+          { name: "Khác", value: 30, color: "#fa8c16" },
         ],
-        topSellers: [
-          { sellerId: "1", fullName: "Nguyễn Văn Hùng", email: "hungnv@gmail.com", revenue: 45000000, ordersCount: 12 },
-          { sellerId: "2", fullName: "Lê Thị Thanh", email: "thanhle@gmail.com", revenue: 32000000, ordersCount: 8 },
-          { sellerId: "3", fullName: "Trần Minh Quân", email: "quantm@gmail.com", revenue: 29000000, ordersCount: 7 },
-          { sellerId: "4", fullName: "Phạm Hồng Sơn", email: "sonph@gmail.com", revenue: 21000000, ordersCount: 5 },
-        ],
-        topProducts: [
-          { itemId: "1", title: "iPhone 14 Pro Max 256GB Gold VN/A", price: 21500000, views: 2450, ordersCount: 6 },
-          { itemId: "2", title: "MacBook Air M1 2020 Gray 8GB/256GB", price: 15900000, views: 1890, ordersCount: 4 },
-          { itemId: "3", title: "PlayStation 5 Standard Edition", price: 11200000, views: 1420, ordersCount: 3 },
-          { itemId: "4", title: "Bàn Phím Cơ Keychron K2 V2 Blue Switch", price: 1650000, views: 920, ordersCount: 8 },
-        ]
+        topSellers: processedTopSellers,
+        topProducts: processedTopProducts
       });
     } catch (error) {
-      message.error("Lỗi khi tải dữ liệu phân tích hệ thống");
+      console.error(error);
+      message.error("Lỗi khi tải dữ liệu phân tích hệ thống thực tế");
     }
   };
 
@@ -242,7 +257,8 @@ const AnalyticsPage = () => {
           >
             <div style={{ height: 280, display: "flex", alignItems: "flex-end", justifyContent: "space-around", padding: "16px 0" }}>
               {stats.revenueData.map((data: any, idx: number) => {
-                const heightPercent = (data.value / 140000000) * 100;
+                const maxVal = Math.max(...stats.revenueData.map((d: any) => d.value), 1000000);
+                const heightPercent = (data.value / maxVal) * 80; // Scale to 80% max
                 return (
                   <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "15%" }}>
                     <Text strong style={{ fontSize: 11, marginBottom: 8, color: "#1890ff" }}>
