@@ -4,6 +4,7 @@ import { Dropdown, message as antdMessage, Badge, App } from "antd";
 import {
   Bell,
   ChevronDown,
+  ClipboardList,
   FileText,
   Heart,
   KeyRound,
@@ -113,6 +114,11 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
       key: "customers",
       label: "Quản lý khách hàng",
       icon: <Users size={16} />,
+    },
+    {
+      key: "orders",
+      label: "Lịch sử đơn hàng",
+      icon: <ClipboardList size={16} />,
     },
     {
       type: "divider" as const,
@@ -328,6 +334,9 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                     } else if (key === "customers") {
                       router.push("/dashboard/customers");
                       setOpen(false);
+                    } else if (key === "orders") {
+                      router.push("/dashboard/orders");
+                      setOpen(false);
                     } else if (key === "settings") {
                       router.push("/dashboard/profile");
                       setOpen(false);
@@ -386,6 +395,8 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                       router.push("/dashboard");
                     } else if (key === "customers") {
                       router.push("/dashboard/customers");
+                    } else if (key === "orders") {
+                      router.push("/dashboard/orders");
                     } else if (key === "settings") {
                       router.push("/dashboard/profile");
                     } else if (key === "password") {
