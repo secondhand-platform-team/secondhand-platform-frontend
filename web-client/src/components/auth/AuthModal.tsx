@@ -26,8 +26,10 @@ import {
   clearAuthError,
   loginUser,
   registerUser,
+  loginWithGoogle,
 } from "@/stores/slices/auth.slice";
 import { FaFacebookF } from "react-icons/fa";
+import { GoogleLogin } from "@react-oauth/google";
 
 type AuthModalProps = {
   open: boolean;
@@ -121,6 +123,12 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       messageApi.success("Đăng ký thành công!");
       setMode("login");
     } catch {}
+  };
+
+  const handleGoogleSuccess = (credentialResponse: any) => {
+    if (credentialResponse.credential) {
+      dispatch(loginWithGoogle(credentialResponse.credential));
+    }
   };
 
   return (
@@ -395,15 +403,15 @@ items-center justify-center p-12 overflow-hidden">
 
                         <div className="flex gap-3">
 
-                      <Button
-                        className="flex-1 h-11 !rounded-xl flex items-center justify-center gap-2 border border-slate-200 bg-white"
-                      >
-                        <img
-                          src="https://www.svgrepo.com/show/475656/google-color.svg"
-                          className="w-5"
-                        />
-                        Google
-                      </Button>
+                        <div className="flex-1 overflow-hidden">
+                          <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => messageApi.error("Đăng nhập Google thất bại")}
+                            theme="outline"
+                            size="large"
+                            width="180"
+                          />
+                        </div>
                       <Button
                         className="flex-1 h-11 !rounded-xl flex items-center justify-center gap-2 
                         !border-none !text-white !bg-[#1877F2] hover:!bg-[#166fe5]"

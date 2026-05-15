@@ -82,6 +82,20 @@ export const loginUser = createAsyncThunk<
 	}
 });
 
+export const loginWithGoogle = createAsyncThunk<
+	UserType,
+	string,
+	{ rejectValue: string }
+>("auth/loginWithGoogle", async (idToken, { rejectWithValue }) => {
+	try {
+		await http.post("/auth/api/login/google", { idToken });
+		const profileResponse = await http.get<UserProfileApiResponseType>("/auth/api/profile");
+		return mapProfileResponseToUser(profileResponse);
+	} catch (error) {
+		return rejectWithValue(getErrorMessage(error, "Đăng nhập Google thất bại"));
+	}
+});
+
 export const logoutUser = createAsyncThunk<void, void, { rejectValue: string }>(
 	"auth/logoutUser",
 	async (_, { rejectWithValue }) => {
@@ -145,6 +159,24 @@ export const authSlice = createSlice({
 				state.user = null;
 				state.authProvider = null;
 				state.error = action.payload || "Đăng nhập thất bại";
+			})
+			.addCase(loginWithGoogle.pending, (state) => {
+				state.loading = true;
+				state.error = null;
+			})
+			.addCase(loginWithGoogle.fulfilled, (state, action) => {
+				state.loading = false;
+				state.isAuth = true;
+				state.user = action.payload;
+				state.authProvider = "email"; // Or "google" if we want to track
+				state.error = null;
+			})
+			.addCase(loginWithGoogle.rejected, (state, action) => {
+				state.loading = false;
+				state.isAuth = false;
+				state.user = null;
+				state.authProvider = null;
+				state.error = action.payload || "Đăng nhập Google thất bại";
 			})
 			.addCase(registerUser.pending, (state) => {
 				state.loading = true;
