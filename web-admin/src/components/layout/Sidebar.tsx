@@ -13,6 +13,7 @@ import {
   SettingOutlined,
   LeftOutlined,
   RightOutlined,
+  ShoppingCartOutlined,
 } from "@ant-design/icons";
 import { useAppSelector } from "../../stores/hooks";
 import { ReLifeLogo } from "../../assets/logo/Logo";
@@ -40,6 +41,7 @@ const menuItems = [
     children: [
       { key: "/users", icon: <UserOutlined />, label: "Người dùng" },
       { key: "/items", icon: <FileTextOutlined />, label: "Tin đăng" },
+      { key: "/orders", icon: <ShoppingCartOutlined />, label: "Đơn hàng" },
       { key: "/transactions", icon: <SwapOutlined />, label: "Giao dịch" },
       { key: "/payments", icon: <CreditCardOutlined />, label: "Thanh toán" },
     ],

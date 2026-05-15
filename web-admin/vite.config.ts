@@ -10,10 +10,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/auth": { target: KONG_URL, changeOrigin: true },
-      "/core": { target: KONG_URL, changeOrigin: true },
-      "/order": { target: KONG_URL, changeOrigin: true },
-      "/chat":  { target: KONG_URL, changeOrigin: true },
+      "/auth/api": { target: KONG_URL, changeOrigin: true },
+      "/core/api": { target: KONG_URL, changeOrigin: true },
+      "/order/api": { target: KONG_URL, changeOrigin: true },
+      "/chat/api":  { target: KONG_URL, changeOrigin: true },
     },
   },
 });
