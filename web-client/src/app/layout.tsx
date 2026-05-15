@@ -5,10 +5,9 @@ import { ReduxProvider } from "@/stores/provider";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ConfigProvider, App } from "antd";
 import NextTopLoader from "nextjs-toploader";
-// import GoogleAuthProviderWrapper from "@/components/auth/GoogleAuthProvider";
-// import AntdConfigProvider from "@/components/common/AntdConfigProvider";
-// import AuthTokenSync from "@/components/auth/AuthTokenSync";
-// import { ChatSocketProvider } from "@/contexts/ChatSocketContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 const bodyFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -48,20 +47,22 @@ export default function RootLayout({
               },
             }}
           >
-            <App>
-              <NextTopLoader
-                color="#22c55e"
-                showSpinner={false}
-                height={3}
-                crawlSpeed={200}
-                speed={200}
-                easing="ease"
-                shadow="0 0 10px #22c55e,0 0 5px #22c55e"
-              />
-              <ReduxProvider>
-                {children}
-              </ReduxProvider>
-            </App>
+            <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+              <App>
+                <NextTopLoader
+                  color="#22c55e"
+                  showSpinner={false}
+                  height={3}
+                  crawlSpeed={200}
+                  speed={200}
+                  easing="ease"
+                  shadow="0 0 10px #22c55e,0 0 5px #22c55e"
+                />
+                <ReduxProvider>
+                  {children}
+                </ReduxProvider>
+              </App>
+            </GoogleOAuthProvider>
           </ConfigProvider>
         </AntdRegistry>
       </body>
