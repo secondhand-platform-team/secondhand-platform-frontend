@@ -53,11 +53,13 @@ const AnalyticsPage = () => {
       // Fetch user metrics from auth-service
       const userStats = await http.get("/admin/statistics", {
         headers: { "X-Service": "auth" },
+        params: { timeframe }
       });
 
       // Fetch order/revenue metrics from order-service
       const orderStats = await http.get("/orders/admin/statistics", {
         headers: { "X-Service": "order" },
+        params: { timeframe }
       });
 
       // Process daily revenue data for the chart

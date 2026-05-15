@@ -3,6 +3,7 @@ import envConfig from "../config";
 type HttpOptions = {
   headers?: Record<string, string>;
   contentType?: string;
+  params?: Record<string, any>;
 };
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -51,9 +52,23 @@ class HttpClient {
     const service = options?.headers?.["X-Service"];
     const prefix = service ? SERVICE_PREFIX[service] || "" : "/core";
 
-    const url = endpoint.startsWith("http")
+    let url = endpoint.startsWith("http")
       ? endpoint
       : `${this.baseUrl}${prefix}/api${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+
+    // Append query parameters if present
+    if (options?.params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+      const queryString = searchParams.toString();
+      if (queryString) {
+        url += (url.includes("?") ? "&" : "?") + queryString;
+      }
+    }
 
     const headers = this.buildHeaders(options, data);
     const config: RequestInit = {
