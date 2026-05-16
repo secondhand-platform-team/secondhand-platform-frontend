@@ -74,7 +74,9 @@ export default function PostNewPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { isAuth } = useAppSelector((state) => state.auth);
-  const { categories, myPosts, myFavorites, loading } = useAppSelector((state) => state.items);
+  const { categories, myPosts, myFavorites, loading } = useAppSelector(
+    (state) => state.items,
+  );
   const [activeTab, setActiveTab] = useState<ManageTab>("create");
   const [freePost, setFreePost] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -161,7 +163,9 @@ export default function PostNewPage() {
     form.setFieldValue("ward", undefined);
     setWards([]);
 
-    const selectedProvince = provinces.find((province) => province.name === cityName);
+    const selectedProvince = provinces.find(
+      (province) => province.name === cityName,
+    );
     if (!selectedProvince) {
       setDistricts([]);
       return;
@@ -169,7 +173,8 @@ export default function PostNewPage() {
 
     setLoadingDistrict(true);
     try {
-      const provinceWithDistricts = await provinceService.getProvinceWithDistricts(selectedProvince.code);
+      const provinceWithDistricts =
+        await provinceService.getProvinceWithDistricts(selectedProvince.code);
       setDistricts(provinceWithDistricts.districts || []);
     } catch {
       setDistricts([]);
@@ -181,14 +186,18 @@ export default function PostNewPage() {
 
   const onDistrictChange = async (districtName: string) => {
     form.setFieldValue("ward", undefined);
-    const selectedDistrictData = districts.find((district) => district.name === districtName);
+    const selectedDistrictData = districts.find(
+      (district) => district.name === districtName,
+    );
     if (!selectedDistrictData) {
       setWards([]);
       return;
     }
 
     try {
-      const districtWithWards = await provinceService.getDistrictWithWards(selectedDistrictData.code);
+      const districtWithWards = await provinceService.getDistrictWithWards(
+        selectedDistrictData.code,
+      );
       setWards(districtWithWards.wards || []);
     } catch {
       setWards([]);
@@ -217,7 +226,12 @@ export default function PostNewPage() {
     return false;
   };
 
-  const fullAddress = [selectedAddress, selectedWard, selectedDistrict, selectedCity]
+  const fullAddress = [
+    selectedAddress,
+    selectedWard,
+    selectedDistrict,
+    selectedCity,
+  ]
     .filter(Boolean)
     .join(", ");
 
@@ -277,7 +291,9 @@ export default function PostNewPage() {
       setActiveTab("posts");
       dispatch(fetchMyItems());
     } catch (error) {
-      message.error(error instanceof Error ? error.message : "Không thể đăng tin");
+      message.error(
+        error instanceof Error ? error.message : "Không thể đăng tin",
+      );
     }
   };
 
@@ -286,7 +302,9 @@ export default function PostNewPage() {
       await dispatch(updateItemStatusThunk({ itemId, status })).unwrap();
       message.success("Đã cập nhật trạng thái tin");
     } catch (error) {
-      message.error(error instanceof Error ? error.message : "Cập nhật thất bại");
+      message.error(
+        error instanceof Error ? error.message : "Cập nhật thất bại",
+      );
     }
   };
 
@@ -295,16 +313,22 @@ export default function PostNewPage() {
       await dispatch(deleteItemThunk(itemId)).unwrap();
       message.success("Đã xóa tin đăng");
     } catch (error) {
-      message.error(error instanceof Error ? error.message : "Xóa tin thất bại");
+      message.error(
+        error instanceof Error ? error.message : "Xóa tin thất bại",
+      );
     }
   };
 
   const onRemoveFavorite = async (itemId: string) => {
     try {
-      await dispatch(toggleItemFavorite({ itemId, isFavorited: true })).unwrap();
+      await dispatch(
+        toggleItemFavorite({ itemId, isFavorited: true }),
+      ).unwrap();
       message.success("Đã bỏ yêu thích");
     } catch (error) {
-      message.error(error instanceof Error ? error.message : "Không thể bỏ yêu thích");
+      message.error(
+        error instanceof Error ? error.message : "Không thể bỏ yêu thích",
+      );
     }
   };
 
@@ -339,7 +363,9 @@ export default function PostNewPage() {
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Typography.Text strong>{record.title}</Typography.Text>
-          <Typography.Text type="secondary">{record.categoryId}</Typography.Text>
+          <Typography.Text type="secondary">
+            {record.categoryId}
+          </Typography.Text>
         </Space>
       ),
     },
@@ -353,7 +379,9 @@ export default function PostNewPage() {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      render: (status: string) => <AntTag color={statusColor[status] || "default"}>{status}</AntTag>,
+      render: (status: string) => (
+        <AntTag color={statusColor[status] || "default"}>{status}</AntTag>
+      ),
     },
     {
       title: "Cập nhật trạng thái",
@@ -407,11 +435,16 @@ export default function PostNewPage() {
   };
 
   return (
-    <div style={{ background: PAGE_BG }} className="min-h-[calc(100vh-73px)] px-4 py-6 md:px-6 lg:px-8">
+    <div
+      style={{ background: PAGE_BG }}
+      className="min-h-[calc(100vh-73px)] px-4 py-6 md:px-6 lg:px-8"
+    >
       <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 lg:flex-row">
         <aside className="w-full lg:w-[250px] lg:shrink-0">
           <div style={blockStyle}>
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Quản lý</p>
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+              Quản lý
+            </p>
             <div className="space-y-2">
               <button
                 onClick={() => setActiveTab("overview")}
@@ -451,11 +484,15 @@ export default function PostNewPage() {
             className="mt-4 rounded-xl border px-3 py-4"
             style={{ background: BRAND_GREEN_SOFT, borderColor: "#D5EAD9" }}
           >
-            <p className="mb-2 flex items-center gap-1 text-sm font-semibold" style={{ color: BRAND_GREEN_DARK }}>
+            <p
+              className="mb-2 flex items-center gap-1 text-sm font-semibold"
+              style={{ color: BRAND_GREEN_DARK }}
+            >
               <CircleHelp size={14} /> Mẹo đăng tin nhanh
             </p>
             <p className="text-xs leading-relaxed text-slate-600">
-              Sử dụng hình ảnh rõ nét và mô tả chi tiết giúp món đồ của bạn được tìm thấy nhanh hơn 40%.
+              Sử dụng hình ảnh rõ nét và mô tả chi tiết giúp món đồ của bạn được
+              tìm thấy nhanh hơn 40%.
             </p>
           </div>
         </aside>
@@ -463,7 +500,10 @@ export default function PostNewPage() {
         <section className="min-w-0 flex-1">
           {activeTab === "overview" ? (
             <div>
-              <Typography.Title level={2} className="!mb-1 !text-[32px] !font-extrabold !text-slate-900">
+              <Typography.Title
+                level={2}
+                className="!mb-1 !text-[32px] !font-extrabold !text-slate-900"
+              >
                 Tổng quan quản lý tin
               </Typography.Title>
               <Typography.Paragraph className="!mb-4 !text-slate-500">
@@ -472,16 +512,26 @@ export default function PostNewPage() {
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <Card loading={loading}>
-                  <Typography.Text type="secondary">Tổng tin đăng</Typography.Text>
-                  <Typography.Title level={3} className="!mb-0">{postStats.total}</Typography.Title>
+                  <Typography.Text type="secondary">
+                    Tổng tin đăng
+                  </Typography.Text>
+                  <Typography.Title level={3} className="!mb-0">
+                    {postStats.total}
+                  </Typography.Title>
                 </Card>
                 <Card loading={loading}>
-                  <Typography.Text type="secondary">Đang hiển thị</Typography.Text>
-                  <Typography.Title level={3} className="!mb-0">{postStats.available}</Typography.Title>
+                  <Typography.Text type="secondary">
+                    Đang hiển thị
+                  </Typography.Text>
+                  <Typography.Title level={3} className="!mb-0">
+                    {postStats.available}
+                  </Typography.Title>
                 </Card>
                 <Card loading={loading}>
                   <Typography.Text type="secondary">Tin đã lưu</Typography.Text>
-                  <Typography.Title level={3} className="!mb-0">{myFavorites.length}</Typography.Title>
+                  <Typography.Title level={3} className="!mb-0">
+                    {myFavorites.length}
+                  </Typography.Title>
                 </Card>
               </div>
             </div>
@@ -489,7 +539,10 @@ export default function PostNewPage() {
 
           {activeTab === "posts" ? (
             <div>
-              <Typography.Title level={2} className="!mb-1 !text-[32px] !font-extrabold !text-slate-900">
+              <Typography.Title
+                level={2}
+                className="!mb-1 !text-[32px] !font-extrabold !text-slate-900"
+              >
                 Tin đang đăng
               </Typography.Title>
               <Typography.Paragraph className="!mb-4 !text-slate-500">
@@ -514,7 +567,10 @@ export default function PostNewPage() {
 
           {activeTab === "favorites" ? (
             <div>
-              <Typography.Title level={2} className="!mb-1 !text-[32px] !font-extrabold !text-slate-900">
+              <Typography.Title
+                level={2}
+                className="!mb-1 !text-[32px] !font-extrabold !text-slate-900"
+              >
                 Tin đã lưu
               </Typography.Title>
               <Typography.Paragraph className="!mb-4 !text-slate-500">
@@ -532,9 +588,18 @@ export default function PostNewPage() {
                       key={item.itemId}
                       loading={loading}
                       title={item.title}
-                      extra={<AntTag color="gold">{item.status || "AVAILABLE"}</AntTag>}
+                      extra={
+                        <AntTag color="gold">
+                          {item.status || "AVAILABLE"}
+                        </AntTag>
+                      }
                       actions={[
-                        <Button type="text" danger onClick={() => onRemoveFavorite(item.itemId)} key="remove">
+                        <Button
+                          type="text"
+                          danger
+                          onClick={() => onRemoveFavorite(item.itemId)}
+                          key="remove"
+                        >
                           Bỏ yêu thích
                         </Button>,
                       ]}
@@ -554,7 +619,10 @@ export default function PostNewPage() {
 
           {activeTab === "create" ? (
             <>
-              <Typography.Title level={2} className="!mb-1 !text-[36px] !font-extrabold !leading-tight !text-slate-900">
+              <Typography.Title
+                level={2}
+                className="!mb-1 !text-[36px] !font-extrabold !leading-tight !text-slate-900"
+              >
                 Đăng tin rao bán
               </Typography.Title>
               <Typography.Paragraph className="!mb-4 !text-slate-500">
@@ -565,14 +633,20 @@ export default function PostNewPage() {
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
-                initialValues={{ condition: "LIKE_NEW", status: "AVAILABLE", price: 0 }}
+                initialValues={{
+                  condition: "LIKE_NEW",
+                  status: "AVAILABLE",
+                  price: 0,
+                }}
                 requiredMark={false}
               >
                 <div style={blockStyle}>
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <ImageIcon size={16} color={BRAND_GREEN} />
-                      <span className="font-bold text-slate-800">Hình ảnh sản phẩm</span>
+                      <span className="font-bold text-slate-800">
+                        Hình ảnh sản phẩm
+                      </span>
                     </div>
                     <span className="text-xs text-slate-400">Tối đa 6 ảnh</span>
                   </div>
@@ -581,9 +655,13 @@ export default function PostNewPage() {
                     listType="picture-card"
                     fileList={fileList}
                     beforeUpload={beforeUpload}
-                    onChange={({ fileList: nextFileList }) => setFileList(nextFileList.slice(0, MAX_IMAGES))}
+                    onChange={({ fileList: nextFileList }) =>
+                      setFileList(nextFileList.slice(0, MAX_IMAGES))
+                    }
                     onRemove={(file) => {
-                      setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
+                      setFileList((prev) =>
+                        prev.filter((f) => f.uid !== file.uid),
+                      );
                     }}
                     multiple
                     accept="image/*"
@@ -600,12 +678,18 @@ export default function PostNewPage() {
                 <div className="mt-4" style={blockStyle}>
                   <div className="mb-3 flex items-center gap-2">
                     <FileText size={16} color={BRAND_GREEN} />
-                    <span className="font-bold text-slate-800">Thông tin cơ bản</span>
+                    <span className="font-bold text-slate-800">
+                      Thông tin cơ bản
+                    </span>
                   </div>
 
                   <Form.Item
                     name="title"
-                    label={<span className="text-xs font-semibold text-slate-600">Tiêu đề món đồ *</span>}
+                    label={
+                      <span className="text-xs font-semibold text-slate-600">
+                        Tiêu đề món đồ *
+                      </span>
+                    }
                     rules={[
                       { required: true, message: "Vui lòng nhập tiêu đề" },
                       { min: 8, message: "Tiêu đề tối thiểu 8 ký tự" },
@@ -613,23 +697,42 @@ export default function PostNewPage() {
                     ]}
                     className="!mb-3"
                   >
-                    <Input placeholder="VD: iPhone 12 Pro Max 128GB màu Xanh" className="h-[40px]" />
+                    <Input
+                      placeholder="VD: iPhone 12 Pro Max 128GB màu Xanh"
+                      className="h-[40px]"
+                    />
                   </Form.Item>
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <Form.Item
                       name="categoryId"
-                      label={<span className="text-xs font-semibold text-slate-600">Danh mục *</span>}
-                      rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
+                      label={
+                        <span className="text-xs font-semibold text-slate-600">
+                          Danh mục *
+                        </span>
+                      }
+                      rules={[
+                        { required: true, message: "Vui lòng chọn danh mục" },
+                      ]}
                       className="!mb-3"
                     >
-                      <Select options={categoryOptions} placeholder="Chọn danh mục" className="h-[40px]" />
+                      <Select
+                        options={categoryOptions}
+                        placeholder="Chọn danh mục"
+                        className="h-[40px]"
+                      />
                     </Form.Item>
 
                     <Form.Item
                       name="condition"
-                      label={<span className="text-xs font-semibold text-slate-600">Tình trạng *</span>}
-                      rules={[{ required: true, message: "Vui lòng chọn tình trạng" }]}
+                      label={
+                        <span className="text-xs font-semibold text-slate-600">
+                          Tình trạng *
+                        </span>
+                      }
+                      rules={[
+                        { required: true, message: "Vui lòng chọn tình trạng" },
+                      ]}
                       className="!mb-3"
                     >
                       <Select options={conditionOptions} className="h-[40px]" />
@@ -637,16 +740,24 @@ export default function PostNewPage() {
                   </div>
 
                   <div className="mb-1 flex items-center justify-between gap-3">
-                    <span className="text-xs font-semibold text-slate-600">Giá bán</span>
+                    <span className="text-xs font-semibold text-slate-600">
+                      Giá bán
+                    </span>
                     <div className="flex items-center gap-2">
                       <Switch checked={freePost} onChange={setFreePost} />
-                      <span className="text-sm text-slate-500">Tặng miễn phí</span>
+                      <span className="text-sm text-slate-500">
+                        Tặng miễn phí
+                      </span>
                     </div>
                   </div>
 
                   <Form.Item
                     name="price"
-                    rules={freePost ? [] : [{ required: true, message: "Vui lòng nhập giá" }]}
+                    rules={
+                      freePost
+                        ? []
+                        : [{ required: true, message: "Vui lòng nhập giá" }]
+                    }
                     className="!mb-3"
                   >
                     <div className="relative">
@@ -668,28 +779,43 @@ export default function PostNewPage() {
 
                   <Form.Item
                     name="description"
-                    label={<span className="text-xs font-semibold text-slate-600">Mô tả chi tiết *</span>}
+                    label={
+                      <span className="text-xs font-semibold text-slate-600">
+                        Mô tả chi tiết *
+                      </span>
+                    }
                     rules={[
                       { required: true, message: "Vui lòng nhập mô tả" },
                       { min: 20, message: "Mô tả tối thiểu 20 ký tự" },
                     ]}
                     className="!mb-0"
                   >
-                    <Input.TextArea rows={4} placeholder="Mô tả về tình trạng sản phẩm, lý do bán, các phụ kiện đi kèm..." />
+                    <Input.TextArea
+                      rows={4}
+                      placeholder="Mô tả về tình trạng sản phẩm, lý do bán, các phụ kiện đi kèm..."
+                    />
                   </Form.Item>
                 </div>
 
                 <div className="mt-4" style={blockStyle}>
                   <div className="mb-3 flex items-center gap-2">
                     <MapPin size={16} color={BRAND_GREEN} />
-                    <span className="font-bold text-slate-800">Địa điểm & Giao dịch</span>
+                    <span className="font-bold text-slate-800">
+                      Địa điểm & Giao dịch
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <Form.Item
                       name="city"
-                      label={<span className="text-xs font-semibold text-slate-600">Tỉnh / Thành phố *</span>}
-                      rules={[{ required: true, message: "Vui lòng chọn tỉnh/thành" }]}
+                      label={
+                        <span className="text-xs font-semibold text-slate-600">
+                          Tỉnh / Thành phố *
+                        </span>
+                      }
+                      rules={[
+                        { required: true, message: "Vui lòng chọn tỉnh/thành" },
+                      ]}
                       className="!mb-3"
                     >
                       <Select
@@ -705,8 +831,14 @@ export default function PostNewPage() {
 
                     <Form.Item
                       name="district"
-                      label={<span className="text-xs font-semibold text-slate-600">Quận / Huyện *</span>}
-                      rules={[{ required: true, message: "Vui lòng chọn quận/huyện" }]}
+                      label={
+                        <span className="text-xs font-semibold text-slate-600">
+                          Quận / Huyện *
+                        </span>
+                      }
+                      rules={[
+                        { required: true, message: "Vui lòng chọn quận/huyện" },
+                      ]}
                       className="!mb-3"
                     >
                       <Select
@@ -723,7 +855,11 @@ export default function PostNewPage() {
 
                   <Form.Item
                     name="ward"
-                    label={<span className="text-xs font-semibold text-slate-600">Phường / Xã</span>}
+                    label={
+                      <span className="text-xs font-semibold text-slate-600">
+                        Phường / Xã
+                      </span>
+                    }
                     className="!mb-3"
                   >
                     <Select
@@ -738,14 +874,26 @@ export default function PostNewPage() {
 
                   <Form.Item
                     name="address"
-                    label={<span className="text-xs font-semibold text-slate-600">Địa chỉ cụ thể *</span>}
-                    rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
+                    label={
+                      <span className="text-xs font-semibold text-slate-600">
+                        Địa chỉ cụ thể *
+                      </span>
+                    }
+                    rules={[
+                      { required: true, message: "Vui lòng nhập địa chỉ" },
+                    ]}
                     className="!mb-3"
                   >
-                    <Input placeholder="Số nhà, tên đường, phường/xã..." className="h-[40px]" />
+                    <Input
+                      placeholder="Số nhà, tên đường, phường/xã..."
+                      className="h-[40px]"
+                    />
                   </Form.Item>
 
-                  <div className="overflow-hidden rounded-lg border" style={{ borderColor: BORDER_COLOR }}>
+                  <div
+                    className="overflow-hidden rounded-lg border"
+                    style={{ borderColor: BORDER_COLOR }}
+                  >
                     {mapEmbedUrl ? (
                       <iframe
                         title="Bản đồ địa chỉ tin đăng"
@@ -763,7 +911,11 @@ export default function PostNewPage() {
 
                   <div className="mt-3 flex justify-end">
                     <Button
-                      href={fullAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}` : undefined}
+                      href={
+                        fullAddress
+                          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`
+                          : undefined
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       disabled={!fullAddress}
@@ -776,7 +928,10 @@ export default function PostNewPage() {
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <Button icon={<Eye size={16} />} className="!h-[48px] !rounded-[10px] !border !border-[#D8DDE5] !bg-white !font-semibold !text-slate-700">
+                  <Button
+                    icon={<Eye size={16} />}
+                    className="!h-[48px] !rounded-[10px] !border !border-[#D8DDE5] !bg-white !font-semibold !text-slate-700"
+                  >
                     Xem trước
                   </Button>
                   <Button

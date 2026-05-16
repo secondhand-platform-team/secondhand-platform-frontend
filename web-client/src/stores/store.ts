@@ -4,6 +4,8 @@ import chatReducer from "./slices/chat.slice";
 import itemsReducer from "./slices/items.slice";
 import searchReducer from "./slices/search.slice";
 import cartReducer from "./slices/cart.slice";
+import notificationReducer from "./slices/notification.slice";
+import walletReducer from "./slices/wallet.slice";
 
 export const makeStore = () => {
   return configureStore({
@@ -13,6 +15,8 @@ export const makeStore = () => {
       items: itemsReducer,
       search: searchReducer,
       cart: cartReducer,
+      notification: notificationReducer,
+      wallet: walletReducer,
     },
   });
 };
