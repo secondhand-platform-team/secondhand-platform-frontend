@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Dropdown, App, Badge } from "antd";
 import {
   ChevronDown,
+  ClipboardList,
   FileText,
   Heart,
   KeyRound,
@@ -42,8 +43,24 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   );
   const { message: messageApi } = App.useApp();
 
+  // Close notification dropdown on outside click
   useEffect(() => {
-    if (isAuth) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    };
+    if (notifOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notifOpen]);
+
+  const [mounted, setMounted] = useState(false);
+  
+  // Đảm bảo UI khớp giữa Server và Client để tránh Hydration error
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isAuth && mounted) {
       dispatch(fetchMyCart());
       dispatch(fetchMyWallet());
     }
@@ -55,6 +72,9 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   };
 
   const showAuthenticatedUi = isAuth && Boolean(user);
+  }, [isAuth, dispatch, mounted]);
+
+  const showAuthenticatedUi = mounted && isAuth && Boolean(user);
   const displayName = user?.fullName?.trim() || user?.email || "Người dùng";
   const router = useRouter();
   const pathname = usePathname();
@@ -106,6 +126,11 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
       key: "customers",
       label: "Quản lý khách hàng",
       icon: <Users size={16} />,
+    },
+    {
+      key: "orders",
+      label: "Lịch sử đơn hàng",
+      icon: <ClipboardList size={16} />,
     },
     {
       type: "divider" as const,
@@ -247,6 +272,9 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                     } else if (key === "customers") {
                       router.push("/dashboard/customers");
                       setOpen(false);
+                    } else if (key === "orders") {
+                      router.push("/dashboard/orders");
+                      setOpen(false);
                     } else if (key === "settings") {
                       router.push("/dashboard/profile");
                       setOpen(false);
@@ -318,6 +346,8 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                       router.push("/dashboard");
                     } else if (key === "customers") {
                       router.push("/dashboard/customers");
+                    } else if (key === "orders") {
+                      router.push("/dashboard/orders");
                     } else if (key === "settings") {
                       router.push("/dashboard/profile");
                     } else if (key === "password") {

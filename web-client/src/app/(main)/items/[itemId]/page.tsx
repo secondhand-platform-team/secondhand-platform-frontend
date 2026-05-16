@@ -36,6 +36,7 @@ import { message as antdMessage, Spin, App } from "antd";
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { addItemToCart } from "@/stores/slices/cart.slice";
 import { useReportItem } from "@/hooks/useReportItem";
+import ReportItemModal from "@/components/item/ReportItemModal";
 
 const CONDITIONS: Record<string, string> = {
   NEW: "Mới 100%",
@@ -65,7 +66,12 @@ export default function ItemDetailPage() {
   const { isAuth } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const { message: messageApi } = App.useApp();
-  const { openReportModal, ReportModal } = useReportItem();
+  const {
+    open: reportOpen,
+    itemId: reportItemId,
+    openReportModal,
+    closeReportModal,
+  } = useReportItem();
 
   useEffect(() => {
     if (!itemId) return;
@@ -669,7 +675,11 @@ export default function ItemDetailPage() {
           </div>
         </div>
       </div>
-      <ReportModal />
+      <ReportItemModal
+        open={reportOpen}
+        itemId={reportItemId}
+        onClose={closeReportModal}
+      />
     </>
   );
 }

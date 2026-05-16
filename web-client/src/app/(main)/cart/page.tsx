@@ -124,7 +124,7 @@ export default function CartPage() {
   };
 
   const handleCheckout = () => {
-    messageApi.info("Tính năng thanh toán đang được phát triển");
+    router.push("/checkout");
   };
 
   const subtotal = enrichedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);

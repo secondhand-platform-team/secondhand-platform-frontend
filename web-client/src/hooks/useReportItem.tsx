@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import ReportItemModal from "@/components/item/ReportItemModal";
 
 export function useReportItem() {
   const [open, setOpen] = useState(false);
@@ -17,13 +16,10 @@ export function useReportItem() {
     setItemId("");
   };
 
-  const ReportModal = () => (
-    <ReportItemModal open={open} itemId={itemId} onClose={closeReportModal} />
-  );
-
   return {
+    open,
+    itemId,
     openReportModal,
     closeReportModal,
-    ReportModal,
   };
 }

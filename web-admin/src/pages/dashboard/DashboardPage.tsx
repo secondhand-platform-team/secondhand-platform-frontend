@@ -11,12 +11,10 @@ import {
   Space,
 } from "antd";
 import {
-  UserOutlined,
   FileTextOutlined,
   CheckCircleOutlined,
   WarningOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined,
 } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "../../stores/hooks";
 import { fetchAllItems } from "../../stores/slices/item.slice";
@@ -24,7 +22,7 @@ import { fetchAllCategories } from "../../stores/slices/category.slice";
 import { fetchPendingCount } from "../../stores/slices/report.slice";
 import type { ItemResponse } from "../../types";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // Map trạng thái → màu tag
 const statusMap: Record<string, { color: string; label: string }> = {
