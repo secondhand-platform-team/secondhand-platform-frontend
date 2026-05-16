@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { Dropdown, App, Badge } from "antd";
 import {
   ChevronDown,
@@ -12,23 +14,15 @@ import {
   Settings,
   Users,
   ShoppingCart,
-<<<<<<< Updated upstream
   Wallet,
-=======
-  ShoppingBag,
->>>>>>> Stashed changes
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import { logoutUser } from "@/stores/slices/auth.slice";
 import { fetchMyCart } from "@/stores/slices/cart.slice";
-import { walletService } from "@/services/wallet.service";
+import { fetchMyWallet } from "@/stores/slices/wallet.slice";
 import type { UserType } from "@/types/user.type";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-<<<<<<< Updated upstream
-=======
-import Link from "next/link";
->>>>>>> Stashed changes
 import { NotificationBell } from "@/components/NotificationBell";
 
 type SiteHeaderProps = {
@@ -43,32 +37,23 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   const cartItemCount = useAppSelector(
     (state) => state.cart.cart?.cartItems?.length || 0,
   );
+  const walletBalance = useAppSelector(
+    (state) => state.wallet.wallet?.balance ?? null,
+  );
   const { message: messageApi } = App.useApp();
 
   useEffect(() => {
     if (isAuth) {
       dispatch(fetchMyCart());
+      dispatch(fetchMyWallet());
     }
   }, [isAuth, dispatch]);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   const formatCurrency = (value?: number | null) => {
     if (value == null) return "0đ";
     return `${value.toLocaleString("vi-VN")}đ`;
   };
 
-  useEffect(() => {
-    const loadWallet = async () => {
-      if (!isAuth) return;
-      try {
-        const res = await walletService.getMyWallet();
-        setWalletBalance(res.balance ?? 0);
-      } catch {
-        // ignore wallet load errors silently
-      }
-    };
-    void loadWallet();
-  }, [isAuth]);
   const showAuthenticatedUi = isAuth && Boolean(user);
   const displayName = user?.fullName?.trim() || user?.email || "Người dùng";
   const router = useRouter();
@@ -150,9 +135,11 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
           <div className="flex items-center gap-6 lg:gap-8">
             <a href="/home" className="flex items-center group">
               <div className="relative flex items-center justify-center">
-                <img
+                <Image
                   src="/logo/icon-logo.png"
                   alt="Logo ReLife"
+                  width={120}
+                  height={80}
                   className="h-20 w-auto max-w-30 object-contain transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
@@ -191,21 +178,8 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             {showAuthenticatedUi && (
               <div className="flex items-center gap-1">
-<<<<<<< Updated upstream
                 <NotificationBell />
 
-                <button
-                  onClick={() => router.push("/dashboard/wallet")}
-                  className="flex h-9 items-center gap-2 rounded-lg px-3 text-slate-600 transition hover:bg-slate-100 hover:text-emerald-600"
-                  title="Ví của tôi"
-                >
-                  <Wallet size={18} />
-                  <span className="hidden text-sm font-semibold sm:inline">Ví của tôi</span>
-                </button>
-=======
-                {/* Notification Bell */}
-                <NotificationBell />
->>>>>>> Stashed changes
                 {!isChat && (
                   <>
                     {/* Chat */}
@@ -286,9 +260,11 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                 <div className="hidden cursor-pointer items-center gap-2 rounded-xl bg-white px-2.5 py-1.5 transition-all hover:bg-slate-100 hover:shadow-sm dark:bg-slate-800 dark:hover:bg-slate-700 sm:flex">
                   <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-600">
                     {user?.avatarUrl ? (
-                      <img
+                      <Image
                         src={user.avatarUrl}
                         alt="Ảnh đại diện"
+                        width={36}
+                        height={36}
                         className="h-full w-full object-cover"
                       />
                     ) : (

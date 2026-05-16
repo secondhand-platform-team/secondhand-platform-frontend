@@ -169,11 +169,13 @@ export default function WalletPage() {
   const handleDeposit = async (values: DepositRequest) => {
     try {
       setSubmitting(true);
-      const response = await dispatch(depositWallet({
-        amount: Number(values.amount),
-        bankCode: values.bankCode?.trim() || undefined,
-        language: values.language || "vn",
-      })).unwrap();
+      const response = await dispatch(
+        depositWallet({
+          amount: Number(values.amount),
+          bankCode: values.bankCode?.trim() || undefined,
+          language: values.language || "vn",
+        }),
+      ).unwrap();
       const paymentUrl = extractPaymentUrl(response);
       messageApi.success("Đã tạo yêu cầu nạp tiền");
       if (paymentUrl && typeof window !== "undefined") {

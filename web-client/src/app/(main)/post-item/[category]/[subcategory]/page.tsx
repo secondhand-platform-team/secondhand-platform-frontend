@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { message } from "antd";
 import {
   CloseOutlined,
   PictureOutlined,
@@ -22,12 +21,12 @@ import {
 import provinceService from "@/services/province.service";
 import { itemService } from "@/stores/slices/items.slice";
 import type { ItemRequest, PaymentMethod } from "@/types/item.type";
-import { walletService } from "@/services/wallet.service";
 import type { District, Province, Ward } from "@/types/province.type";
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { fetchCurrentUser } from "@/stores/slices/auth.slice";
+import { fetchMyWallet } from "@/stores/slices/wallet.slice";
 import PaymentRedirectModal from "@/components/payment/PaymentRedirectModal";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Wallet } from "lucide-react";
 
 type TransactionType = "SELL" | "GIVE_AWAY";
 type ConditionType = "NEW" | "LIKE_NEW" | "USED" | "FOR_PARTS";
@@ -73,6 +72,9 @@ export default function PostItemFormPage() {
 
   // Get user from auth store
   const user = useAppSelector((state) => state.auth.user);
+  const walletBalance = useAppSelector(
+    (state) => state.wallet.wallet?.balance ?? null,
+  );
   const dispatch = useAppDispatch();
 
   const categoryLabel = categoryLabelMap[categoryKey] || "Danh mục";
@@ -86,7 +88,6 @@ export default function PostItemFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [provinces, setProvinces] = useState<Province[]>([]);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -195,16 +196,8 @@ export default function PostItemFormPage() {
     };
 
     loadProvinces();
-    // load wallet balance (for payment UI)
-    void (async () => {
-      try {
-        const res = await walletService.getMyWallet();
-        setWalletBalance(res?.balance ?? 0);
-      } catch {
-        setWalletBalance(null);
-      }
-    })();
-  }, []);
+    void dispatch(fetchMyWallet());
+  }, [dispatch]);
 
   const handleCityChange = async (cityCode: string) => {
     const selectedProvince = provinces.find(
@@ -475,6 +468,12 @@ export default function PostItemFormPage() {
       } else {
         // Refresh user data to update freeSellUse
         await dispatch(fetchCurrentUser()).unwrap();
+        // Refresh wallet balance so header shows latest amount (e.g., paid from internal wallet)
+        try {
+          await dispatch(fetchMyWallet()).unwrap();
+        } catch {
+          // ignore wallet refresh errors silently
+        }
         // message.success(
         //   <>
         //     <CheckCircleOutlined /> Đã tạo tin thành công!
@@ -925,12 +924,14 @@ export default function PostItemFormPage() {
           )}
 
           {formData.transactionType === "SELL" && freeSellRemaining <= 0 && (
-            <div>
+            <div className="space-y-3">
+              {/* Header */}
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                <label className="text-sm font-semibold text-slate-900">
                   Phương thức thanh toán
                 </label>
-                <div className="text-sm text-slate-600">
+
+                <div className="px-3 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
                   Số dư ví:{" "}
                   {walletBalance != null
                     ? `${walletBalance.toLocaleString("vi-VN")}đ`
@@ -938,9 +939,19 @@ export default function PostItemFormPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              {/* Payment Methods */}
+              <div className="flex flex-col gap-3">
+                {/* Wallet */}
                 <label
-                  className={`flex-1 rounded-xl border px-4 py-2.5 cursor-pointer transition ${formData.paymentMethod === "WALLET" ? "bg-primary text-white" : "bg-white"}`}
+                  className={`
+          relative rounded-2xl border p-3 cursor-pointer
+          transition-all duration-200
+              ${
+                formData.paymentMethod === "WALLET"
+                  ? "border-primary bg-primary/4 shadow-sm"
+                  : "border-slate-200 bg-white hover:border-primary/40"
+              }
+        `}
                 >
                   <input
                     type="radio"
@@ -955,11 +966,71 @@ export default function PostItemFormPage() {
                     }
                     className="hidden"
                   />
-                  Ví cá nhân
+
+                  {/* Radio */}
+                  <div
+                    className={`
+            absolute top-3 right-3 w-4 h-4 rounded-full border
+            flex items-center justify-center
+            ${
+              formData.paymentMethod === "WALLET"
+                ? "border-primary"
+                : "border-slate-300"
+            }
+          `}
+                  >
+                    {formData.paymentMethod === "WALLET" && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Icon */}
+                    <div
+                      className={`
+              w-11 h-11 rounded-xl flex items-center justify-center
+              ${
+                formData.paymentMethod === "WALLET"
+                  ? "bg-primary text-white"
+                  : "bg-slate-100 text-slate-700"
+              }
+            `}
+                    >
+                      <Wallet className="w-5 h-5" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-sm text-slate-800">
+                          Ví cá nhân
+                        </h3>
+
+                        {walletBalance != null && walletBalance > 0 && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                            Khả dụng
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Thanh toán bằng số dư ví nội bộ
+                      </p>
+                    </div>
+                  </div>
                 </label>
 
+                {/* VNPay */}
                 <label
-                  className={`flex-1 rounded-xl border px-4 py-2.5 cursor-pointer transition ${formData.paymentMethod === "VNPAY" ? "bg-primary text-white" : "bg-white"}`}
+                  className={`
+          relative rounded-2xl border p-3 cursor-pointer
+          transition-all duration-200
+          ${
+            formData.paymentMethod === "VNPAY"
+              ? "border-primary bg-primary/4 shadow-sm"
+              : "border-slate-200 bg-white hover:border-primary/40"
+          }
+        `}
                 >
                   <input
                     type="radio"
@@ -974,7 +1045,56 @@ export default function PostItemFormPage() {
                     }
                     className="hidden"
                   />
-                  VNPay
+
+                  {/* Radio */}
+                  <div
+                    className={`
+            absolute top-3 right-3 w-4 h-4 rounded-full border
+            flex items-center justify-center
+            ${
+              formData.paymentMethod === "VNPAY"
+                ? "border-primary"
+                : "border-slate-300"
+            }
+          `}
+                  >
+                    {formData.paymentMethod === "VNPAY" && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Icon */}
+                    <div
+                      className={`
+              w-11 h-11 rounded-xl flex items-center justify-center
+              ${
+                formData.paymentMethod === "VNPAY"
+                  ? "bg-primary/10"
+                  : "bg-slate-100"
+              }
+            `}
+                    >
+                      <Image
+                        src="/icon-other/VNPAY.jpg"
+                        alt="VNPay"
+                        width={34}
+                        height={18}
+                        className="object-contain"
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm text-slate-800">
+                        VNPay
+                      </h3>
+
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Thanh toán qua cổng VNPay
+                      </p>
+                    </div>
+                  </div>
                 </label>
               </div>
             </div>

@@ -74,24 +74,27 @@ class WebSocketService {
           );
 
           this.callbacks.onConnect?.();
-          resolve();
         };
 
         this.client.onStompError = (frame) => {
           console.error("[WebSocket] STOMP error:", frame);
           this.isConnecting = false;
           this.callbacks.onError?.(frame);
-          reject(frame);
         };
 
         this.client.onWebSocketError = (error) => {
           console.error("[WebSocket] WebSocket error:", error);
           this.isConnecting = false;
           this.callbacks.onError?.(error);
-          reject(error);
+        };
+
+        this.client.onWebSocketClose = () => {
+          this.isConnecting = false;
+          this.callbacks.onDisconnect?.();
         };
 
         this.client.activate();
+        resolve();
       } catch (error) {
         console.error("[WebSocket] Connection error:", error);
         this.isConnecting = false;

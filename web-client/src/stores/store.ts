@@ -5,10 +5,7 @@ import itemsReducer from "./slices/items.slice";
 import searchReducer from "./slices/search.slice";
 import cartReducer from "./slices/cart.slice";
 import notificationReducer from "./slices/notification.slice";
-<<<<<<< Updated upstream
 import walletReducer from "./slices/wallet.slice";
-=======
->>>>>>> Stashed changes
 
 export const makeStore = () => {
   return configureStore({
@@ -19,10 +16,7 @@ export const makeStore = () => {
       search: searchReducer,
       cart: cartReducer,
       notification: notificationReducer,
-<<<<<<< Updated upstream
       wallet: walletReducer,
-=======
->>>>>>> Stashed changes
     },
   });
 };

@@ -37,7 +37,7 @@ export function NotificationProvider({
         });
 
         webSocketService.onError((error) => {
-          console.error("[NotificationProvider] WebSocket error:", error);
+          console.warn("[NotificationProvider] WebSocket reconnecting:", error);
         });
 
         webSocketService.onConnect(() => {
@@ -54,7 +54,7 @@ export function NotificationProvider({
         // Kết nối WebSocket
         await webSocketService.connect(userId);
       } catch (error) {
-        console.error("[NotificationProvider] Initialization error:", error);
+        console.warn("[NotificationProvider] Initialization retry:", error);
       }
     };
 
