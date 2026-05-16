@@ -51,20 +51,6 @@ export default function RootLayout({
               },
             }}
           >
-            <App>
-              <NextTopLoader
-                color="#22c55e"
-                showSpinner={false}
-                height={3}
-                crawlSpeed={200}
-                speed={200}
-                easing="ease"
-                shadow="0 0 10px #22c55e,0 0 5px #22c55e"
-              />
-              <ReduxProvider>
-                <NotificationProvider>{children}</NotificationProvider>
-              </ReduxProvider>
-            </App>
             <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
               <App>
                 <NextTopLoader
@@ -77,7 +63,7 @@ export default function RootLayout({
                   shadow="0 0 10px #22c55e,0 0 5px #22c55e"
                 />
                 <ReduxProvider>
-                  {children}
+                  <NotificationProvider>{children}</NotificationProvider>
                 </ReduxProvider>
               </App>
             </GoogleOAuthProvider>

@@ -15,7 +15,6 @@ import {
   Settings,
   Users,
   ShoppingCart,
-  Wallet,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import { logoutUser } from "@/stores/slices/auth.slice";
@@ -34,6 +33,7 @@ type SiteHeaderProps = {
 
 export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const dispatch = useAppDispatch();
   const cartItemCount = useAppSelector(
     (state) => state.cart.cart?.cartItems?.length || 0,
@@ -46,15 +46,17 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   // Close notification dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target as Node))
+        setNotifOpen(false);
     };
     if (notifOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifOpen]);
 
   const [mounted, setMounted] = useState(false);
-  
+
   // Đảm bảo UI khớp giữa Server và Client để tránh Hydration error
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -64,18 +66,17 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
       dispatch(fetchMyCart());
       dispatch(fetchMyWallet());
     }
-  }, [isAuth, dispatch]);
+  }, [isAuth, dispatch, mounted]);
 
   const formatCurrency = (value?: number | null) => {
     if (value == null) return "0đ";
     return `${value.toLocaleString("vi-VN")}đ`;
   };
 
-  const showAuthenticatedUi = isAuth && Boolean(user);
-  }, [isAuth, dispatch, mounted]);
+  // const showAuthenticatedUi = isAuth && Boolean(user);
+  // }, [isAuth, dispatch, mounted]);
 
   const showAuthenticatedUi = mounted && isAuth && Boolean(user);
-  const displayName = user?.fullName?.trim() || user?.email || "Người dùng";
   const router = useRouter();
   const pathname = usePathname();
   const isChat = pathname?.startsWith("/chat") ?? false;
@@ -302,7 +303,7 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
 
                   <div className="flex flex-col max-w-44">
                     <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {displayName}
+                      {user?.fullName || user?.email || "User"}
                     </p>
                     {walletBalance != null && (
                       <Link
