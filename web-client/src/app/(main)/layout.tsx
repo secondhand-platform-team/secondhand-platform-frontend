@@ -23,13 +23,11 @@ const MainLayoutInner = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header
-              isAuth={isAuth}
-              user={user}
-              onOpenAuth={() => setAuthOpen(true)}
-            />
-      <main className="flex-1">
-        {children}
-      </main>
+        isAuth={isAuth}
+        user={user}
+        onOpenAuth={() => setAuthOpen(true)}
+      />
+      <main className="flex-1">{children}</main>
       {authOpen ? (
         <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       ) : null}
@@ -38,6 +36,7 @@ const MainLayoutInner = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+export default MainLayout;
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>

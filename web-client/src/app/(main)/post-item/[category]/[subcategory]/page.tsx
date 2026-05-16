@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { message } from "antd";
 import {
   CloseOutlined,
   PictureOutlined,
@@ -21,12 +20,13 @@ import {
 } from "@/stores/slices/category.slice";
 import provinceService from "@/services/province.service";
 import { itemService } from "@/stores/slices/items.slice";
-import type { ItemRequest } from "@/types/item.type";
+import type { ItemRequest, PaymentMethod } from "@/types/item.type";
 import type { District, Province, Ward } from "@/types/province.type";
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { fetchCurrentUser } from "@/stores/slices/auth.slice";
+import { fetchMyWallet } from "@/stores/slices/wallet.slice";
 import PaymentRedirectModal from "@/components/payment/PaymentRedirectModal";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Wallet } from "lucide-react";
 
 type TransactionType = "SELL" | "GIVE_AWAY";
 type ConditionType = "NEW" | "LIKE_NEW" | "USED" | "FOR_PARTS";
@@ -51,6 +51,7 @@ interface FormData {
   transactionType: TransactionType;
   condition: ConditionType;
   price: number;
+  paymentMethod: PaymentMethod;
   subcategoryId: string;
   attributes: AttributeValue[];
   location: LocationData;
@@ -71,6 +72,9 @@ export default function PostItemFormPage() {
 
   // Get user from auth store
   const user = useAppSelector((state) => state.auth.user);
+  const walletBalance = useAppSelector(
+    (state) => state.wallet.wallet?.balance ?? null,
+  );
   const dispatch = useAppDispatch();
 
   const categoryLabel = categoryLabelMap[categoryKey] || "Danh mục";
@@ -102,6 +106,7 @@ export default function PostItemFormPage() {
     transactionType: "SELL",
     condition: "NEW",
     price: 0,
+    paymentMethod: "VNPAY",
     subcategoryId: subcategoryId,
     attributes: [],
     location: {
@@ -191,7 +196,8 @@ export default function PostItemFormPage() {
     };
 
     loadProvinces();
-  }, []);
+    void dispatch(fetchMyWallet());
+  }, [dispatch]);
 
   const handleCityChange = async (cityCode: string) => {
     const selectedProvince = provinces.find(
@@ -420,10 +426,15 @@ export default function PostItemFormPage() {
       }));
 
       const transactionTypeMap: Record<TransactionType, SubmitTransactionType> =
-      {
-        SELL: freeSellRemaining > 0 ? "FREE_SELL" : "SELL",
-        GIVE_AWAY: "GIVE_AWAY",
-      };
+        {
+          SELL: freeSellRemaining > 0 ? "FREE_SELL" : "SELL",
+          GIVE_AWAY: "GIVE_AWAY",
+        };
+
+      const postingFeeToPay =
+        formData.transactionType === "SELL" && freeSellRemaining <= 0
+          ? (categoryData?.postingFee ?? 0)
+          : 0;
 
       const submitData: ItemRequest = {
         title: formData.title,
@@ -432,6 +443,8 @@ export default function PostItemFormPage() {
         categoryId: formData.subcategoryId,
         transactionType: transactionTypeMap[formData.transactionType],
         price: formData.transactionType === "SELL" ? formData.price : 0,
+        postingFee: postingFeeToPay,
+        paymentMethod: formData.paymentMethod,
         location: formData.location,
         attributes,
       };
@@ -455,12 +468,18 @@ export default function PostItemFormPage() {
       } else {
         // Refresh user data to update freeSellUse
         await dispatch(fetchCurrentUser()).unwrap();
-        message.success(
-          <>
-            <CheckCircleOutlined /> Đã tạo tin thành công!
-          </>,
-          2,
-        );
+        // Refresh wallet balance so header shows latest amount (e.g., paid from internal wallet)
+        try {
+          await dispatch(fetchMyWallet()).unwrap();
+        } catch {
+          // ignore wallet refresh errors silently
+        }
+        // message.success(
+        //   <>
+        //     <CheckCircleOutlined /> Đã tạo tin thành công!
+        //   </>,
+        //   2,
+        // );
         router.push("/home");
       }
     } catch (error) {
@@ -534,10 +553,11 @@ export default function PostItemFormPage() {
                   onClick={() =>
                     setFormData((prev) => ({ ...prev, transactionType: type }))
                   }
-                  className={`flex-1 rounded-xl py-3 px-4 font-semibold transition ${formData.transactionType === type
-                    ? "bg-primary text-white"
-                    : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                    }`}
+                  className={`flex-1 rounded-xl py-3 px-4 font-semibold transition ${
+                    formData.transactionType === type
+                      ? "bg-primary text-white"
+                      : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                  }`}
                 >
                   {type === "SELL" ? "Bán" : "Cho miễn phí"}
                 </button>
@@ -625,10 +645,11 @@ export default function PostItemFormPage() {
                 setFormData((prev) => ({ ...prev, title: e.target.value }))
               }
               placeholder="Nhập tiêu đề sản phẩm"
-              className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${errors.title
-                ? "border-red-300 focus:ring-red-200"
-                : "border-slate-200 focus:ring-primary/20"
-                }`}
+              className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${
+                errors.title
+                  ? "border-red-300 focus:ring-red-200"
+                  : "border-slate-200 focus:ring-primary/20"
+              }`}
             />
             {errors.title && (
               <p className="mt-1 text-sm text-red-600">{errors.title}</p>
@@ -652,10 +673,11 @@ export default function PostItemFormPage() {
                 }
                 placeholder="0"
                 min="0"
-                className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${errors.price
-                  ? "border-red-300 focus:ring-red-200"
-                  : "border-slate-200 focus:ring-primary/20"
-                  }`}
+                className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${
+                  errors.price
+                    ? "border-red-300 focus:ring-red-200"
+                    : "border-slate-200 focus:ring-primary/20"
+                }`}
               />
               {errors.price && (
                 <p className="mt-1 text-sm text-red-600">{errors.price}</p>
@@ -835,7 +857,8 @@ export default function PostItemFormPage() {
                 <Sparkles className="w-4 h-4" /> Mẹo đăng tin hiệu quả
               </p>
               <p className="text-xs text-emerald-700 mt-1">
-                Sử dụng hình ảnh rõ nét và mô tả chi tiết để tăng khả năng tiếp cận người mua lên đến 80%.
+                Sử dụng hình ảnh rõ nét và mô tả chi tiết để tăng khả năng tiếp
+                cận người mua lên đến 80%.
               </p>
             </div>
           )}
@@ -843,22 +866,24 @@ export default function PostItemFormPage() {
           {/* Posting Fee Info - Only for SELL type */}
           {formData.transactionType === "SELL" && user && categoryData && (
             <div
-              className={`rounded-xl p-4 border ${freeSellRemaining > 0
-                ? "bg-green-50 border-green-200"
-                : categoryData.postingFee && categoryData.postingFee > 0
-                  ? "bg-orange-50 border-orange-200"
-                  : "bg-green-50 border-green-200"
-                }`}
+              className={`rounded-xl p-4 border ${
+                freeSellRemaining > 0
+                  ? "bg-green-50 border-green-200"
+                  : categoryData.postingFee && categoryData.postingFee > 0
+                    ? "bg-orange-50 border-orange-200"
+                    : "bg-green-50 border-green-200"
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p
-                    className={`text-sm font-semibold flex items-center gap-2 ${freeSellRemaining > 0
-                      ? "text-green-900"
-                      : categoryData.postingFee && categoryData.postingFee > 0
-                        ? "text-orange-900"
-                        : "text-green-900"
-                      }`}
+                    className={`text-sm font-semibold flex items-center gap-2 ${
+                      freeSellRemaining > 0
+                        ? "text-green-900"
+                        : categoryData.postingFee && categoryData.postingFee > 0
+                          ? "text-orange-900"
+                          : "text-green-900"
+                    }`}
                   >
                     {freeSellRemaining > 0 ? (
                       <>
@@ -879,12 +904,13 @@ export default function PostItemFormPage() {
                     )}
                   </p>
                   <p
-                    className={`text-xs mt-1 ${freeSellRemaining > 0
-                      ? "text-green-700"
-                      : categoryData.postingFee && categoryData.postingFee > 0
-                        ? "text-orange-700"
-                        : "text-green-700"
-                      }`}
+                    className={`text-xs mt-1 ${
+                      freeSellRemaining > 0
+                        ? "text-green-700"
+                        : categoryData.postingFee && categoryData.postingFee > 0
+                          ? "text-orange-700"
+                          : "text-green-700"
+                    }`}
                   >
                     {freeSellRemaining > 0
                       ? `Còn ${freeSellRemaining} lần đăng tin miễn phí`
@@ -893,6 +919,183 @@ export default function PostItemFormPage() {
                         : "Danh mục này cho phép đăng tin miễn phí"}
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {formData.transactionType === "SELL" && freeSellRemaining <= 0 && (
+            <div className="space-y-3">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-slate-900">
+                  Phương thức thanh toán
+                </label>
+
+                <div className="px-3 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
+                  Số dư ví:{" "}
+                  {walletBalance != null
+                    ? `${walletBalance.toLocaleString("vi-VN")}đ`
+                    : "-"}
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="flex flex-col gap-3">
+                {/* Wallet */}
+                <label
+                  className={`
+          relative rounded-2xl border p-3 cursor-pointer
+          transition-all duration-200
+              ${
+                formData.paymentMethod === "WALLET"
+                  ? "border-primary bg-primary/4 shadow-sm"
+                  : "border-slate-200 bg-white hover:border-primary/40"
+              }
+        `}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="WALLET"
+                    checked={formData.paymentMethod === "WALLET"}
+                    onChange={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        paymentMethod: "WALLET",
+                      }))
+                    }
+                    className="hidden"
+                  />
+
+                  {/* Radio */}
+                  <div
+                    className={`
+            absolute top-3 right-3 w-4 h-4 rounded-full border
+            flex items-center justify-center
+            ${
+              formData.paymentMethod === "WALLET"
+                ? "border-primary"
+                : "border-slate-300"
+            }
+          `}
+                  >
+                    {formData.paymentMethod === "WALLET" && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Icon */}
+                    <div
+                      className={`
+              w-11 h-11 rounded-xl flex items-center justify-center
+              ${
+                formData.paymentMethod === "WALLET"
+                  ? "bg-primary text-white"
+                  : "bg-slate-100 text-slate-700"
+              }
+            `}
+                    >
+                      <Wallet className="w-5 h-5" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-sm text-slate-800">
+                          Ví cá nhân
+                        </h3>
+
+                        {walletBalance != null && walletBalance > 0 && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                            Khả dụng
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Thanh toán bằng số dư ví nội bộ
+                      </p>
+                    </div>
+                  </div>
+                </label>
+
+                {/* VNPay */}
+                <label
+                  className={`
+          relative rounded-2xl border p-3 cursor-pointer
+          transition-all duration-200
+          ${
+            formData.paymentMethod === "VNPAY"
+              ? "border-primary bg-primary/4 shadow-sm"
+              : "border-slate-200 bg-white hover:border-primary/40"
+          }
+        `}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="VNPAY"
+                    checked={formData.paymentMethod === "VNPAY"}
+                    onChange={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        paymentMethod: "VNPAY",
+                      }))
+                    }
+                    className="hidden"
+                  />
+
+                  {/* Radio */}
+                  <div
+                    className={`
+            absolute top-3 right-3 w-4 h-4 rounded-full border
+            flex items-center justify-center
+            ${
+              formData.paymentMethod === "VNPAY"
+                ? "border-primary"
+                : "border-slate-300"
+            }
+          `}
+                  >
+                    {formData.paymentMethod === "VNPAY" && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Icon */}
+                    <div
+                      className={`
+              w-11 h-11 rounded-xl flex items-center justify-center
+              ${
+                formData.paymentMethod === "VNPAY"
+                  ? "bg-primary/10"
+                  : "bg-slate-100"
+              }
+            `}
+                    >
+                      <Image
+                        src="/icon-other/VNPAY.jpg"
+                        alt="VNPay"
+                        width={34}
+                        height={18}
+                        className="object-contain"
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm text-slate-800">
+                        VNPay
+                      </h3>
+
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Thanh toán qua cổng VNPay
+                      </p>
+                    </div>
+                  </div>
+                </label>
               </div>
             </div>
           )}

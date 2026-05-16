@@ -1,8 +1,9 @@
 "use client";
 
-import { Dropdown, message as antdMessage, Badge, App } from "antd";
+import Image from "next/image";
+import Link from "next/link";
+import { Dropdown, App, Badge } from "antd";
 import {
-  Bell,
   ChevronDown,
   ClipboardList,
   FileText,
@@ -14,16 +15,16 @@ import {
   Settings,
   Users,
   ShoppingCart,
-  ShoppingBag,
-  ShieldCheck,
+  Wallet,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import { logoutUser } from "@/stores/slices/auth.slice";
 import { fetchMyCart } from "@/stores/slices/cart.slice";
+import { fetchMyWallet } from "@/stores/slices/wallet.slice";
 import type { UserType } from "@/types/user.type";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
+import { NotificationBell } from "@/components/NotificationBell";
 
 type SiteHeaderProps = {
   user: UserType | null;
@@ -33,11 +34,13 @@ type SiteHeaderProps = {
 
 export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [notifFilter, setNotifFilter] = useState<"all" | "unread" | "read">("all");
-  const notifRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
-  const cartItemCount = useAppSelector((state) => state.cart.cart?.cartItems?.length || 0);
+  const cartItemCount = useAppSelector(
+    (state) => state.cart.cart?.cartItems?.length || 0,
+  );
+  const walletBalance = useAppSelector(
+    (state) => state.wallet.wallet?.balance ?? null,
+  );
   const { message: messageApi } = App.useApp();
 
   // Close notification dropdown on outside click
@@ -59,7 +62,16 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   useEffect(() => {
     if (isAuth && mounted) {
       dispatch(fetchMyCart());
+      dispatch(fetchMyWallet());
     }
+  }, [isAuth, dispatch]);
+
+  const formatCurrency = (value?: number | null) => {
+    if (value == null) return "0đ";
+    return `${value.toLocaleString("vi-VN")}đ`;
+  };
+
+  const showAuthenticatedUi = isAuth && Boolean(user);
   }, [isAuth, dispatch, mounted]);
 
   const showAuthenticatedUi = mounted && isAuth && Boolean(user);
@@ -148,37 +160,39 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
           <div className="flex items-center gap-6 lg:gap-8">
             <a href="/home" className="flex items-center group">
               <div className="relative flex items-center justify-center">
-                <img
+                <Image
                   src="/logo/icon-logo.png"
                   alt="Logo ReLife"
-                  className="h-20 w-auto max-w-[120px] object-contain transition-transform duration-300 group-hover:scale-110"
+                  width={120}
+                  height={80}
+                  className="h-20 w-auto max-w-30 object-contain transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
             </a>
             <nav className="hidden items-center gap-5 md:flex lg:gap-6">
               <a
-                className="text-sm font-semibold transition-colors hover:!text-emerald-600"
+                className="text-sm font-semibold transition-colors hover:text-emerald-600!"
                 href="/products"
                 style={{ color: "#4b5563" }}
               >
                 Sản phẩm
               </a>
               <a
-                className="text-sm font-semibold transition-colors hover:!text-emerald-600"
+                className="text-sm font-semibold transition-colors hover:text-emerald-600!"
                 href="/home#categories"
                 style={{ color: "#4b5563" }}
               >
                 Danh mục
               </a>
               <a
-                className="text-sm font-semibold transition-colors hover:!text-emerald-600"
+                className="text-sm font-semibold transition-colors hover:text-emerald-600!"
                 href="/community"
                 style={{ color: "#4b5563" }}
               >
                 Cộng đồng
               </a>
               <a
-                className="text-sm font-semibold transition-colors hover:!text-emerald-600"
+                className="text-sm font-semibold transition-colors hover:text-emerald-600!"
                 href="/contact"
                 style={{ color: "#4b5563" }}
               >
@@ -189,84 +203,8 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             {showAuthenticatedUi && (
               <div className="flex items-center gap-1">
-                {/* Notification Dropdown */}
-                <div className="relative" ref={notifRef}>
-                  <button
-                    onClick={() => setNotifOpen(!notifOpen)}
-                    className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-emerald-600"
-                    title="Thông báo"
-                  >
-                    <Badge count={2} size="small" offset={[-2, 2]}>
-                      <Bell size={18} />
-                    </Badge>
-                  </button>
-                  {notifOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                      <div className="px-5 py-4 border-b border-slate-100">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="font-bold text-slate-900 text-lg">Thông báo</h3>
-                          <button className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">Đánh dấu đã đọc tất cả</button>
-                        </div>
+                <NotificationBell />
 
-                        {/* Tabs */}
-                        <div className="flex gap-2 p-1 bg-slate-50 rounded-xl">
-                          <button
-                            onClick={() => setNotifFilter("all")}
-                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${notifFilter === "all" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                          >
-                            Tất cả
-                          </button>
-                          <button
-                            onClick={() => setNotifFilter("unread")}
-                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${notifFilter === "unread" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                          >
-                            Chưa đọc
-                          </button>
-                          <button
-                            onClick={() => setNotifFilter("read")}
-                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${notifFilter === "read" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                          >
-                            Đã đọc
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="max-h-80 overflow-y-auto">
-                        {[
-                          { title: "Tin đăng được duyệt", desc: "Tin đăng \"iPhone 14 Pro Max\" đã được duyệt thành công.", time: "5 phút trước", unread: true, type: 'success' },
-                          { title: "Có người yêu thích tin của bạn", desc: "Một người đã thêm tin đăng của bạn vào yêu thích.", time: "1 giờ trước", unread: true, type: 'info' },
-                          { title: "Nhắc nhở cập nhật hồ sơ", desc: "Hoàn thiện hồ sơ để tăng uy tín với người mua.", time: "3 giờ trước", unread: false, type: 'warning' },
-                          { title: "Khuyến mãi đặc biệt", desc: "Đăng tin miễn phí trong 7 ngày tới!", time: "1 ngày trước", unread: false, type: 'promo' },
-                        ].filter(n => {
-                          if (notifFilter === "all") return true;
-                          if (notifFilter === "unread") return n.unread;
-                          if (notifFilter === "read") return !n.unread;
-                          return true;
-                        }).map((notif, idx) => (
-                          <div key={idx} className={`px-5 py-4 flex gap-3 cursor-pointer transition-colors hover:bg-slate-50 border-b border-slate-50 last:border-0 ${notif.unread ? 'bg-emerald-50/30' : ''}`}>
-                            <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center ${notif.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
-                              notif.type === 'info' ? 'bg-slate-100 text-slate-600' :
-                                notif.type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
-                              }`}>
-                              {notif.type === 'success' ? <ShieldCheck size={18} /> : <Bell size={18} />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className={`text-sm ${notif.unread ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>{notif.title}</p>
-                                {notif.unread && <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />}
-                              </div>
-                              <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">{notif.desc}</p>
-                              <p className="text-[10px] text-slate-400 mt-2 font-medium">{notif.time}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="px-5 py-3 border-t border-slate-100 text-center bg-slate-50/50">
-                        <button className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">Xem tất cả</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
                 {!isChat && (
                   <>
                     {/* Chat */}
@@ -350,9 +288,11 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                 <div className="hidden cursor-pointer items-center gap-2 rounded-xl bg-white px-2.5 py-1.5 transition-all hover:bg-slate-100 hover:shadow-sm dark:bg-slate-800 dark:hover:bg-slate-700 sm:flex">
                   <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-600">
                     {user?.avatarUrl ? (
-                      <img
+                      <Image
                         src={user.avatarUrl}
                         alt="Ảnh đại diện"
+                        width={36}
+                        height={36}
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -360,14 +300,25 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                     )}
                   </div>
 
-                  <p className="max-w-44 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {displayName}
-                  </p>
+                  <div className="flex flex-col max-w-44">
+                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {displayName}
+                    </p>
+                    {walletBalance != null && (
+                      <Link
+                        href="/dashboard/wallet"
+                        className="text-xs text-emerald-600 font-semibold hover:underline"
+                      >
+                        {formatCurrency(walletBalance)}
+                      </Link>
+                    )}
+                  </div>
 
                   <ChevronDown
                     size={16}
-                    className={`text-slate-500 transition-transform duration-200 ${open ? "rotate-180" : ""
-                      }`}
+                    className={`text-slate-500 transition-transform duration-200 ${
+                      open ? "rotate-180" : ""
+                    }`}
                   />
                 </div>
               </Dropdown>

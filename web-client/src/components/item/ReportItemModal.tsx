@@ -82,9 +82,9 @@ export default function ReportItemModal({
         .filter((file): file is NonNullable<typeof file> => file !== undefined);
 
       await dispatch(reportItemThunk({ data: reportData, images })).unwrap();
-      message.success(
-        "Báo cáo bài viết thành công. Cảm ơn đóng góp ý kiến của bạn!",
-      );
+      // message.success(
+      //   "Báo cáo bài viết thành công. Cảm ơn đóng góp ý kiến của bạn!",
+      // );
       form.resetFields();
       setFileList([]);
       setSubmitted(true);

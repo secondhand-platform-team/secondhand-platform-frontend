@@ -6,6 +6,7 @@ import DashboardPage from "../pages/dashboard/DashboardPage";
 import ProfilePage from "../pages/profile/ProfilePage";
 import ReportPage from "../pages/reports/ReportPage";
 import MyReportsPage from "../pages/reports/MyReportsPage";
+import PaymentPage from "../pages/payments/PaymentPage";
 import AnalyticsPage from "../pages/analytics/AnalyticsPage";
 import UsersPage from "../pages/users/UsersPage";
 import CategoriesPage from "../pages/categories/CategoriesPage";
@@ -30,7 +31,7 @@ const router = createBrowserRouter([
           { path: "items", element: <DashboardPage /> },
           { path: "orders", element: <OrdersPage /> },
           { path: "transactions", element: <DashboardPage /> },
-          { path: "payments", element: <DashboardPage /> },
+          { path: "payments", element: <PaymentPage /> },
           { path: "reports", element: <ReportPage /> },
           { path: "my-reports", element: <MyReportsPage /> },
           { path: "approvals", element: <DashboardPage /> },
