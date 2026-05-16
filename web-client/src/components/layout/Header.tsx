@@ -12,14 +12,23 @@ import {
   Settings,
   Users,
   ShoppingCart,
+<<<<<<< Updated upstream
   Wallet,
+=======
+  ShoppingBag,
+>>>>>>> Stashed changes
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import { logoutUser } from "@/stores/slices/auth.slice";
 import { fetchMyCart } from "@/stores/slices/cart.slice";
+import { walletService } from "@/services/wallet.service";
 import type { UserType } from "@/types/user.type";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+<<<<<<< Updated upstream
+=======
+import Link from "next/link";
+>>>>>>> Stashed changes
 import { NotificationBell } from "@/components/NotificationBell";
 
 type SiteHeaderProps = {
@@ -31,7 +40,9 @@ type SiteHeaderProps = {
 export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
   const dispatch = useAppDispatch();
-  const cartItemCount = useAppSelector((state) => state.cart.cart?.cartItems?.length || 0);
+  const cartItemCount = useAppSelector(
+    (state) => state.cart.cart?.cartItems?.length || 0,
+  );
   const { message: messageApi } = App.useApp();
 
   useEffect(() => {
@@ -39,6 +50,25 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
       dispatch(fetchMyCart());
     }
   }, [isAuth, dispatch]);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+
+  const formatCurrency = (value?: number | null) => {
+    if (value == null) return "0đ";
+    return `${value.toLocaleString("vi-VN")}đ`;
+  };
+
+  useEffect(() => {
+    const loadWallet = async () => {
+      if (!isAuth) return;
+      try {
+        const res = await walletService.getMyWallet();
+        setWalletBalance(res.balance ?? 0);
+      } catch {
+        // ignore wallet load errors silently
+      }
+    };
+    void loadWallet();
+  }, [isAuth]);
   const showAuthenticatedUi = isAuth && Boolean(user);
   const displayName = user?.fullName?.trim() || user?.email || "Người dùng";
   const router = useRouter();
@@ -161,6 +191,7 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             {showAuthenticatedUi && (
               <div className="flex items-center gap-1">
+<<<<<<< Updated upstream
                 <NotificationBell />
 
                 <button
@@ -171,6 +202,10 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                   <Wallet size={18} />
                   <span className="hidden text-sm font-semibold sm:inline">Ví của tôi</span>
                 </button>
+=======
+                {/* Notification Bell */}
+                <NotificationBell />
+>>>>>>> Stashed changes
                 {!isChat && (
                   <>
                     {/* Chat */}
@@ -261,14 +296,25 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                     )}
                   </div>
 
-                  <p className="max-w-44 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {displayName}
-                  </p>
+                  <div className="flex flex-col max-w-44">
+                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {displayName}
+                    </p>
+                    {walletBalance != null && (
+                      <Link
+                        href="/dashboard/wallet"
+                        className="text-xs text-emerald-600 font-semibold hover:underline"
+                      >
+                        {formatCurrency(walletBalance)}
+                      </Link>
+                    )}
+                  </div>
 
                   <ChevronDown
                     size={16}
-                    className={`text-slate-500 transition-transform duration-200 ${open ? "rotate-180" : ""
-                      }`}
+                    className={`text-slate-500 transition-transform duration-200 ${
+                      open ? "rotate-180" : ""
+                    }`}
                   />
                 </div>
               </Dropdown>

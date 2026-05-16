@@ -21,7 +21,8 @@ import {
 } from "@/stores/slices/category.slice";
 import provinceService from "@/services/province.service";
 import { itemService } from "@/stores/slices/items.slice";
-import type { ItemRequest } from "@/types/item.type";
+import type { ItemRequest, PaymentMethod } from "@/types/item.type";
+import { walletService } from "@/services/wallet.service";
 import type { District, Province, Ward } from "@/types/province.type";
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { fetchCurrentUser } from "@/stores/slices/auth.slice";
@@ -51,6 +52,7 @@ interface FormData {
   transactionType: TransactionType;
   condition: ConditionType;
   price: number;
+  paymentMethod: PaymentMethod;
   subcategoryId: string;
   attributes: AttributeValue[];
   location: LocationData;
@@ -84,6 +86,7 @@ export default function PostItemFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [provinces, setProvinces] = useState<Province[]>([]);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -102,6 +105,7 @@ export default function PostItemFormPage() {
     transactionType: "SELL",
     condition: "NEW",
     price: 0,
+    paymentMethod: "VNPAY",
     subcategoryId: subcategoryId,
     attributes: [],
     location: {
@@ -191,6 +195,15 @@ export default function PostItemFormPage() {
     };
 
     loadProvinces();
+    // load wallet balance (for payment UI)
+    void (async () => {
+      try {
+        const res = await walletService.getMyWallet();
+        setWalletBalance(res?.balance ?? 0);
+      } catch {
+        setWalletBalance(null);
+      }
+    })();
   }, []);
 
   const handleCityChange = async (cityCode: string) => {
@@ -420,10 +433,15 @@ export default function PostItemFormPage() {
       }));
 
       const transactionTypeMap: Record<TransactionType, SubmitTransactionType> =
-      {
-        SELL: freeSellRemaining > 0 ? "FREE_SELL" : "SELL",
-        GIVE_AWAY: "GIVE_AWAY",
-      };
+        {
+          SELL: freeSellRemaining > 0 ? "FREE_SELL" : "SELL",
+          GIVE_AWAY: "GIVE_AWAY",
+        };
+
+      const postingFeeToPay =
+        formData.transactionType === "SELL" && freeSellRemaining <= 0
+          ? (categoryData?.postingFee ?? 0)
+          : 0;
 
       const submitData: ItemRequest = {
         title: formData.title,
@@ -432,6 +450,8 @@ export default function PostItemFormPage() {
         categoryId: formData.subcategoryId,
         transactionType: transactionTypeMap[formData.transactionType],
         price: formData.transactionType === "SELL" ? formData.price : 0,
+        postingFee: postingFeeToPay,
+        paymentMethod: formData.paymentMethod,
         location: formData.location,
         attributes,
       };
@@ -455,12 +475,12 @@ export default function PostItemFormPage() {
       } else {
         // Refresh user data to update freeSellUse
         await dispatch(fetchCurrentUser()).unwrap();
-        message.success(
-          <>
-            <CheckCircleOutlined /> Đã tạo tin thành công!
-          </>,
-          2,
-        );
+        // message.success(
+        //   <>
+        //     <CheckCircleOutlined /> Đã tạo tin thành công!
+        //   </>,
+        //   2,
+        // );
         router.push("/home");
       }
     } catch (error) {
@@ -534,10 +554,11 @@ export default function PostItemFormPage() {
                   onClick={() =>
                     setFormData((prev) => ({ ...prev, transactionType: type }))
                   }
-                  className={`flex-1 rounded-xl py-3 px-4 font-semibold transition ${formData.transactionType === type
-                    ? "bg-primary text-white"
-                    : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                    }`}
+                  className={`flex-1 rounded-xl py-3 px-4 font-semibold transition ${
+                    formData.transactionType === type
+                      ? "bg-primary text-white"
+                      : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                  }`}
                 >
                   {type === "SELL" ? "Bán" : "Cho miễn phí"}
                 </button>
@@ -625,10 +646,11 @@ export default function PostItemFormPage() {
                 setFormData((prev) => ({ ...prev, title: e.target.value }))
               }
               placeholder="Nhập tiêu đề sản phẩm"
-              className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${errors.title
-                ? "border-red-300 focus:ring-red-200"
-                : "border-slate-200 focus:ring-primary/20"
-                }`}
+              className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${
+                errors.title
+                  ? "border-red-300 focus:ring-red-200"
+                  : "border-slate-200 focus:ring-primary/20"
+              }`}
             />
             {errors.title && (
               <p className="mt-1 text-sm text-red-600">{errors.title}</p>
@@ -652,10 +674,11 @@ export default function PostItemFormPage() {
                 }
                 placeholder="0"
                 min="0"
-                className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${errors.price
-                  ? "border-red-300 focus:ring-red-200"
-                  : "border-slate-200 focus:ring-primary/20"
-                  }`}
+                className={`w-full rounded-xl border px-4 py-2.5 transition focus:outline-none focus:ring-2 ${
+                  errors.price
+                    ? "border-red-300 focus:ring-red-200"
+                    : "border-slate-200 focus:ring-primary/20"
+                }`}
               />
               {errors.price && (
                 <p className="mt-1 text-sm text-red-600">{errors.price}</p>
@@ -835,7 +858,8 @@ export default function PostItemFormPage() {
                 <Sparkles className="w-4 h-4" /> Mẹo đăng tin hiệu quả
               </p>
               <p className="text-xs text-emerald-700 mt-1">
-                Sử dụng hình ảnh rõ nét và mô tả chi tiết để tăng khả năng tiếp cận người mua lên đến 80%.
+                Sử dụng hình ảnh rõ nét và mô tả chi tiết để tăng khả năng tiếp
+                cận người mua lên đến 80%.
               </p>
             </div>
           )}
@@ -843,22 +867,24 @@ export default function PostItemFormPage() {
           {/* Posting Fee Info - Only for SELL type */}
           {formData.transactionType === "SELL" && user && categoryData && (
             <div
-              className={`rounded-xl p-4 border ${freeSellRemaining > 0
-                ? "bg-green-50 border-green-200"
-                : categoryData.postingFee && categoryData.postingFee > 0
-                  ? "bg-orange-50 border-orange-200"
-                  : "bg-green-50 border-green-200"
-                }`}
+              className={`rounded-xl p-4 border ${
+                freeSellRemaining > 0
+                  ? "bg-green-50 border-green-200"
+                  : categoryData.postingFee && categoryData.postingFee > 0
+                    ? "bg-orange-50 border-orange-200"
+                    : "bg-green-50 border-green-200"
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p
-                    className={`text-sm font-semibold flex items-center gap-2 ${freeSellRemaining > 0
-                      ? "text-green-900"
-                      : categoryData.postingFee && categoryData.postingFee > 0
-                        ? "text-orange-900"
-                        : "text-green-900"
-                      }`}
+                    className={`text-sm font-semibold flex items-center gap-2 ${
+                      freeSellRemaining > 0
+                        ? "text-green-900"
+                        : categoryData.postingFee && categoryData.postingFee > 0
+                          ? "text-orange-900"
+                          : "text-green-900"
+                    }`}
                   >
                     {freeSellRemaining > 0 ? (
                       <>
@@ -879,12 +905,13 @@ export default function PostItemFormPage() {
                     )}
                   </p>
                   <p
-                    className={`text-xs mt-1 ${freeSellRemaining > 0
-                      ? "text-green-700"
-                      : categoryData.postingFee && categoryData.postingFee > 0
-                        ? "text-orange-700"
-                        : "text-green-700"
-                      }`}
+                    className={`text-xs mt-1 ${
+                      freeSellRemaining > 0
+                        ? "text-green-700"
+                        : categoryData.postingFee && categoryData.postingFee > 0
+                          ? "text-orange-700"
+                          : "text-green-700"
+                    }`}
                   >
                     {freeSellRemaining > 0
                       ? `Còn ${freeSellRemaining} lần đăng tin miễn phí`
@@ -893,6 +920,62 @@ export default function PostItemFormPage() {
                         : "Danh mục này cho phép đăng tin miễn phí"}
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {formData.transactionType === "SELL" && freeSellRemaining <= 0 && (
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  Phương thức thanh toán
+                </label>
+                <div className="text-sm text-slate-600">
+                  Số dư ví:{" "}
+                  {walletBalance != null
+                    ? `${walletBalance.toLocaleString("vi-VN")}đ`
+                    : "-"}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <label
+                  className={`flex-1 rounded-xl border px-4 py-2.5 cursor-pointer transition ${formData.paymentMethod === "WALLET" ? "bg-primary text-white" : "bg-white"}`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="WALLET"
+                    checked={formData.paymentMethod === "WALLET"}
+                    onChange={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        paymentMethod: "WALLET",
+                      }))
+                    }
+                    className="hidden"
+                  />
+                  Ví cá nhân
+                </label>
+
+                <label
+                  className={`flex-1 rounded-xl border px-4 py-2.5 cursor-pointer transition ${formData.paymentMethod === "VNPAY" ? "bg-primary text-white" : "bg-white"}`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="VNPAY"
+                    checked={formData.paymentMethod === "VNPAY"}
+                    onChange={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        paymentMethod: "VNPAY",
+                      }))
+                    }
+                    className="hidden"
+                  />
+                  VNPay
+                </label>
               </div>
             </div>
           )}

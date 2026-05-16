@@ -15,6 +15,8 @@ export interface ItemImageRequest {
   isPrimary?: boolean;
 }
 
+export type PaymentMethod = "WALLET" | "VNPAY";
+
 export interface ItemRequest {
   title: string;
   description: string;
@@ -22,6 +24,8 @@ export interface ItemRequest {
   categoryId: string;
   transactionType: string; // SELL, GIVEWAY
   price: number | null;
+  postingFee: number;
+  paymentMethod: PaymentMethod;
   status?: string; // AVAILABLE, RESERVED, SOLD, HIDDEN
   location: LocationRequest;
   attributes: ItemAttributeRequest[];

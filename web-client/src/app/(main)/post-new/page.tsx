@@ -287,7 +287,7 @@ export default function PostNewPage() {
 
     try {
       await dispatch(createNewItem({ payload, images })).unwrap();
-      message.success("Đăng tin thành công");
+      // message.success("Đăng tin thành công");
       setActiveTab("posts");
       dispatch(fetchMyItems());
     } catch (error) {

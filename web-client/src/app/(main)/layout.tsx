@@ -22,13 +22,11 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header
-              isAuth={isAuth}
-              user={user}
-              onOpenAuth={() => setAuthOpen(true)}
-            />
-      <main className="flex-1">
-        {children}
-      </main>
+        isAuth={isAuth}
+        user={user}
+        onOpenAuth={() => setAuthOpen(true)}
+      />
+      <main className="flex-1">{children}</main>
       {authOpen ? (
         <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       ) : null}

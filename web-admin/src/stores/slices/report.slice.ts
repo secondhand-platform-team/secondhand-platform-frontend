@@ -27,8 +27,9 @@ export const fetchPendingReports = createAsyncThunk<
 >("report/fetchPendingReports", async ({ page, size }, { rejectWithValue }) => {
   try {
     const response = await http.get(
-      `/reports/status/PENDING?page=${page}&size=${size}`,
+      `/reports/admin/status/PENDING?page=${page}&size=${size}`,
       { headers: { "X-Service": "core" } }
+  
     );
     return response as ReportListResponse;
   } catch (error: any) {
@@ -42,7 +43,7 @@ export const fetchReportDetail = createAsyncThunk<
   { rejectValue: string }
 >("report/fetchReportDetail", async (reportId, { rejectWithValue }) => {
   try {
-    const response = await http.get(`/reports/${reportId}`, {
+    const response = await http.get(`/reports/admin/${reportId}`, {
       headers: { "X-Service": "core" },
     });
     return response as ReportResponse;
@@ -58,7 +59,7 @@ export const assignReportToStaff = createAsyncThunk<
 >("report/assignToStaff", async ({ reportId, staffId }, { rejectWithValue }) => {
   try {
     const response = await http.patch(
-      `/reports/${reportId}/assign-staff?staffId=${staffId}`,
+      `/reports/admin/${reportId}/assign-staff?staffId=${staffId}`,
       {},
       { headers: { "X-Service": "core" } }
     );
@@ -75,7 +76,7 @@ export const updateReportStatus = createAsyncThunk<
 >("report/updateStatus", async ({ reportId, status, adminNote }, { rejectWithValue }) => {
   try {
     const response = await http.patch(
-      `/reports/${reportId}/status?status=${status}&adminNote=${encodeURIComponent(adminNote)}`,
+      `/reports/admin/${reportId}/status?status=${status}&adminNote=${encodeURIComponent(adminNote)}`,
       {},
       { headers: { "X-Service": "core" } }
     );
@@ -91,7 +92,7 @@ export const fetchPendingCount = createAsyncThunk<
   { rejectValue: string }
 >("report/fetchPendingCount", async (_, { rejectWithValue }) => {
   try {
-    const response = await http.get("/reports/stats/pending-count", {
+    const response = await http.get("/reports/admin/stats/pending-count", {
       headers: { "X-Service": "core" },
     });
     return response as number;
@@ -107,7 +108,7 @@ export const fetchStaffReports = createAsyncThunk<
 >("report/fetchStaffReports", async ({ staffId, page, size }, { rejectWithValue }) => {
   try {
     const response = await http.get(
-      `/reports/staff/${staffId}?page=${page}&size=${size}`,
+      `/reports/admin/staff/${staffId}?page=${page}&size=${size}`,
       { headers: { "X-Service": "core" } }
     );
     return response as ReportListResponse;

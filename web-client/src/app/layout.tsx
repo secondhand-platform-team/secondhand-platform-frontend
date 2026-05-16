@@ -5,10 +5,7 @@ import { ReduxProvider } from "@/stores/provider";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ConfigProvider, App } from "antd";
 import NextTopLoader from "nextjs-toploader";
-// import GoogleAuthProviderWrapper from "@/components/auth/GoogleAuthProvider";
-// import AntdConfigProvider from "@/components/common/AntdConfigProvider";
-// import AuthTokenSync from "@/components/auth/AuthTokenSync";
-// import { ChatSocketProvider } from "@/contexts/ChatSocketContext";
+import { NotificationProvider } from "@/components/NotificationProvider";
 
 const bodyFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -38,7 +35,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className={`${bodyFont.variable} ${displayFont.variable}`} suppressHydrationWarning>
+      <body
+        className={`${bodyFont.variable} ${displayFont.variable}`}
+        suppressHydrationWarning
+      >
         <AntdRegistry>
           <ConfigProvider
             theme={{
@@ -59,7 +59,7 @@ export default function RootLayout({
                 shadow="0 0 10px #22c55e,0 0 5px #22c55e"
               />
               <ReduxProvider>
-                {children}
+                <NotificationProvider>{children}</NotificationProvider>
               </ReduxProvider>
             </App>
           </ConfigProvider>
