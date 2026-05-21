@@ -17,7 +17,7 @@ export default function HeroSection({ onOpenAuth }: HeroSectionProps) {
 
   const handlePostItem = () => {
     if (isAuth) {
-      router.push("/post-new");
+      router.push("/post-item");
     } else {
       onOpenAuth();
     }

@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  Table, Tag, Button, Select, Input, Modal, Form, Descriptions, message, Space, Card, Tabs, Badge, Spin, Divider,
+  Table, Tag, Button, Select, Input, Modal, Form, Descriptions, message, Space, Card, Tabs, Badge, Divider,
 } from "antd";
 import {
   SearchOutlined, EyeOutlined, EditOutlined, TruckOutlined,
-  CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -278,7 +277,7 @@ export default function OrdersPage() {
 
             {selectedOrder.shipment && (
               <>
-                <Divider orientation="left">Thông tin vận chuyển</Divider>
+                <Divider orientation={"left" as any}>Thông tin vận chuyển</Divider>
                 <Descriptions bordered column={2} size="small" style={{ marginBottom: 20 }}>
                   <Descriptions.Item label="Đơn vị">{CARRIERS.find((c) => c.value === selectedOrder.shipment?.carrier)?.label || selectedOrder.shipment.carrier}</Descriptions.Item>
                   <Descriptions.Item label="Mã vận đơn"><span style={{ fontWeight: 600, color: "#16a34a" }}>{selectedOrder.shipment.trackingCode}</span></Descriptions.Item>
@@ -290,7 +289,7 @@ export default function OrdersPage() {
               </>
             )}
 
-            <Divider orientation="left">Sản phẩm ({selectedOrder.orderItems?.length})</Divider>
+            <Divider orientation={"left" as any}>Sản phẩm ({selectedOrder.orderItems?.length})</Divider>
             <Table dataSource={selectedOrder.orderItems} rowKey="id" pagination={false} size="small"
               columns={[
                 { title: "Sản phẩm", dataIndex: "itemName", key: "name" },

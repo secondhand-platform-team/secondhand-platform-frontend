@@ -279,6 +279,8 @@ export default function PostNewPage() {
         address: values.address,
       },
       attributes: [],
+      postingFee: 10000,
+      paymentMethod: "WALLET" as const,
     };
 
     const images = fileList

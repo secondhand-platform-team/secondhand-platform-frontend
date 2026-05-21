@@ -280,7 +280,7 @@ export default function WalletPage() {
                 formatter={(value) =>
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
                 }
-                parser={(value) => Number((value || "").replace(/\./g, ""))}
+                parser={(value) => Number((value || "").replace(/\./g, "")) as any}
               />
             </Form.Item>
 

@@ -11,8 +11,6 @@ import {
   Space,
   Avatar,
   message,
-  ConfigProvider,
-  theme,
 } from "antd";
 import {
   DollarOutlined,
@@ -21,13 +19,10 @@ import {
   PercentageOutlined,
   FireOutlined,
   TrophyOutlined,
-  CalendarOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from "@ant-design/icons";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -63,7 +58,6 @@ interface TopProduct {
 const COLORS = ["#1890ff", "#52c41a", "#fa8c16", "#f5222d", "#722ed1", "#13c2c2"];
 
 const AnalyticsPage = () => {
-  const { token } = theme.useToken();
   const [timeframe, setTimeframe] = useState("month");
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -292,7 +286,7 @@ const AnalyticsPage = () => {
                     animationBegin={0}
                     animationDuration={1500}
                   >
-                    {stats.categories.map((entry: any, index: number) => (
+                    {stats.categories.map((_: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                     ))}
                   </Pie>

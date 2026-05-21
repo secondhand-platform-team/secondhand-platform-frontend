@@ -33,7 +33,6 @@ type SiteHeaderProps = {
 
 export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const dispatch = useAppDispatch();
   const cartItemCount = useAppSelector(
     (state) => state.cart.cart?.cartItems?.length || 0,
@@ -42,16 +41,6 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
     (state) => state.wallet.wallet?.balance ?? null,
   );
   const { message: messageApi } = App.useApp();
-
-  // Close notification dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node))
-        setNotifOpen(false);
-    };
-    if (notifOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [notifOpen]);
 
   const [mounted, setMounted] = useState(false);
 

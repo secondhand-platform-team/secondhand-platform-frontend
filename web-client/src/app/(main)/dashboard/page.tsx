@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import { fetchMyFavorites } from "@/stores/slices/items.slice";
 import { fetchMyCart } from "@/stores/slices/cart.slice";
-import { 
-  ShoppingBag, 
-  Heart, 
-  MessageSquare, 
-  TrendingUp, 
-  Clock, 
+import {
+  ShoppingBag,
+  Heart,
+  MessageSquare,
+  TrendingUp,
+  Clock,
   ArrowRight,
   Plus
 } from "lucide-react";
@@ -21,38 +21,38 @@ export default function DashboardOverview() {
   const { user } = useAppSelector((state) => state.auth);
   const { myFavorites, loading: favLoading } = useAppSelector((state) => state.items);
   const cartItemCount = useAppSelector((state) => state.cart.cart?.cartItems?.length || 0);
-  
+
   useEffect(() => {
     dispatch(fetchMyFavorites());
     dispatch(fetchMyCart());
   }, [dispatch]);
 
   const stats = [
-    { 
-      label: "Tin đang đăng", 
-      value: user?.freeSellUsed || "0", 
-      icon: ShoppingBag, 
+    {
+      label: "Tin đang đăng",
+      value: user?.freeSellUsed || "0",
+      icon: ShoppingBag,
       color: "bg-emerald-50 text-emerald-600",
       link: "/dashboard/my-posts"
     },
-    { 
-      label: "Tin yêu thích", 
-      value: myFavorites.length, 
-      icon: Heart, 
+    {
+      label: "Tin yêu thích",
+      value: myFavorites.length,
+      icon: Heart,
       color: "bg-rose-50 text-rose-600",
       link: "/dashboard/favorites"
     },
-    { 
-      label: "Giỏ hàng", 
-      value: cartItemCount, 
-      icon: ShoppingBag, 
+    {
+      label: "Giỏ hàng",
+      value: cartItemCount,
+      icon: ShoppingBag,
       color: "bg-emerald-50 text-emerald-600",
       link: "/cart"
     },
-    { 
-      label: "Phản hồi chat", 
-      value: "98%", 
-      icon: MessageSquare, 
+    {
+      label: "Phản hồi chat",
+      value: "98%",
+      icon: MessageSquare,
       color: "bg-amber-50 text-amber-600",
       link: "/chat"
     },
@@ -107,9 +107,9 @@ export default function DashboardOverview() {
                 {myFavorites.slice(0, 3).map((item) => (
                   <Link key={item.itemId} href={`/items/${item.itemId}`} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0">
-                      <img 
-                        src={item.itemImageList?.find(img => img.isPrimary)?.imageUrl || item.itemImageList?.[0]?.imageUrl || "/icon-other/san-pham-khac.png"} 
-                        alt="" 
+                      <img
+                        src={item.itemImageList?.find(img => img.isPrimary)?.imageUrl || item.itemImageList?.[0]?.imageUrl || "/icon-other/san-pham-khac.png"}
+                        alt=""
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                       />
                     </div>
@@ -130,13 +130,13 @@ export default function DashboardOverview() {
           <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-lg shadow-emerald-200">
             <h3 className="text-xl font-bold mb-2">Bạn có món đồ muốn chia sẻ?</h3>
             <p className="text-emerald-50/80 text-sm mb-6">Đăng tin ngay để tiếp cận hàng ngàn người mua tiềm năng trong khu vực của bạn.</p>
-            <Link href="/post-new" className="inline-flex items-center gap-2 bg-white text-emerald-600 px-6 py-3 rounded-2xl font-bold hover:bg-emerald-50 transition-all shadow-md">
+            <Link href="/post-item" className="inline-flex items-center gap-2 bg-white text-emerald-600 px-6 py-3 rounded-2xl font-bold hover:bg-emerald-50 transition-all shadow-md">
               <Plus className="w-5 h-5" /> Đăng tin mới
             </Link>
           </div>
 
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-            <h3 className="font-bold text-slate-900 mb-4">Gợi ý cho bạn</h3>
+            <h3 className="font-bold text-slate-900 mb-4">Sản phẩm dành cho bạn</h3>
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm">
                 <p className="text-slate-600 font-medium italic">"Hoàn thiện hồ sơ giúp tăng tỉ lệ bán hàng thành công lên đến 40%."</p>

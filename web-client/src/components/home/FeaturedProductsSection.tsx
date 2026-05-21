@@ -33,14 +33,25 @@ export default function FeaturedProductsSection() {
 
   useEffect(() => {
     const fetchAIRecommendations = async () => {
+      if (!currentUserId) {
+        try {
+          const fallbackItems = await itemService.getFeaturedItems(4);
+          setItems(fallbackItems);
+        } catch (err) {
+          console.error("Lỗi lấy sản phẩm nổi bật (không auth):", err);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         let recentItemNames: string[] = [];
         let cartItemIds: string[] = [];
         
-        if (currentUserId) {
-          const headers = { "Authorization": `Bearer ${localStorage.getItem("access_token")}` };
-          
-          // 1. Lấy lịch sử xem của user để làm "thói quen"
+        const headers = { "Authorization": `Bearer ${localStorage.getItem("access_token")}` };
+        
+        // 1. Lấy lịch sử xem của user để làm "thói quen"
           try {
             const historyRes = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/core/api/view-history/recent`, { headers });
             if (historyRes.ok) {
@@ -61,7 +72,6 @@ export default function FeaturedProductsSection() {
               }
             }
           } catch (e) {}
-        }
 
         // 3. Gọi AI-Service để lấy gợi ý
         const aiRes = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/ai/recommend`, {
@@ -104,7 +114,7 @@ export default function FeaturedProductsSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-            Gợi ý cho bạn ✨
+            Sản phẩm dành cho bạn
           </h2>
           <button
             onClick={() => router.push("/search")}
