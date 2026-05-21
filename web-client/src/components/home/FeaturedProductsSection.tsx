@@ -32,60 +32,78 @@ export default function FeaturedProductsSection() {
   const currentUserId = useAppSelector((state) => state.auth.user?.userId);
 
   useEffect(() => {
-    const fetchAIRecommendations = async () => {
-      if (!currentUserId) {
-        try {
-          const fallbackItems = await itemService.getFeaturedItems(4);
+    let cancelled = false;
+
+    const loadItems = async () => {
+      // 1. Luôn tải sản phẩm nổi bật trước làm fallback
+      try {
+        const fallbackItems = await itemService.getFeaturedItems(4);
+        if (!cancelled) {
           setItems(fallbackItems);
-        } catch (err) {
-          console.error("Lỗi lấy sản phẩm nổi bật (không auth):", err);
-        } finally {
           setLoading(false);
         }
-        return;
+      } catch (err) {
+        console.error("Lỗi lấy sản phẩm nổi bật:", err);
+        if (!cancelled) setLoading(false);
       }
 
+      // 2. Nếu đã đăng nhập, thử gọi AI để cá nhân hóa (không block UI)
+      if (!currentUserId) return;
+
       try {
+        const fetchOptions: RequestInit = {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Client-Type": "user",
+          },
+        };
+
         let recentItemNames: string[] = [];
         let cartItemIds: string[] = [];
-        
-        const headers = { "Authorization": `Bearer ${localStorage.getItem("access_token")}` };
-        
-        // 1. Lấy lịch sử xem của user để làm "thói quen"
-          try {
-            const historyRes = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/core/api/view-history/recent`, { headers });
-            if (historyRes.ok) {
-              const historyData = await historyRes.json();
-              recentItemNames = (Array.isArray(historyData) ? historyData : [])
-                .map((h: any) => h.item?.title)
-                .filter(Boolean);
-            }
-          } catch (e) {}
 
-          // 2. Lấy giỏ hàng của user
-          try {
-            const cartRes = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/order/api/carts/me`, { headers });
-            if (cartRes.ok) {
-              const cartData = await cartRes.json();
-              if (cartData && Array.isArray(cartData.cartItems)) {
-                cartItemIds = cartData.cartItems.map((c: any) => c.itemId).filter(Boolean);
-              }
-            }
-          } catch (e) {}
+        // Lấy lịch sử xem + giỏ hàng song song
+        const [historyResult, cartResult] = await Promise.allSettled([
+          fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/core/api/view-history/recent`, fetchOptions),
+          fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/order/api/carts/me`, fetchOptions),
+        ]);
 
-        // 3. Gọi AI-Service để lấy gợi ý
+        if (historyResult.status === "fulfilled" && historyResult.value.ok) {
+          try {
+            const historyData = await historyResult.value.json();
+            recentItemNames = (Array.isArray(historyData) ? historyData : [])
+              .map((h: any) => h.item?.title)
+              .filter(Boolean);
+          } catch {}
+        }
+
+        if (cartResult.status === "fulfilled" && cartResult.value.ok) {
+          try {
+            const cartData = await cartResult.value.json();
+            if (cartData && Array.isArray(cartData.cartItems)) {
+              cartItemIds = cartData.cartItems.map((c: any) => c.itemId).filter(Boolean);
+            }
+          } catch {}
+        }
+
+        // Gọi AI-Service với timeout 8 giây
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
         const aiRes = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000"}/ai/recommend`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             user_id: currentUserId,
             recent_items: recentItemNames,
             cart_item_ids: cartItemIds,
-            limit: 8
-          })
+            limit: 8,
+          }),
         });
+        clearTimeout(timeoutId);
 
-        if (aiRes.ok) {
+        if (!cancelled && aiRes.ok) {
           const aiData = await aiRes.json();
           const recommendedItems = (Array.isArray(aiData.items) ? aiData.items : []).map((item: any) => ({
             ...item,
@@ -93,20 +111,17 @@ export default function FeaturedProductsSection() {
             favoriteCount: item.favoriteCount ?? 0,
             isFavorited: item.isFavorited ?? false,
           }));
-          setItems(recommendedItems);
-        } else {
-          const fallbackItems = await itemService.getFeaturedItems(4);
-          setItems(fallbackItems);
+          if (recommendedItems.length > 0 && !cancelled) {
+            setItems(recommendedItems);
+          }
         }
-      } catch (err) {
-        const fallbackItems = await itemService.getFeaturedItems(4);
-        setItems(fallbackItems);
-      } finally {
-        setLoading(false);
+      } catch {
+        // AI thất bại → giữ nguyên fallback items đã hiển thị
       }
     };
 
-    fetchAIRecommendations();
+    loadItems();
+    return () => { cancelled = true; };
   }, [currentUserId]);
 
   return (

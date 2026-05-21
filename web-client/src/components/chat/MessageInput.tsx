@@ -1,18 +1,20 @@
 "use client";
 
-import { Button, Input } from "antd";
+import { Button, Input, Upload, message, Badge } from "antd";
 import {
   CloseOutlined,
   FileImageOutlined,
-  PlusCircleOutlined,
-  SmileOutlined,
-  VerticalAlignTopOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
-import { useState } from "react";
-import { ReplyMessage } from "@/types/message.type";
+import { useRef, useState } from "react";
+import { MessageType, ReplyMessage } from "@/types/message.type";
+import type { InputRef } from "antd";
+import type { UploadFile } from "antd/es/upload/interface";
+import http from "@/utils/api";
+import Image from "next/image";
 
 type MessageInputProps = {
-  onSend: (content: string, options?: { replyTo?: ReplyMessage }) => Promise<void> | void;
+  onSend: (content: string, options?: { replyTo?: ReplyMessage, type?: MessageType }) => Promise<void> | void;
   disabled?: boolean;
   replyTo?: ReplyMessage | null;
   onCancelReply?: () => void;
@@ -24,21 +26,80 @@ const MessageInput = ({
   replyTo,
   onCancelReply,
 }: MessageInputProps) => {
-  const [message, setMessage] = useState("");
+  const [messageText, setMessageText] = useState("");
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const inputRef = useRef<InputRef>(null);
+
+  const beforeUpload = (file: File) => {
+    const isImage = file.type.startsWith("image/");
+    if (!isImage) {
+      message.error("Bạn chỉ có thể tải lên file hình ảnh!");
+      return Upload.LIST_IGNORE;
+    }
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      message.error("Hình ảnh phải nhỏ hơn 5MB!");
+      return Upload.LIST_IGNORE;
+    }
+    return false; // Prevent automatic upload
+  };
+
+  const handleChange = ({ fileList: newFileList }: { fileList: UploadFile[] }) => {
+    setFileList(newFileList);
+    // Focus input after selecting images
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const removeFile = (uid: string) => {
+    setFileList(fileList.filter(file => file.uid !== uid));
+  };
 
   const handleSendMessage = async () => {
-    const nextMessage = message.trim();
-
-    if (!nextMessage || disabled) {
+    const textContent = messageText.trim();
+    if ((!textContent && fileList.length === 0) || disabled || isUploading) {
       return;
     }
 
+    setIsUploading(true);
     try {
-      await onSend(nextMessage, {
-        replyTo: replyTo || undefined,
-      });
-      setMessage("");
-    } catch {
+      if (fileList.length > 0) {
+        const formData = new FormData();
+        fileList.forEach(file => {
+          if (file.originFileObj) {
+            formData.append("files", file.originFileObj);
+          }
+        });
+
+        const uploadResponse = await http.post<{ success: boolean, imageUrls: string[] }>(
+          "/core/api/images/upload-multiple",
+          formData
+        );
+
+        if (uploadResponse.success && uploadResponse.imageUrls && uploadResponse.imageUrls.length > 0) {
+          await onSend(uploadResponse.imageUrls.join(","), { type: "IMAGE", replyTo: replyTo || undefined });
+        }
+        setFileList([]);
+      }
+
+      if (textContent) {
+        await onSend(textContent, {
+          replyTo: replyTo || undefined,
+          type: "TEXT"
+        });
+      }
+
+      setMessageText("");
+      if (onCancelReply) {
+        onCancelReply();
+      }
+    } catch (error) {
+      console.error("Gửi tin nhắn thất bại", error);
+      message.error("Không thể gửi tin nhắn");
+    } finally {
+      setIsUploading(false);
+      // Focus input after sending
+      setTimeout(() => inputRef.current?.focus(), 0);
     }
   };
 
@@ -71,29 +132,68 @@ const MessageInput = ({
         </div>
       ) : null}
 
+      {fileList.length > 0 && (
+        <div className="mb-2 flex gap-2 overflow-x-auto pb-2">
+          {fileList.map(file => {
+            const previewUrl = file.originFileObj ? URL.createObjectURL(file.originFileObj) : "";
+            return (
+              <Badge 
+                key={file.uid} 
+                count={
+                  <CloseOutlined 
+                    className="cursor-pointer rounded-full bg-white text-gray-500 shadow-sm border border-gray-200 p-1" 
+                    onClick={() => removeFile(file.uid)}
+                    style={{ fontSize: 10 }}
+                  />
+                }
+              >
+                <div className="h-16 w-16 overflow-hidden rounded-lg border border-gray-200">
+                  <Image 
+                    src={previewUrl} 
+                    alt="preview" 
+                    width={64} 
+                    height={64} 
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              </Badge>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex items-center gap-2 rounded-2xl border border-(--line) bg-slate-50/70 px-2 py-2">
-        <Button type="text" icon={<PlusCircleOutlined className="text-slate-500" />} />
-        <Button type="text" icon={<FileImageOutlined className="text-slate-500" />} />
-        <Button type="text" icon={<SmileOutlined className="text-slate-500" />} />
+        <Upload
+          beforeUpload={beforeUpload}
+          onChange={handleChange}
+          fileList={fileList}
+          multiple
+          accept="image/*"
+          showUploadList={false}
+          disabled={disabled || isUploading}
+        >
+          <Button type="text" icon={<FileImageOutlined className="text-slate-500" />} />
+        </Upload>
 
         <Input
+          ref={inputRef}
           variant="borderless"
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
+          value={messageText}
+          onChange={(event) => setMessageText(event.target.value)}
           onPressEnter={handleSendMessage}
           placeholder="Nhập tin nhắn..."
           className="px-1"
-          disabled={disabled}
+          disabled={disabled || isUploading}
         />
 
         <Button
           type="primary"
           shape="circle"
-          className="bg-emerald-500 shadow-none"
-          disabled={!message.trim() || disabled}
+          className="bg-emerald-500 shadow-none flex items-center justify-center"
+          disabled={(!messageText.trim() && fileList.length === 0) || disabled || isUploading}
           onClick={handleSendMessage}
         >
-          ➤
+          {isUploading ? <LoadingOutlined /> : "➤"}
         </Button>
       </div>
 

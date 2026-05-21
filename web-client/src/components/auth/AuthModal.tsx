@@ -29,6 +29,7 @@ import {
   loginWithGoogle,
 } from "@/stores/slices/auth.slice";
 import { FaFacebookF } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { GoogleLogin } from "@react-oauth/google";
 
 type AuthModalProps = {
@@ -106,7 +107,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
     try {
       await dispatch(loginUser(loginForm)).unwrap();
-    } catch {}
+    } catch { }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -122,7 +123,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
       messageApi.success("Đăng ký thành công!");
       setMode("login");
-    } catch {}
+    } catch { }
   };
 
   const handleGoogleSuccess = (credentialResponse: any) => {
@@ -149,37 +150,37 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         <div className="flex flex-col md:flex-row min-h-[520px]">
 
           {/* LEFT PANEL */}
-<div className="hidden md:flex md:w-1/2 relative 
+          <div className="hidden md:flex md:w-1/2 relative 
 bg-gradient-to-br from-primary/70 via-primary/20 to-white 
 items-center justify-center p-12 overflow-hidden">
 
-  {/* Background blur blobs */}
-  <div className="absolute inset-0 z-0 opacity-70">
-    <div className="absolute top-0 left-0 w-80 h-80 bg-primary rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-    <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-primary rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
-  </div>
+            {/* Background blur blobs */}
+            <div className="absolute inset-0 z-0 opacity-70">
+              <div className="absolute top-0 left-0 w-80 h-80 bg-primary rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+              <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-primary rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
+            </div>
 
-  {/* Content */}
-  <div className="relative z-10 text-center">
-    <div className="mb-8 flex justify-center">
-      <div
-        className="w-full max-w-md aspect-[4/5] rounded-2xl bg-center bg-cover shadow-2xl"
-        style={{
-          backgroundImage:
-            "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDe6LGE8hyGq8LiaoJ7_Uv9NkyKx84H3-8eKjXU21u3fkZPM0PonBFnaPIsgtCNzX1O0PnbV8KyVQVt3Rqy8CGzKLRlKMcwHL8KFBXzND6XmXu7OPS1k7cIBaPuRyQj3m7xh_PfFsh8IBRMZM59NKJD5aR_SrpuKGIZwTx1qOXiS8JjPHLJjeu2XwybNEDINmwlHEFl3Ltsay5cFWV2urTW2Vn4Iu_yz5NOZXbJv-qYoRjHAAo_5XLhGVo_cxIh6GI1TDogd0gQdmod')",
-        }}
-      />
-    </div>
+            {/* Content */}
+            <div className="relative z-10 text-center">
+              <div className="mb-8 flex justify-center">
+                <div
+                  className="w-full max-w-md aspect-[4/5] rounded-2xl bg-center bg-cover shadow-2xl"
+                  style={{
+                    backgroundImage:
+                      "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDe6LGE8hyGq8LiaoJ7_Uv9NkyKx84H3-8eKjXU21u3fkZPM0PonBFnaPIsgtCNzX1O0PnbV8KyVQVt3Rqy8CGzKLRlKMcwHL8KFBXzND6XmXu7OPS1k7cIBaPuRyQj3m7xh_PfFsh8IBRMZM59NKJD5aR_SrpuKGIZwTx1qOXiS8JjPHLJjeu2XwybNEDINmwlHEFl3Ltsay5cFWV2urTW2Vn4Iu_yz5NOZXbJv-qYoRjHAAo_5XLhGVo_cxIh6GI1TDogd0gQdmod')",
+                  }}
+                />
+              </div>
 
-    <h2 className="text-3xl font-extrabold text-slate-900 mb-4">
-      Gia nhập cộng đồng <span className="text-primary">Xanh</span>
-    </h2>
+              <h2 className="text-3xl font-extrabold text-slate-900 mb-4">
+                Gia nhập cộng đồng <span className="text-primary">Xanh</span>
+              </h2>
 
-    <p className="text-slate-600 text-lg leading-relaxed">
-      Mua bán đồ cũ không chỉ tiết kiệm mà còn góp phần bảo vệ môi trường.
-    </p>
-  </div>
-</div>
+              <p className="text-slate-600 text-lg leading-relaxed">
+                Mua bán đồ cũ không chỉ tiết kiệm mà còn góp phần bảo vệ môi trường.
+              </p>
+            </div>
+          </div>
 
           {/* RIGHT PANEL */}
 
@@ -198,16 +199,16 @@ items-center justify-center p-12 overflow-hidden">
                   {mode === "login"
                     ? "Chào mừng quay lại"
                     : mode === "register"
-                    ? "Tạo tài khoản"
-                    : "Khôi phục mật khẩu"}
+                      ? "Tạo tài khoản"
+                      : "Khôi phục mật khẩu"}
                 </Typography.Title>
 
                 <Typography.Text className="text-slate-400">
                   {mode === "login"
                     ? "Đăng nhập để tiếp tục"
                     : mode === "register"
-                    ? "Tham gia cộng đồng mua sắm bền vững"
-                    : "Nhập email hoặc số điện thoại để lấy lại mật khẩu"}
+                      ? "Tham gia cộng đồng mua sắm bền vững"
+                      : "Nhập email hoặc số điện thoại để lấy lại mật khẩu"}
                 </Typography.Text>
               </div>
 
@@ -218,22 +219,20 @@ items-center justify-center p-12 overflow-hidden">
 
                   <button
                     onClick={() => setMode("login")}
-                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-                      mode === "login"
-                        ? "bg-white dark:bg-slate-700 shadow text-emerald-600"
-                        : "text-slate-500"
-                    }`}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${mode === "login"
+                      ? "bg-white dark:bg-slate-700 shadow text-emerald-600"
+                      : "text-slate-500"
+                      }`}
                   >
                     Đăng nhập
                   </button>
 
                   <button
                     onClick={() => setMode("register")}
-                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-                      mode === "register"
-                        ? "bg-white dark:bg-slate-700 shadow text-emerald-600"
-                        : "text-slate-500"
-                    }`}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${mode === "register"
+                      ? "bg-white dark:bg-slate-700 shadow text-emerald-600"
+                      : "text-slate-500"
+                      }`}
                   >
                     Đăng ký
                   </button>
@@ -291,13 +290,13 @@ items-center justify-center p-12 overflow-hidden">
                       onChange={(e) =>
                         mode === "register"
                           ? setRegisterForm({
-                              ...registerForm,
-                              email: e.target.value,
-                            })
+                            ...registerForm,
+                            email: e.target.value,
+                          })
                           : setLoginForm({
-                              ...loginForm,
-                              email: e.target.value,
-                            })
+                            ...loginForm,
+                            email: e.target.value,
+                          })
                       }
                       className="!rounded-xl h-11"
                     />
@@ -331,13 +330,13 @@ items-center justify-center p-12 overflow-hidden">
                         onChange={(e) =>
                           mode === "login"
                             ? setLoginForm({
-                                ...loginForm,
-                                password: e.target.value,
-                              })
+                              ...loginForm,
+                              password: e.target.value,
+                            })
                             : setRegisterForm({
-                                ...registerForm,
-                                password: e.target.value,
-                              })
+                              ...registerForm,
+                              password: e.target.value,
+                            })
                         }
                         className="!rounded-xl h-11"
                       />
@@ -403,25 +402,55 @@ items-center justify-center p-12 overflow-hidden">
 
                         <div className="flex gap-3">
 
-                        <div className="flex-1 overflow-hidden">
-                          <GoogleLogin
-                            onSuccess={handleGoogleSuccess}
-                            onError={() => messageApi.error("Đăng nhập Google thất bại")}
-                            theme="outline"
-                            size="large"
-                            width="180"
-                          />
-                        </div>
-                      <Button
-                        className="flex-1 h-11 !rounded-xl flex items-center justify-center gap-2 
-                        !border-none !text-white !bg-[#1877F2] hover:!bg-[#166fe5]"
-                      >
-                        <FaFacebookF size={16} />
-                        Facebook
-                      </Button>
+                          <div className="flex-1 relative h-11 rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
+                            {/* Hidden GoogleLogin — fills the container so its click area covers the visible button */}
+                            <div className="absolute inset-0 opacity-0 z-10 [&_iframe]:!w-full [&_iframe]:!h-full [&>div]:!w-full [&>div]:!h-full">
+                              <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => messageApi.error("Đăng nhập Google thất bại")}
+                                size="large"
+                                width="300"
+                              />
+                            </div>
+                            {/* Visible styled button — pointer-events disabled so clicks pass to GoogleLogin above */}
+                            <div className="absolute inset-0 z-0 flex items-center justify-center gap-2
+                            border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 
+                            text-slate-700 dark:text-slate-200 rounded-xl text-sm font-medium
+                            pointer-events-none">
+                              <FcGoogle size={18} />
+                              Google
+                            </div>
+                          </div>
+                          <div className="flex-1 relative h-11 rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
+                            {/* Hidden GoogleLogin — fills the container so its click area covers the visible button */}
+                            <div className="absolute inset-0 opacity-0 z-10 [&_iframe]:!w-full [&_iframe]:!h-full [&>div]:!w-full [&>div]:!h-full">
+                              {/* <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => messageApi.error("Đăng nhập Google thất bại")}
+                                size="large"
+                                width="300"
+                              /> */}
+                            </div>
+                            {/* Visible styled button — pointer-events disabled so clicks pass to GoogleLogin above */}
+                            <div className="absolute inset-0 z-0 flex items-center justify-center gap-2
+                            border border-slate-200 dark:border-slate-600 bg-blue-600 dark:bg-slate-800 
+                            text-white dark:text-slate-200 rounded-xl text-sm font-medium
+                            pointer-events-none">
+                              <FaFacebookF size={18} className="text-white" />
+                              Facebook
+                            </div>
+                          </div>
 
-                    </div>
-                    </>
+                          {/* <Button
+                          //   className="flex-1 h-11 !rounded-xl flex items-center justify-center gap-2
+                          //     !border !border-slate-200 dark:!border-slate-600 !bg-white dark:!bg-slate-800 hover:!bg-slate-50 dark:hover:!bg-slate-700 !text-slate-700 dark:!text-slate-200 hover:!shadow-md !transition-shadow"
+                          // >
+                          //     <FaFacebookF size={16} className="text-[#1877F2]" />
+                          //     Facebook
+                          //   </Button> */}
+
+                        </div>
+                      </>
                     )}
 
                   </form>

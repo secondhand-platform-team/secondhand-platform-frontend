@@ -13,6 +13,8 @@ const MainLayoutInner = ({ children }: { children: React.ReactNode }) => {
   const [authOpen, setAuthOpen] = useState(false);
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isChat = pathname.startsWith("/chat");
 
   useEffect(() => {
     const shouldOpenAuth = searchParams.get("auth") === "1";
@@ -31,7 +33,8 @@ const MainLayoutInner = ({ children }: { children: React.ReactNode }) => {
       {authOpen ? (
         <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       ) : null}
-      <AIChatbot />
+      {!isChat && !isDashboard && <AIChatbot />}
+
     </div>
   );
 };

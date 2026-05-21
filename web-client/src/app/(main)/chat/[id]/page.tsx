@@ -2,7 +2,7 @@
 
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatWindow from "@/components/chat/ChatWindow";
-import { chatSocketService } from "@/stores/slices/chat.slice";
+import { chatSocketService } from "@/services/websocket.service";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
   connectChatSocket,
@@ -17,7 +17,7 @@ import {
   setParticipantOnlineStatus,
   upsertConversation,
 } from "@/stores/slices/chat.slice";
-import { ChatMessage, ReplyMessage } from "@/types/message.type";
+import { ChatMessage, MessageType, ReplyMessage } from "@/types/message.type";
 import { Empty } from "antd";
 import dayjs from "dayjs";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -46,6 +46,7 @@ const ChatWindowPageContent = () => {
   );
   const [replyingTo, setReplyingTo] = useState<ReplyMessage | null>(null);
   const [localReplyByMessageId, setLocalReplyByMessageId] = useState<Record<string, ReplyMessage>>({});
+  const [itemContext, setItemContext] = useState<{ id: string; title: string; price: number; imageUrl: string; } | null>(null);
   const activeConversation = conversations.find(
     (conversation) => conversation.id === activeConversationId
   );
@@ -138,6 +139,24 @@ const ChatWindowPageContent = () => {
 
   //   router.replace("/home");
   // }, [isAuth, router]);
+
+  useEffect(() => {
+    const itemId = searchParams.get("itemId");
+    if (itemId) {
+      import("@/stores/slices/items.slice").then(({ itemService }) => {
+        itemService.getItem(itemId).then((res) => {
+          if (res) {
+            setItemContext({
+              id: res.itemId,
+              title: res.title,
+              price: res.price || 0,
+              imageUrl: res.images?.[0]?.imageUrl || "",
+            });
+          }
+        }).catch(console.error);
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!routeConversationId) {
@@ -296,7 +315,7 @@ const ChatWindowPageContent = () => {
   }, []);
 
   const handleSendMessage = useCallback(
-    async (content: string, options?: { replyTo?: ReplyMessage }) => {
+    async (content: string, options?: { replyTo?: ReplyMessage, type?: MessageType }) => {
       if (!activeConversation) {
         return;
       }
@@ -316,7 +335,7 @@ const ChatWindowPageContent = () => {
           conversationId: activeConversation.id,
           receiverId: activeConversation.participantId,
           content,
-          type: "TEXT",
+          type: options?.type || "TEXT",
           replyTo: options?.replyTo,
         })
       ).unwrap();
@@ -373,6 +392,7 @@ const ChatWindowPageContent = () => {
               onReplyMessage={handleReplyMessage}
               onReactMessage={handleReactMessage}
               currentUserName={user?.fullName || user?.email || "Bạn"}
+              itemContext={itemContext}
             />
           ) : (
             <div className="flex items-center justify-center bg-slate-50">

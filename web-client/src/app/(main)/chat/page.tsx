@@ -2,7 +2,7 @@
 
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatWindow from "@/components/chat/ChatWindow";
-import { chatSocketService } from "@/stores/slices/chat.slice";
+import { chatSocketService } from "@/services/websocket.service";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
   connectChatSocket,

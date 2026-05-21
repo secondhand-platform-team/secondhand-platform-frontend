@@ -129,10 +129,12 @@ const MessageBubble = ({
           </div>
 
           <div
-            className={`rounded-2xl px-4 py-2.5 ${
-              isMine
-                ? "rounded-br-md bg-emerald-500 text-white"
-                : "rounded-bl-md border border-(--line) bg-white text-slate-700"
+            className={`rounded-2xl ${message.type === "IMAGE" ? "" : "px-4 py-2.5"} ${
+              message.type === "IMAGE" 
+                ? "" 
+                : isMine
+                  ? "rounded-br-md bg-emerald-500 text-white"
+                  : "rounded-bl-md border border-(--line) bg-white text-slate-700"
             }`}
           >
             {message.replyTo ? (
@@ -147,19 +149,78 @@ const MessageBubble = ({
               <Typography.Text style={{ color: "inherit" }}>{message.content}</Typography.Text>
             ) : null}
 
-            {message.type === "IMAGE" ? (
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {[message.content].map((image, index) => (
+            {message.type === "IMAGE" ? (() => {
+              const urls = message.content.split(",").filter(Boolean);
+              const count = urls.length;
+              const shown = urls.slice(0, 4);
+              const extra = count - 4;
+
+              const imgClass = "w-full h-full object-cover";
+
+              const renderImg = (url: string, index: number, overlaySrc?: string) => (
+                <div key={`${message.id}-${index}`} className="relative overflow-hidden">
                   <Image
-                    key={`${message.id}-${index}`}
-                    src={image}
-                    alt="Ảnh người bán gửi"
-                    preview
-                    className="h-52 w-full rounded-xl object-cover"
+                    src={url}
+                    alt={`Ảnh ${index + 1}`}
+                    preview={{ src: url }}
+                    className={`${imgClass} !rounded-none`}
+                    style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+                    styles={{ root: { width: "100%", height: "100%", display: "block" } }}
                   />
-                ))}
-              </div>
-            ) : null}
+                  {overlaySrc && extra > 0 && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xl font-bold cursor-pointer select-none"
+                      style={{ borderRadius: 0 }}
+                    >
+                      +{extra + 1}
+                    </div>
+                  )}
+                </div>
+              );
+
+              return (
+                <div className="mt-1 overflow-hidden rounded-xl" style={{ maxWidth: 260 }}>
+                  {count > 1 && (
+                    <div className={`mb-1 text-[11px] font-medium ${isMine ? "text-white/80 text-right" : "text-slate-400 text-left"}`}>
+                      {isMine ? `Bạn đã gửi ${count} ảnh` : `${count} ảnh`}
+                    </div>
+                  )}
+
+                  {/* 1 image */}
+                  {count === 1 && (
+                    <div style={{ width: 220, height: 220 }} className="rounded-xl overflow-hidden">
+                      {renderImg(urls[0], 0)}
+                    </div>
+                  )}
+
+                  {/* 2 images: side by side */}
+                  {count === 2 && (
+                    <div style={{ width: 260, height: 130, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+                      {shown.map((url, i) => renderImg(url, i))}
+                    </div>
+                  )}
+
+                  {/* 3 images: 1 large left + 2 stacked right */}
+                  {count === 3 && (
+                    <div style={{ width: 260, height: 180, display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: 2 }}>
+                      <div style={{ gridRow: "1 / 3" }}>{renderImg(urls[0], 0)}</div>
+                      <div>{renderImg(urls[1], 1)}</div>
+                      <div>{renderImg(urls[2], 2)}</div>
+                    </div>
+                  )}
+
+                  {/* 4+ images: 2x2 grid, last cell shows overlay if extra */}
+                  {count >= 4 && (
+                    <div style={{ width: 260, height: 260, display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: 2 }}>
+                      {renderImg(shown[0], 0)}
+                      {renderImg(shown[1], 1)}
+                      {renderImg(shown[2], 2)}
+                      {extra > 0 ? renderImg(shown[3], 3, shown[3]) : renderImg(shown[3], 3)}
+                    </div>
+                  )}
+                </div>
+              );
+            })() : null}
             {showTime && (
               <div className={`mt-1 ${isMine ? "text-right" : "text-left"}`}>
                 <span className={`text-[10px] ${isMine ? "text-white/70" : "text-slate-400"}`}>
