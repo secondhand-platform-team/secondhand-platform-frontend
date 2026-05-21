@@ -13,7 +13,7 @@ export default defineConfig({
       "/auth/api": { target: KONG_URL, changeOrigin: true },
       "/core/api": { target: KONG_URL, changeOrigin: true },
       "/order/api": { target: KONG_URL, changeOrigin: true },
-      "/chat/api":  { target: KONG_URL, changeOrigin: true },
+      "/chat/api": { target: KONG_URL, changeOrigin: true },
     },
   },
 });

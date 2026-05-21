@@ -30,8 +30,9 @@ class HttpClient {
       headers["Content-Type"] = options?.contentType || "application/json";
     }
 
-    // Tokens are stored in HttpOnly cookies — browser sends them automatically.
-    // Do NOT read from localStorage or set Authorization header.
+    // Identify this request as coming from the admin app.
+    // Backend uses this to scope cookies/sessions separately from web-client.
+    headers["X-Client-Type"] = "admin";
 
     if (options?.headers) {
       // Strip internal X-Service header before sending
