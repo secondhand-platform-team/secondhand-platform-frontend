@@ -29,6 +29,11 @@ class HttpClient {
       headers["Content-Type"] = options?.contentType || "application/json";
     }
 
+    // Identify this request as coming from the user-facing client app.
+    // Backend uses this to scope cookie operations (login/logout/refresh)
+    // to the user session only, without affecting the admin session.
+    headers["X-Client-Type"] = "user";
+
     // Merge với headers tùy chỉnh
     if (options?.headers) {
       Object.assign(headers, options.headers);
