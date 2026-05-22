@@ -41,7 +41,8 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState<AddressType[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [showNewAddress, setShowNewAddress] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [paymentMethod, setPaymentMethod] = useState("WALLET");
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -96,6 +97,11 @@ export default function CheckoutPage() {
     loadCart();
     loadAddresses();
     provinceService.getProvinces().then(setProvinces).catch(() => {});
+    
+    // Tải số dư ví hiện tại của người mua
+    http.get<any>("/core/api/wallet/me")
+      .then((res) => setWalletBalance(res.balance))
+      .catch(() => setWalletBalance(null));
   }, [isAuth, authLoading, router, loadCart, loadAddresses]);
 
   const onCityChange = async (cityName: string) => {
@@ -164,13 +170,40 @@ export default function CheckoutPage() {
       quantity: item.quantity,
     }));
 
+    if (paymentMethod === "WALLET") {
+      try {
+        setSubmitting(true);
+        // Kiểm tra số dư ví realtime trước khi gửi request tạo order
+        const wallet = await http.get<any>("/core/api/wallet/me");
+        if (wallet.balance < total) {
+          messageApi.error("Số dư ví không đủ, vui lòng nạp thêm tiền!");
+          setSubmitting(false);
+          return;
+        }
+      } catch {
+        messageApi.error("Không thể xác thực số dư ví. Vui lòng thử lại!");
+        setSubmitting(false);
+        return;
+      }
+    }
+
     try {
       setSubmitting(true);
-      await http.post("/order/api/orders", {
+      const res = await http.post<any>("/order/api/orders", {
         receiverName, receiverPhone, shippingAddress, paymentMethod, items,
       });
-      messageApi.success("Đặt hàng thành công!");
-      router.push("/dashboard/orders");
+      
+      if (paymentMethod === "VNPAY") {
+        if (res && res.paymentUrl) {
+          messageApi.success("Đang chuyển hướng sang cổng thanh toán VNPay...");
+          window.location.href = res.paymentUrl;
+        } else {
+          messageApi.error("Không nhận được liên kết thanh toán từ VNPay.");
+        }
+      } else {
+        messageApi.success("Đặt hàng và thanh toán qua ví thành công!");
+        router.push("/dashboard/orders");
+      }
     } catch (err: any) {
       messageApi.error(err?.message || "Đặt hàng thất bại");
     } finally { setSubmitting(false); }
@@ -303,9 +336,20 @@ export default function CheckoutPage() {
               </h2>
               <Radio.Group value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full space-y-3">
                 {[
-                  { value: "COD", icon: <Banknote className="w-5 h-5 text-emerald-600" />, label: "Thanh toán khi nhận hàng (COD)", desc: "Thanh toán bằng tiền mặt khi shipper giao hàng" },
-                  { value: "BANK_TRANSFER", icon: <CreditCard className="w-5 h-5 text-blue-600" />, label: "Chuyển khoản ngân hàng", desc: "Chuyển khoản qua ứng dụng ngân hàng hoặc ATM" },
-                  { value: "MOMO", icon: <Wallet className="w-5 h-5 text-pink-600" />, label: "Ví điện tử", desc: "Momo, ZaloPay, ShopeePay" },
+                  {
+                    value: "WALLET",
+                    icon: <Wallet className="w-5 h-5 text-emerald-600" />,
+                    label: "Thanh toán qua ví Chợ Đồ Cũ",
+                    desc: walletBalance !== null
+                      ? `Số dư ví hiện tại: ${formatPrice(walletBalance)}`
+                      : "Sử dụng số dư ví Chợ Đồ Cũ của bạn"
+                  },
+                  {
+                    value: "VNPAY",
+                    icon: <CreditCard className="w-5 h-5 text-blue-600" />,
+                    label: "Thanh toán qua VNPay",
+                    desc: "Thanh toán online qua thẻ ngân hàng hoặc mã QR"
+                  },
                 ].map((opt) => (
                   <label key={opt.value}
                     className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
