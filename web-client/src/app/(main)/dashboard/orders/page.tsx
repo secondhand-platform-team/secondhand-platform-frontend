@@ -32,6 +32,15 @@ interface PaymentType {
   createdAt: string;
 }
 
+interface ShipmentType {
+  id: string;
+  carrier: string;
+  trackingCode: string;
+  status: string;
+  shippedAt?: string;
+  deliveredAt?: string;
+}
+
 interface OrderType {
   id: string;
   buyerId: string;
@@ -45,6 +54,7 @@ interface OrderType {
   updatedAt: string;
   orderItems: OrderItemType[];
   payment: PaymentType | null;
+  shipment: ShipmentType | null;
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -86,6 +96,12 @@ export default function OrderHistoryPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const dispatch = useAppDispatch();
 
+  // Seller & Shipment states
+  const [viewMode, setViewMode] = useState<"BUY" | "SELL">("BUY");
+  const [showShipmentForm, setShowShipmentForm] = useState(false);
+  const [carrier, setCarrier] = useState("GHTK");
+  const [trackingCode, setTrackingCode] = useState("");
+
   const formatPrice = (p: number) => p.toLocaleString("vi-VN") + "đ";
   const formatDate = (d: string) => {
     if (!d) return "";
@@ -96,7 +112,8 @@ export default function OrderHistoryPage() {
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await http.get<OrderType[]>("/order/api/orders/me");
+      const url = viewMode === "BUY" ? "/order/api/orders/me" : "/order/api/orders/seller";
+      const data = await http.get<OrderType[]>(url);
       setOrders(data);
 
       // Load first images for order items
@@ -118,7 +135,7 @@ export default function OrderHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [viewMode]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -137,6 +154,14 @@ export default function OrderHistoryPage() {
 
   const openDetail = (order: OrderType) => {
     setDetailOrder(order);
+    setShowShipmentForm(false);
+    if (order.shipment) {
+      setCarrier(order.shipment.carrier || "GHTK");
+      setTrackingCode(order.shipment.trackingCode || "");
+    } else {
+      setCarrier("GHTK");
+      setTrackingCode("");
+    }
     setDetailOpen(true);
   };
 
@@ -209,6 +234,93 @@ export default function OrderHistoryPage() {
     }
   };
 
+  const handleCancelOrderBySeller = () => {
+    if (!detailOrder) return;
+    Modal.confirm({
+      title: "Hủy đơn hàng (Người bán)",
+      content: "Bạn có chắc chắn muốn hủy đơn hàng này không? Khách hàng sẽ nhận được thông báo hủy đơn.",
+      okText: "Hủy đơn",
+      okType: "danger",
+      cancelText: "Không",
+      onOk: async () => {
+        try {
+          setActionLoading(true);
+          const updatedOrder = await http.put<OrderType>(`/order/api/orders/seller/${detailOrder.id}/cancel`, {});
+          messageApi.success("Hủy đơn hàng thành công");
+          setDetailOpen(false);
+          loadOrders();
+        } catch (err: any) {
+          messageApi.error(err?.message || "Lỗi khi hủy đơn hàng");
+        } finally {
+          setActionLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleCreateShipment = async () => {
+    if (!detailOrder) return;
+    if (!carrier.trim() || !trackingCode.trim()) {
+      messageApi.error("Vui lòng nhập đầy đủ Đơn vị vận chuyển và Mã vận đơn");
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const updatedOrder = await http.post<OrderType>(`/order/api/orders/seller/${detailOrder.id}/shipment`, {
+        carrier,
+        trackingCode,
+      });
+      messageApi.success("Tạo thông tin vận chuyển thành công");
+      setShowShipmentForm(false);
+      setDetailOrder(updatedOrder);
+      loadOrders();
+    } catch (err: any) {
+      messageApi.error(err?.message || "Lỗi khi tạo thông tin vận chuyển");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateShipmentInfo = async () => {
+    if (!detailOrder) return;
+    if (!carrier.trim() || !trackingCode.trim()) {
+      messageApi.error("Vui lòng nhập đầy đủ Đơn vị vận chuyển và Mã vận đơn");
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const updatedOrder = await http.put<OrderType>(`/order/api/orders/seller/${detailOrder.id}/shipment`, {
+        carrier,
+        trackingCode,
+      });
+      messageApi.success("Cập nhật thông tin vận chuyển thành công");
+      setShowShipmentForm(false);
+      setDetailOrder(updatedOrder);
+      loadOrders();
+    } catch (err: any) {
+      messageApi.error(err?.message || "Lỗi khi cập nhật thông tin vận chuyển");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateShipmentStatus = async (newShipmentStatus: string) => {
+    if (!detailOrder) return;
+    try {
+      setActionLoading(true);
+      const updatedOrder = await http.put<OrderType>(`/order/api/orders/seller/${detailOrder.id}/shipment`, {
+        status: newShipmentStatus,
+      });
+      messageApi.success(`Chuyển trạng thái đơn hàng sang ${newShipmentStatus === "SHIPPING" ? "Đang giao" : "Đã giao"} thành công`);
+      setDetailOrder(updatedOrder);
+      loadOrders();
+    } catch (err: any) {
+      messageApi.error(err?.message || "Lỗi khi cập nhật trạng thái vận chuyển");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
@@ -232,6 +344,28 @@ export default function OrderHistoryPage() {
         <div className="mb-2">
           <h1 className="text-3xl font-black text-slate-900">Lịch sử đơn hàng</h1>
           <p className="text-slate-500 mt-1">Theo dõi và quản lý các đơn mua bán đồ cũ của bạn.</p>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-fit mt-6">
+          <button
+            onClick={() => { setViewMode("BUY"); setActiveTab("ALL"); }}
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
+              viewMode === "BUY" ? "bg-emerald-500 text-white shadow-md" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            Đơn đã mua
+          </button>
+          <button
+            onClick={() => { setViewMode("SELL"); setActiveTab("ALL"); }}
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
+              viewMode === "SELL" ? "bg-emerald-500 text-white shadow-md" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            Đơn đã bán
+          </button>
         </div>
 
         {/* Tabs */}
@@ -392,7 +526,7 @@ export default function OrderHistoryPage() {
             </div>
 
             {/* Payment Info */}
-            <div className="p-4 border border-slate-200 rounded-xl">
+            <div className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm">
               <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-emerald-500" /> Thanh toán
               </h4>
@@ -400,6 +534,87 @@ export default function OrderHistoryPage() {
                 {detailOrder.payment ? PAYMENT_METHOD_MAP[detailOrder.payment.method] || detailOrder.payment.method : "Không rõ"}
               </p>
             </div>
+
+            {/* Shipment Info */}
+            {detailOrder.shipment && (
+              <div className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm">
+                <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-emerald-500" /> Thông tin vận chuyển
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <span className="text-slate-500">Đơn vị vận chuyển:</span>
+                    <span className="font-semibold text-slate-800">{detailOrder.shipment.carrier}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <span className="text-slate-500">Mã vận đơn:</span>
+                    <span className="font-bold text-emerald-600 font-mono">{detailOrder.shipment.trackingCode}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">Trạng thái vận chuyển:</span>
+                    <span className={`font-semibold px-2.5 py-0.5 rounded-full text-xs ${
+                      detailOrder.shipment.status === "DELIVERED" ? "bg-green-50 text-green-700" :
+                      detailOrder.shipment.status === "SHIPPING" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"
+                    }`}>
+                      {detailOrder.shipment.status === "PREPARING" ? "Đang chuẩn bị" :
+                       detailOrder.shipment.status === "SHIPPING" ? "Đang giao" :
+                       detailOrder.shipment.status === "DELIVERED" ? "Đã giao" : detailOrder.shipment.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Shipment Form */}
+            {showShipmentForm && (
+              <div className="p-4 border-2 border-emerald-500/20 bg-emerald-50/10 rounded-xl space-y-4 shadow-inner">
+                <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-emerald-500" /> Nhập thông tin vận chuyển
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">Đơn vị vận chuyển</label>
+                    <select
+                      value={carrier}
+                      onChange={(e) => setCarrier(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    >
+                      <option value="GHTK">Giao Hàng Tiết Kiệm (GHTK)</option>
+                      <option value="GHN">Giao Hàng Nhanh (GHN)</option>
+                      <option value="Viettel Post">Viettel Post</option>
+                      <option value="VNPost">VNPost (Bưu điện VN)</option>
+                      <option value="Ninja Van">Ninja Van</option>
+                      <option value="J&T Express">J&T Express</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">Mã vận đơn</label>
+                    <input
+                      type="text"
+                      placeholder="Nhập mã vận đơn"
+                      value={trackingCode}
+                      onChange={(e) => setTrackingCode(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={() => setShowShipmentForm(false)}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-all"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    onClick={detailOrder.shipment ? handleUpdateShipmentInfo : handleCreateShipment}
+                    disabled={actionLoading}
+                    className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold transition-all shadow-sm"
+                  >
+                    Xác nhận
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Order Items */}
             <div>
@@ -430,40 +645,133 @@ export default function OrderHistoryPage() {
 
             {/* Actions */}
             <div className="pt-4 border-t border-slate-200">
-              {detailOrder.status === "PENDING" && (
-                <button
-                  onClick={handleCancelOrder}
-                  disabled={actionLoading}
-                  className="w-full py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-bold transition-colors disabled:opacity-50"
-                >
-                  Hủy đơn hàng
-                </button>
-              )}
+              {viewMode === "BUY" ? (
+                <>
+                  {detailOrder.status === "PENDING" && (
+                    <button
+                      onClick={handleCancelOrder}
+                      disabled={actionLoading}
+                      className="w-full py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-bold transition-colors disabled:opacity-50"
+                    >
+                      Hủy đơn hàng
+                    </button>
+                  )}
 
-              {["CONFIRMED", "PAID", "SHIPPING"].includes(detailOrder.status) && (
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium text-center">
-                  Đơn hàng đang trong quá trình xử lý và giao hàng, không thể hủy.
-                </div>
-              )}
+                  {["CONFIRMED", "PAID", "SHIPPING"].includes(detailOrder.status) && (
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium text-center">
+                      Đơn hàng đang trong quá trình xử lý và giao hàng, không thể hủy.
+                    </div>
+                  )}
 
-              {detailOrder.status === "DELIVERED" && (
-                <button
-                  onClick={handleReturnOrder}
-                  disabled={actionLoading}
-                  className="w-full py-3 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-xl font-bold transition-colors disabled:opacity-50"
-                >
-                  Yêu cầu trả hàng
-                </button>
-              )}
+                  {detailOrder.status === "DELIVERED" && (
+                    <button
+                      onClick={handleReturnOrder}
+                      disabled={actionLoading}
+                      className="w-full py-3 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-xl font-bold transition-colors disabled:opacity-50"
+                    >
+                      Yêu cầu trả hàng
+                    </button>
+                  )}
 
-              {["CANCELLED", "RETURNED"].includes(detailOrder.status) && (
-                <button
-                  onClick={handleRepurchase}
-                  disabled={actionLoading}
-                  className="w-full py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <RotateCcw className="w-4 h-4" /> Mua lại đơn hàng
-                </button>
+                  {["CANCELLED", "RETURNED"].includes(detailOrder.status) && (
+                    <button
+                      onClick={handleRepurchase}
+                      disabled={actionLoading}
+                      className="w-full py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" /> Mua lại đơn hàng
+                    </button>
+                  )}
+                </>
+              ) : (
+                // SELLER ACTIONS
+                <>
+                  {!showShipmentForm && (
+                    <div className="space-y-3">
+                      {detailOrder.status === "PENDING" && (
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <button
+                            onClick={handleCancelOrderBySeller}
+                            disabled={actionLoading}
+                            className="flex-1 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-bold transition-colors disabled:opacity-50"
+                          >
+                            Hủy đơn hàng
+                          </button>
+                          <button
+                            onClick={() => setShowShipmentForm(true)}
+                            disabled={actionLoading}
+                            className="flex-1 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+                          >
+                            <Truck className="w-4 h-4" /> Xác nhận & Giao hàng
+                          </button>
+                        </div>
+                      )}
+
+                      {["CONFIRMED", "PAID"].includes(detailOrder.status) && (
+                        <div className="flex flex-col gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                              onClick={() => handleUpdateShipmentStatus("SHIPPING")}
+                              disabled={actionLoading}
+                              className="py-3 bg-blue-500 text-white hover:bg-blue-600 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm animate-pulse-subtle"
+                            >
+                              <Truck className="w-4 h-4" /> Bắt đầu giao hàng
+                            </button>
+                            <button
+                              onClick={() => handleUpdateShipmentStatus("DELIVERED")}
+                              disabled={actionLoading}
+                              className="py-3 bg-green-500 text-white hover:bg-green-600 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+                            >
+                              <CheckCircle2 className="w-4 h-4" /> Đã giao thành công
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                              onClick={() => setShowShipmentForm(true)}
+                              disabled={actionLoading}
+                              className="py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              <ClipboardList className="w-4 h-4" /> Cập nhật Vận đơn
+                            </button>
+                            <button
+                              onClick={handleCancelOrderBySeller}
+                              disabled={actionLoading}
+                              className="py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-bold transition-colors disabled:opacity-50"
+                            >
+                              Hủy đơn hàng
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {detailOrder.status === "SHIPPING" && (
+                        <div className="flex flex-col gap-3">
+                          <button
+                            onClick={() => handleUpdateShipmentStatus("DELIVERED")}
+                            disabled={actionLoading}
+                            className="w-full py-3 bg-green-500 text-white hover:bg-green-600 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+                          >
+                            <CheckCircle2 className="w-4 h-4" /> Đã giao thành công
+                          </button>
+                          <button
+                            onClick={() => setShowShipmentForm(true)}
+                            disabled={actionLoading}
+                            className="w-full py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                          >
+                            <ClipboardList className="w-4 h-4" /> Cập nhật Vận đơn
+                          </button>
+                        </div>
+                      )}
+
+                      {["DELIVERED", "CANCELLED", "RETURNED"].includes(detailOrder.status) && (
+                        <div className="p-3.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-semibold text-center">
+                          Đơn hàng đã kết thúc ở trạng thái: <span className="text-slate-800 font-bold">{STATUS_MAP[detailOrder.status]?.label}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

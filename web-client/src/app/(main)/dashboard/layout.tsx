@@ -16,6 +16,7 @@ import {
   MapPin,
   Heart,
   Wallet,
+  ClipboardList,
 } from "lucide-react";
 import { Rate } from "antd";
 
@@ -46,6 +47,11 @@ export default function DashboardLayout({
       name: "Quản lý tin đăng",
       href: "/dashboard/my-posts",
       icon: ShoppingBag,
+    },
+    {
+      name: "Lịch sử đơn hàng",
+      href: "/dashboard/orders",
+      icon: ClipboardList,
     },
     { name: "Tin yêu thích", href: "/dashboard/favorites", icon: Heart },
     { name: "Ví của tôi", href: "/dashboard/wallet", icon: Wallet },
