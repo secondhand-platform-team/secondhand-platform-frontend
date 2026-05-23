@@ -200,8 +200,6 @@ export default function ItemDetailPage() {
       await dispatch(
         addItemToCart({
           itemId: item.itemId,
-          quantity: 1,
-          price: item.price || 0,
         }),
       ).unwrap();
       messageApi.success("Đã thêm vào giỏ hàng");
