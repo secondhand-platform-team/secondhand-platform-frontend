@@ -45,6 +45,9 @@ const typeMeta: Record<
   WITHDRAW: { label: "Rút tiền", color: "orange" },
   PAYMENT: { label: "Thanh toán", color: "purple" },
   REFUND: { label: "Hoàn tiền", color: "cyan" },
+  ESCROW_HOLD: { label: "Tạm giữ (Escrow)", color: "volcano" },
+  ESCROW_RELEASE: { label: "Nhận tiền bán (Escrow)", color: "green" },
+  ESCROW_REFUND: { label: "Hoàn tiền (Escrow)", color: "cyan" },
 };
 
 function formatCurrency(value: number | undefined | null) {

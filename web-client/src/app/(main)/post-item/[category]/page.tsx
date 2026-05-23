@@ -9,16 +9,20 @@ import {
 } from "@/stores/slices/category.slice";
 
 const categoryLabelMap: Record<string, string> = {
-  vehicles: "Xe cộ",
   electronics: "Đồ điện tử",
-  others: "Sản phẩm khác",
+  vehicles: "Xe cộ",
+  household: "Nhà cửa & đời sống",
+  fashion: "Thời trang & làm đẹp",
+  hobby: "Giải trí & sở thích",
 };
 
 // Map semantic IDs to backend category IDs
 const categoryIdMap: Record<string, string> = {
-  vehicles: "cg-0002",
-  electronics: "cg-0001",
-  others: "cg-0003",
+  electronics: "cg-1002",
+  vehicles: "cg-1003",
+  household: "cg-1004",
+  fashion: "cg-1005",
+  hobby: "cg-1006",
 };
 
 export default function PostItemCategoryPage() {

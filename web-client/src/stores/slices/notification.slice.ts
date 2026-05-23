@@ -76,9 +76,24 @@ export const markAllAsRead = createAsyncThunk<
 >("notification/markAllAsRead", async (_, { rejectWithValue }) => {
   try {
     await http.put("/core/api/notifications/read-all");
+    } catch (error: unknown) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Không thể đánh dấu tất cả đã đọc",
+      );
+    }
+  });
+
+export const deleteNotificationThunk = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string }
+>("notification/deleteNotification", async (id, { rejectWithValue }) => {
+  try {
+    await http.delete(`/core/api/notifications/${id}`);
+    return id;
   } catch (error: unknown) {
     return rejectWithValue(
-      error instanceof Error ? error.message : "Không thể đánh dấu tất cả đã đọc",
+      error instanceof Error ? error.message : "Không thể xóa thông báo",
     );
   }
 });
@@ -197,6 +212,15 @@ const notificationSlice = createSlice({
           n.isRead = true;
         });
         state.unreadCount = 0;
+      })
+      .addCase(deleteNotificationThunk.fulfilled, (state, action) => {
+        const deletedId = action.payload;
+        const notification = state.notifications.find((n) => n.id === deletedId);
+        if (notification && !notification.isRead && state.unreadCount > 0) {
+          state.unreadCount -= 1;
+        }
+        state.notifications = state.notifications.filter((n) => n.id !== deletedId);
+        state.totalElements = Math.max(0, state.totalElements - 1);
       });
   },
 });

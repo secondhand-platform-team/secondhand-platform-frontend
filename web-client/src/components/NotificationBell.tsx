@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Badge, Empty, Spin } from "antd";
-import { Bell, ShieldCheck } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { Notification } from "@/types/notification.type";
+import { Bell, Heart, MessageSquare, AlertTriangle, Gift, Info, ArrowDownToLine, ArrowUpFromLine, X, Package, Truck, CheckCircle2, XCircle, ShieldCheck, Lock, RefreshCcw, DollarSign } from "lucide-react";
 
 export function NotificationBell() {
   const [notifOpen, setNotifOpen] = useState(false);
@@ -20,6 +20,7 @@ export function NotificationBell() {
     fetchNotifications,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
   } = useNotifications();
 
   useEffect(() => {
@@ -54,20 +55,47 @@ export function NotificationBell() {
   });
 
   /**
-   * Map notification type to icon color
+   * Map notification type to icon and color
    */
-  const getTypeColor = (type: string) => {
+  const getTypeInfo = (type: string) => {
     switch (type) {
       case "ITEM_FAVORITED":
+        return { bg: "bg-pink-50", text: "text-pink-400", Icon: Heart };
+      case "ITEM_COMMENTED":
+        return { bg: "bg-blue-50", text: "text-blue-400", Icon: MessageSquare };
+      case "GIVEAWAY_REQUEST":
+        return { bg: "bg-teal-50", text: "text-teal-400", Icon: Gift };
       case "WALLET_DEPOSIT_SUCCESS":
-        return { bg: "bg-emerald-100", text: "text-emerald-600" };
-      case "ITEM_REPORTED":
-      case "SYSTEM":
-        return { bg: "bg-amber-100", text: "text-amber-600" };
+      case "ESCROW_RELEASED":
+        return { bg: "bg-emerald-50", text: "text-emerald-500", Icon: ArrowDownToLine };
       case "WALLET_DEDUCTION":
-        return { bg: "bg-red-100", text: "text-red-600" };
+        return { bg: "bg-orange-50", text: "text-orange-400", Icon: ArrowUpFromLine };
+      case "ESCROW_HOLD":
+        return { bg: "bg-amber-50", text: "text-amber-500", Icon: Lock };
+      case "ESCROW_REFUNDED":
+        return { bg: "bg-blue-50", text: "text-blue-500", Icon: RefreshCcw };
+      case "ORDER_CREATED":
+      case "ORDER_NEW_FOR_SELLER":
+        return { bg: "bg-emerald-50", text: "text-emerald-500", Icon: Package };
+      case "ORDER_PREPARING":
+      case "ORDER_HANDOVER":
+      case "ORDER_IN_TRANSIT":
+      case "ORDER_DELIVERED":
+        return { bg: "bg-blue-50", text: "text-blue-500", Icon: Truck };
+      case "ORDER_RECEIVED":
+      case "ORDER_COMPLETED":
+      case "ORDER_AUTO_COMPLETED":
+        return { bg: "bg-green-50", text: "text-green-500", Icon: CheckCircle2 };
+      case "ORDER_CANCELLED":
+        return { bg: "bg-red-50", text: "text-red-500", Icon: XCircle };
+      case "ITEM_REPORTED":
+      case "ORDER_DISPUTED":
+        return { bg: "bg-red-50", text: "text-red-500", Icon: AlertTriangle };
+      case "ORDER_DISPUTE_RESOLVED":
+        return { bg: "bg-emerald-50", text: "text-emerald-500", Icon: ShieldCheck };
+      case "SYSTEM":
       default:
-        return { bg: "bg-slate-100", text: "text-slate-600" };
+        return { bg: "bg-slate-50", text: "text-slate-400", Icon: Info };
     }
   };
 
@@ -83,6 +111,22 @@ export function NotificationBell() {
       SYSTEM: "Thông báo hệ thống",
       WALLET_DEPOSIT_SUCCESS: "Nạp tiền thành công",
       WALLET_DEDUCTION: "Trừ tiền",
+      ORDER_CREATED: "Đặt hàng thành công",
+      ORDER_NEW_FOR_SELLER: "Đơn hàng mới",
+      ORDER_PREPARING: "Đang chuẩn bị hàng",
+      ORDER_HANDOVER: "Đã giao cho shipper",
+      ORDER_IN_TRANSIT: "Đang vận chuyển",
+      ORDER_DELIVERED: "Giao hàng thành công",
+      ORDER_RECEIVED: "Đã nhận hàng",
+      ORDER_COMPLETED: "Đơn hàng hoàn tất",
+      ORDER_CANCELLED: "Đơn hàng đã hủy",
+      ORDER_DISPUTED: "Khiếu nại đơn hàng",
+      ORDER_DISPUTE_RESOLVED: "Đã giải quyết khiếu nại",
+      ORDER_AUTO_COMPLETED: "Tự động hoàn tất",
+      ESCROW_HOLD: "Tạm giữ tiền",
+      ESCROW_RELEASED: "Tiền đã được chuyển vào ví",
+      ESCROW_REFUNDED: "Hoàn tiền",
+      ORDER_STATUS: "Cập nhật đơn hàng"
     };
 
     return {
@@ -95,6 +139,11 @@ export function NotificationBell() {
     if (!isRead) {
       await markAsRead(id);
     }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await deleteNotification(id);
   };
 
   return (
@@ -131,11 +180,10 @@ export function NotificationBell() {
                 onClick={() => {
                   setNotifFilter("all");
                 }}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${
-                  notifFilter === "all"
-                    ? "bg-white text-emerald-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${notifFilter === "all"
+                  ? "bg-white text-emerald-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
               >
                 Tất cả
               </button>
@@ -143,11 +191,10 @@ export function NotificationBell() {
                 onClick={() => {
                   setNotifFilter("unread");
                 }}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${
-                  notifFilter === "unread"
-                    ? "bg-white text-emerald-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${notifFilter === "unread"
+                  ? "bg-white text-emerald-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
               >
                 Chưa đọc ({unreadCount})
               </button>
@@ -155,11 +202,10 @@ export function NotificationBell() {
                 onClick={() => {
                   setNotifFilter("read");
                 }}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${
-                  notifFilter === "read"
-                    ? "bg-white text-emerald-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition ${notifFilter === "read"
+                  ? "bg-white text-emerald-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
               >
                 Đã đọc
               </button>
@@ -181,7 +227,7 @@ export function NotificationBell() {
               </div>
             ) : (
               filteredNotifications.map((notif) => {
-                const { bg, text } = getTypeColor(notif.type);
+                const { bg, text, Icon } = getTypeInfo(notif.type);
                 const { title, desc } = getNotificationContent(notif);
                 const time = new Date(notif.createdAt).toLocaleString("vi-VN");
 
@@ -191,25 +237,24 @@ export function NotificationBell() {
                     onClick={() =>
                       void handleNotificationClick(notif.id, notif.isRead)
                     }
-                    className={`px-5 py-4 flex gap-3 cursor-pointer transition-colors hover:bg-slate-50 border-b border-slate-50 last:border-0 ${
-                      !notif.isRead ? "bg-emerald-50/30" : ""
-                    }`}
+                    className={`group px-5 py-4 flex gap-3 cursor-pointer transition-colors hover:bg-slate-50 border-b border-slate-50 last:border-0 relative ${!notif.isRead ? "bg-emerald-50/20" : ""
+                      }`}
                   >
                     <div
                       className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center ${bg} ${text}`}
                     >
-                      <ShieldCheck size={18} />
+                      <Icon size={18} />
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0 pr-6">
+                      <div className="flex items-center gap-2 mb-1">
                         <p
-                          className={`text-sm ${notif.isRead ? "font-medium text-slate-700" : "font-bold text-slate-900"}`}
+                          className={`text-sm flex-1 ${notif.isRead ? "font-medium text-slate-700" : "font-bold text-slate-900"}`}
                         >
                           {title}
                         </p>
                         {!notif.isRead && (
-                          <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />
+                          <span className="w-2 h-2 bg-emerald-400 rounded-full shrink-0" />
                         )}
                       </div>
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
@@ -219,6 +264,15 @@ export function NotificationBell() {
                         {time}
                       </p>
                     </div>
+
+                    {/* Delete button (visible on hover) */}
+                    <button
+                      onClick={(e) => void handleDelete(e, notif.id)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all z-10"
+                      title="Xóa thông báo"
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
                 );
               })

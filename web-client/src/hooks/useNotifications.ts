@@ -6,6 +6,7 @@ import {
   fetchUnreadCount as fetchUnreadCountThunk,
   markAsRead as markAsReadThunk,
   markAllAsRead as markAllAsReadThunk,
+  deleteNotificationThunk,
 } from "@/stores/slices/notification.slice";
 import type { Notification } from "@/types/notification.type";
 
@@ -78,6 +79,20 @@ export const useNotifications = () => {
     [dispatch],
   );
 
+  /**
+   * Xóa thông báo
+   */
+  const deleteNotification = useCallback(
+    async (id: string) => {
+      try {
+        await dispatch(deleteNotificationThunk(id)).unwrap();
+      } catch (err) {
+        console.error("[useNotifications] Delete notification error:", err);
+      }
+    },
+    [dispatch],
+  );
+
   return {
     notifications,
     unreadCount,
@@ -88,5 +103,6 @@ export const useNotifications = () => {
     markAsRead,
     markAllAsRead,
     addNotification,
+    deleteNotification,
   };
 };

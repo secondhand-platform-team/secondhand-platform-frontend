@@ -5,24 +5,37 @@ import { useRouter } from "next/navigation";
 
 const postCategories = [
   {
-    id: "vehicles",
-    title: "Xe cộ",
-    description: "Ô tô, Xe máy, Xe tải, Phụ tùng,...",
-    icon: "/icon-other/xe-co.jpg",
-  },
-  {
     id: "electronics",
     title: "Đồ điện tử",
-    description: "Điện thoại, Laptop,...",
+    description: "Điện thoại, Laptop, Máy tính bảng, Linh kiện,...",
     icon: "/icon-other/do-dien-tu.png",
   },
   {
-    id: "others",
-    title: "Sản phẩm khác",
-    description: "Thú cưng, Gia dụng, Thời trang,...",
+    id: "vehicles",
+    title: "Xe cộ",
+    description: "Ô tô, Xe máy, Xe đạp, Phụ tùng,...",
+    icon: "/icon-other/xe-co.jpg",
+  },
+  {
+    id: "household",
+    title: "Nhà cửa & đời sống",
+    description: "Đồ gia dụng, Nội thất, Bếp, Máy giặt,...",
+    icon: "/icon-other/san-pham-khac.png",
+  },
+  {
+    id: "fashion",
+    title: "Thời trang & làm đẹp",
+    description: "Quần áo, Giày dép, Túi xách, Phụ kiện,...",
+    icon: "/icon-other/san-pham-khac.png",
+  },
+  {
+    id: "hobby",
+    title: "Giải trí & sở thích",
+    description: "Đồ thể thao, Nhạc cụ, Đồ sưu tầm,...",
     icon: "/icon-other/san-pham-khac.png",
   },
 ];
+
 
 export default function PostItemPage() {
   const router = useRouter();

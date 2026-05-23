@@ -107,6 +107,24 @@ class HttpClient {
         } finally {
           clearTimeout(retryTimeout);
         }
+      } else {
+        // Nếu refresh thất bại (Refresh token cũng đã hết hạn)
+        // Loại trừ các request profile/login để tránh redirect loop
+        if (
+          typeof window !== "undefined" && 
+          !url.includes("/auth/api/profile") && 
+          !url.includes("/auth/api/login") &&
+          !url.includes("/auth/api/logout")
+        ) {
+          // Gọi API logout để xoá token trong HttpOnly Cookies
+          fetch(`${normalizedBaseUrl}/auth/api/logout`, { method: "POST", credentials: "include" }).catch(() => {});
+          
+          // Chuyển hướng về trang home
+          window.location.href = "/home";
+          
+          // Ném lỗi để chặn execution tiếp theo của request hiện tại
+          throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        }
       }
     }
 

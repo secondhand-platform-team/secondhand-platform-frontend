@@ -10,7 +10,7 @@ export type DepositRequest = {
 	language?: string;
 };
 
-export type WalletTransactionType = "DEPOSIT" | "WITHDRAW" | "PAYMENT" | "REFUND";
+export type WalletTransactionType = "DEPOSIT" | "WITHDRAW" | "PAYMENT" | "REFUND" | "ESCROW_HOLD" | "ESCROW_RELEASE" | "ESCROW_REFUND";
 
 export type WalletTransactionStatus = "PENDING" | "SUCCESS" | "FAILED";
 

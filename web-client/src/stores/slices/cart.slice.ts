@@ -2,11 +2,9 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import http from "@/utils/api";
 
 export interface CartItemType {
+  id: string;
   itemId: string;
-  quantity: number;
-  price: number;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface CartType {
@@ -18,8 +16,6 @@ export interface CartType {
 
 export interface AddToCartRequest {
   itemId: string;
-  quantity: number;
-  price: number;
 }
 
 interface CartState {
@@ -51,9 +47,6 @@ export const addItemToCart = createAsyncThunk(
   "cart/addItemToCart",
   async (request: AddToCartRequest, { rejectWithValue }) => {
     try {
-      // Backend expects itemId, price, quantity. We'll pass price 0 if not provided, 
-      // but ideally we should fetch price first or backend should handle it.
-      // Looking at backend CartItemRequest, it has price.
       const data = await http.post<CartType>("/order/api/carts/me/items", request as unknown as Record<string, unknown>);
       return data;
     } catch (error) {
@@ -63,25 +56,10 @@ export const addItemToCart = createAsyncThunk(
   }
 );
 
-export const updateItemQuantity = createAsyncThunk(
-  "cart/updateItemQuantity",
-  async ({ itemId, quantity }: { itemId: string; quantity: number }, { rejectWithValue }) => {
-    try {
-      // Backend: @PutMapping("/me/items/{itemId}") with @RequestParam Integer quantity
-      const data = await http.put<CartType>(`/order/api/carts/me/items/${itemId}?quantity=${quantity}`, {});
-      return data;
-    } catch (error) {
-      if (error instanceof Error) return rejectWithValue(error.message);
-      return rejectWithValue("Không thể cập nhật giỏ hàng");
-    }
-  }
-);
-
 export const removeItemFromCart = createAsyncThunk(
   "cart/removeItemFromCart",
   async (itemId: string, { rejectWithValue }) => {
     try {
-      // Backend: @DeleteMapping("/me/items/{itemId}")
       const data = await http.delete<CartType>(`/order/api/carts/me/items/${itemId}`);
       return data;
     } catch (error) {
@@ -117,10 +95,6 @@ const cartSlice = createSlice({
       })
       // Add
       .addCase(addItemToCart.fulfilled, (state, action) => {
-        state.cart = action.payload;
-      })
-      // Update
-      .addCase(updateItemQuantity.fulfilled, (state, action) => {
         state.cart = action.payload;
       })
       // Remove

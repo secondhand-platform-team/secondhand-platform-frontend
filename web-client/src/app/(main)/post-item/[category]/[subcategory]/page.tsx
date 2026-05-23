@@ -59,9 +59,11 @@ interface FormData {
 }
 
 const categoryLabelMap: Record<string, string> = {
-  vehicles: "Xe cộ",
   electronics: "Đồ điện tử",
-  others: "Sản phẩm khác",
+  vehicles: "Xe cộ",
+  household: "Nhà cửa & đời sống",
+  fashion: "Thời trang & làm đẹp",
+  hobby: "Giải trí & sở thích",
 };
 
 export default function PostItemFormPage() {
