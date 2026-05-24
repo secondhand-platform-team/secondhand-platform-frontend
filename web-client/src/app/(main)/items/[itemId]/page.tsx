@@ -27,6 +27,7 @@ import {
   ArrowLeft,
   X,
   Flag,
+  Zap,
 } from "lucide-react";
 import FavoriteButton from "@/components/item/FavoriteButton";
 import { chatService } from "@/stores/slices/chat.slice";
@@ -62,6 +63,7 @@ export default function ItemDetailPage() {
   const [showPhone, setShowPhone] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const { isAuth } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
@@ -94,6 +96,23 @@ export default function ItemDetailPage() {
               ),
             )
             .catch(() => {});
+          // Try AI recommendation (runs in parallel, replaces similarItems if successful)
+          const AI_URL = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8000";
+          fetch(`${AI_URL}/ai/recommend`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ item_id: data.itemId, category_id: data.categoryId, limit: 4 }),
+          })
+            .then((r) => r.json())
+            .then((aiRes) => {
+              if (aiRes.items && aiRes.items.length > 0) {
+                const aiItems = aiRes.items
+                  .filter((i: any) => i.itemId !== data.itemId)
+                  .slice(0, 4);
+                if (aiItems.length > 0) setSimilarItems(aiItems);
+              }
+            })
+            .catch(() => {}); // silently fallback to category-based
         }
         if (data.userId) {
           chatService
@@ -207,6 +226,26 @@ export default function ItemDetailPage() {
       messageApi.error("Lỗi khi thêm vào giỏ hàng");
     } finally {
       setAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!isAuth) {
+      messageApi.warning("Vui lòng đăng nhập để mua hàng");
+      return;
+    }
+    try {
+      setBuyingNow(true);
+      await dispatch(
+        addItemToCart({
+          itemId: item.itemId,
+        }),
+      ).unwrap();
+      router.push(`/checkout?itemIds=${item.itemId}`);
+    } catch {
+      messageApi.error("Lỗi khi thêm vào giỏ hàng");
+    } finally {
+      setBuyingNow(false);
     }
   };
 
@@ -531,15 +570,30 @@ export default function ItemDetailPage() {
                 {/* Action Buttons */}
                 <div className="space-y-3 mb-5">
                   <button
-                    onClick={() => setShowPhone(!showPhone)}
-                    className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98]"
+                    onClick={handleBuyNow}
+                    disabled={buyingNow || item.status !== "ACTIVE"}
+                    className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Phone className="w-5 h-5" />
-                    {showPhone
-                      ? sellerProfile?.user.phoneNumber || "Đang cập nhật"
-                      : "Hiện số điện thoại"}
+                    {buyingNow ? (
+                      <Spin size="small" />
+                    ) : (
+                      <Zap className="w-5 h-5" />
+                    )}
+                    Mua ngay
                   </button>
                   <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={addingToCart || item.status !== "ACTIVE"}
+                      className="flex items-center justify-center gap-2 bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 py-3 rounded-xl font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {addingToCart ? (
+                        <Spin size="small" />
+                      ) : (
+                        <ShoppingCart className="w-5 h-5" />
+                      )}
+                      <span className="text-sm">Giỏ hàng</span>
+                    </button>
                     <button
                       onClick={handleChat}
                       disabled={chatLoading}
@@ -552,19 +606,16 @@ export default function ItemDetailPage() {
                       )}
                       <span className="text-sm">Chat ngay</span>
                     </button>
-                    <button
-                      onClick={handleAddToCart}
-                      disabled={addingToCart}
-                      className="flex items-center justify-center gap-2 bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 py-3 rounded-xl font-bold transition-all active:scale-[0.98] disabled:opacity-70"
-                    >
-                      {addingToCart ? (
-                        <Spin size="small" />
-                      ) : (
-                        <ShoppingCart className="w-5 h-5" />
-                      )}
-                      <span className="text-sm">Giỏ hàng</span>
-                    </button>
                   </div>
+                  <button
+                    onClick={() => setShowPhone(!showPhone)}
+                    className="w-full flex items-center justify-center gap-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-all active:scale-[0.98]"
+                  >
+                    <Phone className="w-4 h-4" />
+                    {showPhone
+                      ? sellerProfile?.user.phoneNumber || "Đang cập nhật"
+                      : "Hiện số điện thoại"}
+                  </button>
                 </div>
 
                 {/* Share & Favorite Row */}

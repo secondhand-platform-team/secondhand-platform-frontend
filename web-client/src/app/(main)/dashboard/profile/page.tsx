@@ -4,23 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { Button, Input, Form, Radio, DatePicker, Upload, Select, App, Modal, Popconfirm } from "antd";
 import { CameraOutlined, UploadOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EnvironmentOutlined, StarOutlined, StarFilled } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
-import http from "@/utils/api";
-import type { UserProfileApiResponseType } from "@/types/user.type";
+import { userService } from "@/stores/slices/auth.slice";
+import type { UserProfileApiResponseType, AddressType } from "@/types/user.type";
 import dayjs from "dayjs";
 import { fetchCurrentUser } from "@/stores/slices/auth.slice";
 import type { Province, District, Ward } from "@/types/province.type";
 import provinceService from "@/services/province.service";
 
-interface AddressType {
-  id: number;
-  receiverName: string;
-  receiverPhone: string;
-  province: string;
-  district: string;
-  ward: string;
-  specifics: string;
-  main: number;
-}
 
 export default function ProfileSettingsPage() {
   const dispatch = useAppDispatch();
@@ -65,7 +55,7 @@ export default function ProfileSettingsPage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await http.get<UserProfileApiResponseType>("/auth/api/profile");
+        const res = await userService.getProfile();
         setProfile(res);
         form.setFieldsValue({
           fullName: res.user_profile?.fullName || "",
@@ -96,9 +86,9 @@ export default function ProfileSettingsPage() {
   // Load addresses
   const loadAddresses = useCallback(async () => {
     try {
-      const data = await http.get<AddressType[]>("/auth/api/addresses");
+      const data = await userService.getAddresses();
       setAddresses(data);
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => { loadAddresses(); }, [loadAddresses]);
@@ -114,15 +104,15 @@ export default function ProfileSettingsPage() {
     // If provinces are not loaded yet, wait for them
     if (!selectedProvince) {
       try {
-          const allProvs = await provinceService.getProvinces();
-          const p = allProvs.find((x) => x.name === cityName);
-          if (p) {
-              setLoadingDistrict(true);
-              const provinceWithDistricts = await provinceService.getProvinceWithDistricts(p.code);
-              setDistricts(provinceWithDistricts.districts || []);
-              setLoadingDistrict(false);
-          }
-      } catch {}
+        const allProvs = await provinceService.getProvinces();
+        const p = allProvs.find((x) => x.name === cityName);
+        if (p) {
+          setLoadingDistrict(true);
+          const provinceWithDistricts = await provinceService.getProvinceWithDistricts(p.code);
+          setDistricts(provinceWithDistricts.districts || []);
+          setLoadingDistrict(false);
+        }
+      } catch { }
       return;
     }
 
@@ -163,7 +153,7 @@ export default function ProfileSettingsPage() {
         ...values,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format("YYYY-MM-DD") : undefined,
       };
-      await http.put("/auth/api/profile", payload);
+      await userService.updateProfile(payload);
       messageApi.success("Cập nhật thông tin thành công");
       dispatch(fetchCurrentUser());
     } catch (err) {
@@ -179,11 +169,11 @@ export default function ProfileSettingsPage() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      await http.put("/auth/api/profile/avatar", formData);
+      await userService.updateAvatar(formData);
       messageApi.success("Cập nhật ảnh đại diện thành công");
       dispatch(fetchCurrentUser());
-      
-      const res = await http.get<UserProfileApiResponseType>("/auth/api/profile");
+
+      const res = await userService.getProfile();
       setProfile(res);
     } catch (err) {
       messageApi.error("Cập nhật ảnh đại diện thất bại");
@@ -253,10 +243,10 @@ export default function ProfileSettingsPage() {
       };
 
       if (editingAddress) {
-        await http.put(`/auth/api/addresses/${editingAddress.id}`, payload);
+        await userService.updateAddress(editingAddress.id, payload);
         messageApi.success("Cập nhật địa chỉ thành công");
       } else {
-        await http.post("/auth/api/addresses", payload);
+        await userService.createAddress(payload);
         messageApi.success("Thêm địa chỉ thành công");
       }
       setAddressModalOpen(false);
@@ -271,7 +261,7 @@ export default function ProfileSettingsPage() {
 
   const handleDeleteAddress = async (id: number) => {
     try {
-      await http.delete(`/auth/api/addresses/${id}`);
+      await userService.deleteAddress(id);
       messageApi.success("Xóa địa chỉ thành công");
       loadAddresses();
     } catch {
@@ -281,7 +271,7 @@ export default function ProfileSettingsPage() {
 
   const handleSetDefault = async (id: number) => {
     try {
-      await http.put(`/auth/api/addresses/${id}/set-default`);
+      await userService.setDefaultAddress(id);
       messageApi.success("Đã đặt làm địa chỉ mặc định");
       loadAddresses();
     } catch {
@@ -313,14 +303,14 @@ export default function ProfileSettingsPage() {
         <div className="absolute top-0 left-[-20%] w-[140%] h-40 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-b-[50%] opacity-20 pointer-events-none" />
 
         <h2 className="text-2xl font-bold text-slate-800 mb-8 relative z-10">Hồ sơ của tôi</h2>
-        
+
         <div className="flex flex-col lg:flex-row gap-12 relative z-10">
           <div className="flex flex-col items-center gap-5 w-full lg:w-1/3">
             <div className="w-44 h-44 rounded-full border-4 border-white shadow-xl overflow-hidden relative group bg-white">
               {(profile?.user_profile?.avatarUrl || user?.avatarUrl) ? (
-                <img 
-                  src={profile?.user_profile?.avatarUrl || user?.avatarUrl} 
-                  alt="Avatar" 
+                <img
+                  src={profile?.user_profile?.avatarUrl || user?.avatarUrl}
+                  alt="Avatar"
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -336,8 +326,8 @@ export default function ProfileSettingsPage() {
                   })()}
                 </div>
               )}
-              <Upload 
-                showUploadList={false} 
+              <Upload
+                showUploadList={false}
                 customRequest={handleAvatarUpload}
                 accept="image/*"
               >
@@ -388,44 +378,6 @@ export default function ProfileSettingsPage() {
                   <DatePicker className="w-full rounded-xl px-4" format="DD/MM/YYYY" placeholder="Chọn ngày sinh" />
                 </Form.Item>
 
-                <Form.Item label={<span className="font-semibold text-slate-700">Tỉnh / Thành phố</span>} name="city">
-                  <Select
-                    options={provinceOptions}
-                    loading={loadingProvince}
-                    onChange={(val) => onCityChange(val)}
-                    placeholder="Chọn Tỉnh/Thành phố"
-                    className="[&>.ant-select-selector]:!rounded-xl"
-                    showSearch
-                    optionFilterProp="label"
-                  />
-                </Form.Item>
-
-                <Form.Item label={<span className="font-semibold text-slate-700">Quận / Huyện</span>} name="district">
-                  <Select
-                    options={districtOptions}
-                    loading={loadingDistrict}
-                    onChange={(val) => onDistrictChange(val)}
-                    placeholder="Chọn Quận/Huyện"
-                    className="[&>.ant-select-selector]:!rounded-xl"
-                    showSearch
-                    optionFilterProp="label"
-                  />
-                </Form.Item>
-
-                <Form.Item label={<span className="font-semibold text-slate-700">Phường / Xã</span>} name="ward">
-                  <Select
-                    options={wardOptions}
-                    placeholder="Chọn Phường/Xã (nếu có)"
-                    className="[&>.ant-select-selector]:!rounded-xl"
-                    showSearch
-                    optionFilterProp="label"
-                    disabled={wardOptions.length === 0}
-                  />
-                </Form.Item>
-
-                <Form.Item label={<span className="font-semibold text-slate-700">Địa chỉ cụ thể</span>} name="address" className="col-span-1 md:col-span-2">
-                  <Input placeholder="Số nhà, tên đường..." className="rounded-xl px-4" />
-                </Form.Item>
 
                 <Form.Item label={<span className="font-semibold text-slate-700">Giới thiệu bản thân</span>} name="bio" className="col-span-1 md:col-span-2">
                   <Input.TextArea placeholder="Vài nét về bạn..." rows={4} className="rounded-xl px-4 py-3" />

@@ -7,7 +7,7 @@ import {  type PageResponse } from "@/stores/slices/items.slice";
 import { categoryService } from "@/stores/slices/category.slice";
 import provinceService from "@/services/province.service";
 import type { Province, District, Ward } from "@/types/province.type";
-import http from "@/utils/api";
+
 import type { ItemWithImages } from "@/types/item.type";
 import type { Category, CategoryType } from "@/types/category.type";
 import { MapPin, Heart, ChevronLeft, ChevronRight, SlidersHorizontal, X, ChevronDown, Search } from "lucide-react";
@@ -144,17 +144,17 @@ export default function CategoryPage() {
   useEffect(() => {
     if (!catId) return;
 
-    http.get<CategoryType>(`/core/api/categories/${catId}`)
-      .then(setCurrentCategory)
+    categoryService.getCategoryById(catId)
+      .then((res) => setCurrentCategory(res as unknown as CategoryType))
       .catch(() => setCurrentCategory(null));
 
     Promise.all([
-      http.get<CategoryType[]>(`/core/api/categories/${catId}/children`),
-      http.get<CategoryType[]>("/core/api/categories"),
+      categoryService.getChildCategories(catId),
+      categoryService.getAllCategories(),
     ])
       .then(([childrenLevel, all]) => {
-        setCategories(Array.isArray(childrenLevel) ? childrenLevel : []);
-        setAllCategories(Array.isArray(all) ? all : []);
+        setCategories(Array.isArray(childrenLevel) ? (childrenLevel as unknown as CategoryType[]) : []);
+        setAllCategories(Array.isArray(all) ? (all as unknown as CategoryType[]) : []);
       })
       .catch(() => {
         setCategories([]);

@@ -144,6 +144,10 @@ class ItemService {
     })) as ItemWithImages[];
   }
 
+  async getItemsByUserId(userId: string) {
+    return http.get<ItemWithImages[]>(`core/api/items/user/${userId}`);
+  }
+
   async reportItem(data: ReportRequest, images?: File[]) {
     if (data instanceof FormData) {
       const formData = new FormData();

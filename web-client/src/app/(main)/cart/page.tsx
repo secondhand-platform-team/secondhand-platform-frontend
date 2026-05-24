@@ -26,7 +26,9 @@ import {
   removeItemFromCart,
 } from "@/stores/slices/cart.slice";
 import { itemService } from "@/stores/slices/items.slice";
+import { chatService } from "@/stores/slices/chat.slice";
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
+import type { UserProfileApiResponseType } from "@/types/user.type";
 
 // Extended cart item with product details
 interface EnrichedCartItem extends CartItemType {
@@ -37,6 +39,7 @@ interface EnrichedCartItem extends CartItemType {
 interface SellerGroup {
   sellerId: string;
   sellerName: string;
+  sellerAvatar: string;
   items: EnrichedCartItem[];
 }
 
@@ -55,6 +58,7 @@ export default function CartPage() {
   );
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [suggestedItems, setSuggestedItems] = useState<ItemWithImages[]>([]);
+  const [sellerProfiles, setSellerProfiles] = useState<Map<string, { name: string; avatar: string }>>(new Map());
 
   const loadCart = useCallback(async () => {
     try {
@@ -80,6 +84,29 @@ export default function CartPage() {
             .map((i) => i.itemId),
         );
         setSelectedItemIds(activeIds);
+
+        // Fetch seller profiles
+        const uniqueSellerIds = Array.from(
+          new Set(itemsWithDetails.map((i) => i.product?.userId).filter(Boolean) as string[])
+        );
+        const profileMap = new Map<string, { name: string; avatar: string }>();
+        await Promise.all(
+          uniqueSellerIds.map(async (sellerId) => {
+            try {
+              const profile = await chatService.getUserProfileByUserId(sellerId);
+              profileMap.set(sellerId, {
+                name: profile.user_profile?.fullName || `Người bán ${sellerId.substring(0, 6)}`,
+                avatar: profile.user_profile?.avatarUrl || "",
+              });
+            } catch {
+              profileMap.set(sellerId, {
+                name: `Người bán ${sellerId.substring(0, 6)}`,
+                avatar: "",
+              });
+            }
+          }),
+        );
+        setSellerProfiles(profileMap);
       } else {
         setEnrichedItems([]);
       }
@@ -111,15 +138,16 @@ export default function CartPage() {
     const map = new Map<string, SellerGroup>();
     for (const item of enrichedItems) {
       const sellerId = item.product?.userId || "unknown";
-      const sellerName =
-        item.product?.userId?.substring(0, 8) || "Người bán";
+      const profile = sellerProfiles.get(sellerId);
+      const sellerName = profile?.name || `Người bán ${sellerId.substring(0, 6)}`;
+      const sellerAvatar = profile?.avatar || "";
       if (!map.has(sellerId)) {
-        map.set(sellerId, { sellerId, sellerName, items: [] });
+        map.set(sellerId, { sellerId, sellerName, sellerAvatar, items: [] });
       }
       map.get(sellerId)!.items.push(item);
     }
     return Array.from(map.values());
-  }, [enrichedItems]);
+  }, [enrichedItems, sellerProfiles]);
 
   const handleRemoveItem = async (itemId: string) => {
     try {
@@ -348,12 +376,18 @@ export default function CartPage() {
                             <Square className="w-4.5 h-4.5 text-slate-400" />
                           )}
                         </button>
-                        <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center">
-                          <User className="w-3.5 h-3.5 text-emerald-700" />
-                        </div>
-                        <span className="font-bold text-slate-800 text-sm">
-                          Người bán: {group.sellerName}...
-                        </span>
+                        <Link href={`/user/${group.sellerId}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                          <div className="w-7 h-7 rounded-full overflow-hidden bg-emerald-100 flex items-center justify-center shrink-0">
+                            {group.sellerAvatar ? (
+                              <img src={group.sellerAvatar} alt={group.sellerName} className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-3.5 h-3.5 text-emerald-700" />
+                            )}
+                          </div>
+                          <span className="font-bold text-slate-800 text-sm truncate hover:text-emerald-600 transition-colors">
+                            {group.sellerName}
+                          </span>
+                        </Link>
                         <span className="text-xs text-slate-400 ml-auto">
                           {group.items.length} sản phẩm
                         </span>

@@ -14,6 +14,7 @@ export type UserType = {
 	district?: string;
 	ward?: string;
 	address?: string;
+	createdAt?: string;
 };
 
 export type UserProfileType = {
@@ -36,6 +37,7 @@ export type UserInfoApiType = {
 	status: boolean;
 	freeSellUse?: number;
 	freeSellUsed?: number;
+	createdAt?: string;
 };
 
 export type UserProfileApiResponseType = {
@@ -55,3 +57,14 @@ export type RegisterPayload = {
 	password: string;
 	confirmPassword: string;
 };
+
+export interface AddressType {
+	id: number;
+	receiverName: string;
+	receiverPhone: string;
+	province: string;
+	district: string;
+	ward: string;
+	specifics: string;
+	main: number;
+}

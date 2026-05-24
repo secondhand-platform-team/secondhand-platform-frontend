@@ -10,51 +10,11 @@ import {
   AlertTriangle, ShieldCheck, ArrowRight,
 } from "lucide-react";
 import { useAppSelector } from "@/stores/hooks";
-import http from "@/utils/api";
+import { orderService } from "@/stores/slices/order.slice";
 
-// ====================================================================
-// Types
-// ====================================================================
+import type { OrderType, OrderItemType, ShipmentType } from "@/types/order.type";
 
-interface OrderItemType {
-  id: string;
-  itemId: string;
-  itemName: string;
-  sellerId: string;
-  price: number;
-  itemImageUrl?: string;
-}
 
-interface ShipmentType {
-  id: string;
-  carrier: string;
-  trackingCode: string;
-  status: string;
-  currentLocation?: string;
-  estimatedDelivery?: string;
-  shippedAt?: string;
-  deliveredAt?: string;
-}
-
-interface OrderType {
-  id: string;
-  buyerId: string;
-  sellerId: string;
-  totalPrice: number;
-  status: string;
-  paymentStatus: string;
-  receiverName: string;
-  receiverPhone: string;
-  shippingAddress: string;
-  escrowTransactionId?: string;
-  autoCompleteAt?: string;
-  cancelReason?: string;
-  disputeReason?: string;
-  createdAt: string;
-  updatedAt: string;
-  orderItems: OrderItemType[];
-  shipment: ShipmentType | null;
-}
 
 // ====================================================================
 // Constants
@@ -131,8 +91,9 @@ export default function OrderHistoryPage() {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const endpoint = viewMode === "BUY" ? "/order/api/orders/me" : "/order/api/orders/seller";
-      const data = await http.get<OrderType[]>(endpoint);
+      const data = viewMode === "BUY"
+        ? await orderService.getBuyerOrders()
+        : await orderService.getSellerOrders();
       setOrders(data);
     } catch {
       messageApi.error("Không thể tải đơn hàng");
@@ -156,7 +117,7 @@ export default function OrderHistoryPage() {
   ) => {
     try {
       setActionLoading(true);
-      await http.put(`/order/api/orders${action}`, body || {});
+      await orderService.actionOrder(action, body);
       messageApi.success("Thao tác thành công!");
       fetchOrders();
     } catch {

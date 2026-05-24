@@ -126,4 +126,11 @@ const walletSlice = createSlice({
 });
 
 export const { clearWalletError } = walletSlice.actions;
+
+export const walletService = {
+  getWallet: async () => {
+    return http.get<WalletResponse>("/core/api/wallet/me");
+  },
+};
+
 export default walletSlice.reducer;

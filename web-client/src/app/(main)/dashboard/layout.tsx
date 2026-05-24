@@ -133,7 +133,10 @@ export default function DashboardLayout({
                       : "Toàn quốc"}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <ShoppingBag className="w-4 h-4" /> Tham gia từ T10/2023
+                    <ShoppingBag className="w-4 h-4" />{" "}
+                    {user?.createdAt
+                      ? `Tham gia từ ${new Date(user.createdAt).toLocaleDateString("vi-VN", { month: "long", year: "numeric" })}`
+                      : "Thành viên ReLife"}
                   </span>
                 </div>
               </div>

@@ -4,9 +4,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { itemService, type PageResponse } from "@/stores/slices/items.slice";
+import { categoryService } from "@/stores/slices/category.slice";
 import provinceService from "@/services/province.service";
 import type { Province, District, Ward } from "@/types/province.type";
-import http from "@/utils/api";
 import type { ItemWithImages } from "@/types/item.type";
 import type { CategoryType } from "@/types/category.type";
 import { MapPin, ChevronLeft, ChevronRight, SlidersHorizontal, X, ChevronDown, Search } from "lucide-react";
@@ -142,12 +142,12 @@ export default function SearchPage() {
   // Load categories and provinces on mount
   useEffect(() => {
     Promise.all([
-      http.get<CategoryType[]>("/core/api/categories/top-level"),
-      http.get<CategoryType[]>("/core/api/categories"),
+      categoryService.getTopLevelCategories(),
+      categoryService.getAllCategories(),
     ])
       .then(([topLevel, all]) => {
-        setCategories(Array.isArray(topLevel) ? topLevel : []);
-        setAllCategories(Array.isArray(all) ? all : []);
+        setCategories(Array.isArray(topLevel) ? (topLevel as unknown as CategoryType[]) : []);
+        setAllCategories(Array.isArray(all) ? (all as unknown as CategoryType[]) : []);
       })
       .catch(() => {
         setCategories([]);

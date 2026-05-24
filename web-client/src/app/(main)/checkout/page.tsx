@@ -17,21 +17,14 @@ import {
 } from "lucide-react";
 import { useAppSelector } from "@/stores/hooks";
 import { itemService } from "@/stores/slices/items.slice";
+import { userService } from "@/stores/slices/auth.slice";
+import { walletService } from "@/stores/slices/wallet.slice";
+import { orderService } from "@/stores/slices/order.slice";
 import type { ItemWithImages } from "@/types/item.type";
 import type { Province, District, Ward } from "@/types/province.type";
+import type { AddressType } from "@/types/user.type";
 import provinceService from "@/services/province.service";
-import http from "@/utils/api";
 
-interface AddressType {
-  id: number;
-  receiverName: string;
-  receiverPhone: string;
-  province: string;
-  district: string;
-  ward: string;
-  specifics: string;
-  main: number;
-}
 
 interface OrderResult {
   itemId: string;
@@ -113,7 +106,7 @@ export default function CheckoutPage() {
   // Load addresses
   const loadAddresses = useCallback(async () => {
     try {
-      const data = await http.get<AddressType[]>("/auth/api/addresses");
+      const data = await userService.getAddresses();
       setAddresses(data);
       const def = data.find((a) => a.main === 1);
       if (def) {
@@ -142,8 +135,8 @@ export default function CheckoutPage() {
       .getProvinces()
       .then(setProvinces)
       .catch(() => {});
-    http
-      .get<any>("/core/api/wallet/me")
+    walletService
+      .getWallet()
       .then((res) => setWalletBalance(res.balance))
       .catch(() => setWalletBalance(null));
   }, [isAuth, authLoading, router, loadItems, loadAddresses]);
@@ -190,7 +183,7 @@ export default function CheckoutPage() {
         receiverPhone = vals.receiverPhone;
         shippingAddress = `${vals.specifics}, ${vals.ward}, ${vals.district}, ${vals.province}`;
         try {
-          await http.post("/auth/api/addresses", {
+          await userService.createAddress({
             receiverName: vals.receiverName,
             receiverPhone: vals.receiverPhone,
             province: vals.province,
@@ -217,7 +210,7 @@ export default function CheckoutPage() {
     // Check wallet balance for WALLET payment
     if (paymentMethod === "WALLET") {
       try {
-        const wallet = await http.get<any>("/core/api/wallet/me");
+        const wallet = await walletService.getWallet();
         if (wallet.balance < total) {
           messageApi.error("Số dư ví không đủ, vui lòng nạp thêm tiền!");
           return;
@@ -235,7 +228,7 @@ export default function CheckoutPage() {
       // Create orders sequentially (1 order per item)
       for (const item of items) {
         try {
-          const res = await http.post<any>("/order/api/orders", {
+          const res = await orderService.createOrder({
             receiverName,
             receiverPhone,
             shippingAddress,

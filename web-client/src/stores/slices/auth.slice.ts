@@ -7,6 +7,7 @@ import type {
 	RegisterPayload,
 	UserProfileApiResponseType,
 	UserType,
+	AddressType,
 } from "@/types/user.type";
 
 type AuthProvider = "email" | null;
@@ -53,6 +54,7 @@ const mapProfileResponseToUser = (profileResponse: UserProfileApiResponseType): 
 	district: profileResponse.user_profile?.district,
 	ward: profileResponse.user_profile?.ward,
 	address: profileResponse.user_profile?.address,
+	createdAt: profileResponse.user.createdAt,
 });
 
 export const fetchCurrentUser = createAsyncThunk<
@@ -222,4 +224,32 @@ export const authSlice = createSlice({
 });
 
 export const { logoutLocal, clearAuthError } = authSlice.actions;
+
+export const userService = {
+	getProfile: async () => {
+		return http.get<UserProfileApiResponseType>("/auth/api/profile");
+	},
+	updateProfile: async (payload: Record<string, unknown>) => {
+		return http.put("/auth/api/profile", payload);
+	},
+	updateAvatar: async (formData: FormData) => {
+		return http.put("/auth/api/profile/avatar", formData);
+	},
+	getAddresses: async () => {
+		return http.get<AddressType[]>("/auth/api/addresses");
+	},
+	createAddress: async (payload: Record<string, unknown>) => {
+		return http.post("/auth/api/addresses", payload);
+	},
+	updateAddress: async (id: number, payload: Record<string, unknown>) => {
+		return http.put(`/auth/api/addresses/${id}`, payload);
+	},
+	deleteAddress: async (id: number) => {
+		return http.delete(`/auth/api/addresses/${id}`);
+	},
+	setDefaultAddress: async (id: number) => {
+		return http.put(`/auth/api/addresses/${id}/set-default`);
+	},
+};
+
 export default authSlice.reducer;

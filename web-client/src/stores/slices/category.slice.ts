@@ -69,6 +69,10 @@ class CategoryService {
       `core/api/categories/${categoryId}/attributes`
     );
   }
+
+  async getAllCategories() {
+    return http.get<CategoryResponse[]>(`core/api/categories`);
+  }
 }
 
 export const categoryService = new CategoryService();
