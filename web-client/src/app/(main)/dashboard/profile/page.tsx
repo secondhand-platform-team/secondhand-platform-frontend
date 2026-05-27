@@ -355,7 +355,7 @@ export default function ProfileSettingsPage() {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
                 <Form.Item label={<span className="font-semibold text-slate-700">Họ và tên</span>} name="fullName" rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}>
-                  <Input placeholder="Nguyễn Văn A" className="rounded-xl px-4" />
+                  <Input placeholder="Nhập họ và tên" className="rounded-xl px-4" />
                 </Form.Item>
 
                 <Form.Item label={<span className="font-semibold text-slate-700">Số điện thoại</span>} name="phoneNumber">

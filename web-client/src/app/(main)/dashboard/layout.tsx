@@ -18,7 +18,6 @@ import {
   Wallet,
   ClipboardList,
 } from "lucide-react";
-import { Rate } from "antd";
 
 function getAvatarInitials(fullName?: string, email?: string): string {
   const name = fullName?.trim();
@@ -61,11 +60,11 @@ export default function DashboardLayout({
   ];
 
   const profileStats = [
-    { label: "Tỉ lệ phản hồi", value: "98%", highlight: true },
-    { label: "Đã bán thành công", value: "45", highlight: false },
+    { label: "Tỉ lệ phản hồi", value: "Chưa có dữ liệu", highlight: false },
+    { label: "Đã bán thành công", value: "Chưa có dữ liệu", highlight: false },
     {
-      label: "Đang rao bán",
-      value: user?.freeSellUsed || "12",
+      label: "Lượt đăng miễn phí đã dùng",
+      value: user?.freeSellUsed || "0",
       highlight: false,
     },
   ];
@@ -142,22 +141,13 @@ export default function DashboardLayout({
               </div>
             </div>
 
-            <div className="flex flex-col items-center md:items-end gap-3 mb-2">
-              <div className="flex items-end gap-3">
-                <span className="text-4xl font-black text-emerald-600">
-                  4.8
-                </span>
-                <div className="pb-1">
-                  <Rate
-                    disabled
-                    defaultValue={5}
-                    className="text-amber-400 text-sm"
-                  />
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    (128 đánh giá)
-                  </p>
-                </div>
-              </div>
+            <div className="flex flex-col items-center md:items-end gap-2 mb-2 text-center md:text-right">
+              <span className="text-sm font-semibold text-slate-600">
+                Chưa có dữ liệu đánh giá
+              </span>
+              <p className="text-xs text-slate-500">
+                Điểm số và số lượt đánh giá sẽ hiển thị khi backend hỗ trợ.
+              </p>
             </div>
           </div>
         </div>

@@ -51,7 +51,7 @@ export default function DashboardOverview() {
     },
     {
       label: "Phản hồi chat",
-      value: "98%",
+      value: "—",
       icon: MessageSquare,
       color: "bg-amber-50 text-amber-600",
       link: "/chat"
@@ -139,7 +139,7 @@ export default function DashboardOverview() {
             <h3 className="font-bold text-slate-900 mb-4">Sản phẩm dành cho bạn</h3>
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm">
-                <p className="text-slate-600 font-medium italic">"Hoàn thiện hồ sơ giúp tăng tỉ lệ bán hàng thành công lên đến 40%."</p>
+                <p className="text-slate-600 font-medium italic">"Hoàn thiện hồ sơ giúp người mua tin tưởng hơn khi giao dịch."</p>
                 <Link href="/dashboard/profile" className="text-emerald-600 font-bold mt-2 block">Cập nhật ngay →</Link>
               </div>
             </div>

@@ -14,7 +14,6 @@ import {
   Descriptions,
   Row,
   Col,
-  Statistic,
   message,
   Switch,
 } from "antd";
@@ -352,25 +351,13 @@ const UsersPage = () => {
             {/* Performance Stats Cards */}
             <div>
               <Text strong style={{ display: "block", marginBottom: 12, fontSize: 15 }}>
-                Chỉ số hoạt động (Giả lập)
+                Chỉ số hoạt động
               </Text>
-              <Row gutter={12}>
-                <Col span={8}>
-                  <Card style={{ background: "#f6ffed", border: "1px solid #b7eb8f", borderRadius: 8, textAlign: "center" }}>
-                    <Statistic title="Tin Đăng" value={7} valueStyle={{ color: "#389e0d" }} />
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card style={{ background: "#e6f7ff", border: "1px solid #91d5ff", borderRadius: 8, textAlign: "center" }}>
-                    <Statistic title="Giao Dịch" value={4} valueStyle={{ color: "#096dd9" }} />
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card style={{ background: "#fff7e6", border: "1px solid #ffd591", borderRadius: 8, textAlign: "center" }}>
-                    <Statistic title="Đánh Giá" value="4.8" suffix="/5" valueStyle={{ color: "#d46b08" }} />
-                  </Card>
-                </Col>
-              </Row>
+              <Card style={{ background: "#fafafa", borderRadius: 8 }}>
+                <Text type="secondary">
+                  Chưa có API thống kê chi tiết cho người dùng này. Trang chỉ hiển thị dữ liệu thực tế đã có từ backend.
+                </Text>
+              </Card>
             </div>
 
             {/* Detail accounts parameters */}

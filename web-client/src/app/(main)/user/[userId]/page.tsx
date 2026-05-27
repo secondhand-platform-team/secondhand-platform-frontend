@@ -388,7 +388,7 @@ export default function UserProfilePage() {
                     <Star className="w-4 h-4 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-xl font-black text-slate-800">4.8</p>
+                    <p className="text-xl font-black text-slate-800">—</p>
                     <p className="text-[11px] text-slate-500 font-medium -mt-0.5">
                       Đánh giá
                     </p>
@@ -400,7 +400,7 @@ export default function UserProfilePage() {
                     <Clock className="w-4 h-4 text-violet-600" />
                   </div>
                   <div>
-                    <p className="text-xl font-black text-slate-800">98%</p>
+                    <p className="text-xl font-black text-slate-800">—</p>
                     <p className="text-[11px] text-slate-500 font-medium -mt-0.5">
                       Phản hồi
                     </p>

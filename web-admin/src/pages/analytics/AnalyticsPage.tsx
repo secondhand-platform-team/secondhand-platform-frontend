@@ -87,45 +87,34 @@ const AnalyticsPage = () => {
       // Process top sellers
       const processedTopSellers = orderStats.topSellers?.map((item: any[]) => ({
         sellerId: String(item[0]),
-        fullName: "Người bán " + String(item[0]).substring(0, 5),
+        fullName: String(item[0]),
         email: "ID: " + String(item[0]).substring(0, 8),
-        revenue: Number(item[1]),
-        ordersCount: Number(item[2])
+        revenue: Number(item[1]) || 0,
+        ordersCount: Number(item[2]) || 0
       })) || [];
 
       // Process top products
       const processedTopProducts = orderStats.topProducts?.map((item: any[]) => ({
         itemId: String(item[0]),
         title: String(item[1]),
-        price: 0,
-        views: 0,
-        ordersCount: Number(item[2])
+        price: Number(item[3]) || 0,
+        views: Number(item[4]) || 0,
+        ordersCount: Number(item[2]) || 0
       })) || [];
 
-      const chartData = processedRevenueData.length > 0 ? processedRevenueData : [
-        { date: "01/05", revenue: 5000000 },
-        { date: "05/05", revenue: 12000000 },
-        { date: "10/05", revenue: 18000000 },
-        { date: "15/05", revenue: 25000000 },
-      ];
+      const chartData = processedRevenueData;
 
       setStats({
         totalRevenue: orderStats.totalRevenue || 0,
-        revenueGrowth: 15.4,
+        revenueGrowth: null,
         totalOrders: orderStats.totalOrders || 0,
-        orderGrowth: 12.2,
+        orderGrowth: null,
         totalUsers: userStats.totalUsers || 0,
-        userGrowth: 8.7,
-        refundRate: 0.8,
-        refundChange: -15,
+        userGrowth: null,
+        refundRate: null,
+        refundChange: null,
         revenueData: chartData,
-        categories: [
-          { name: "Điện tử", value: 42 },
-          { name: "Thời trang", value: 28 },
-          { name: "Gia dụng", value: 18 },
-          { name: "Sách", value: 7 },
-          { name: "Khác", value: 5 },
-        ],
+        categories: [],
         topSellers: processedTopSellers,
         topProducts: processedTopProducts
       });
@@ -222,13 +211,19 @@ const AnalyticsPage = () => {
                 }}>{item.icon}</span>}
                 styles={{ content: { color: "#1a1a1a", fontSize: 26, fontWeight: 800 } }}
               />
-              <div style={{ marginTop: 16 }}>
-                <Space size={4}>
-                  {item.trend === "up" ? <ArrowUpOutlined style={{ color: "#52c41a" }} /> : <ArrowDownOutlined style={{ color: "#52c41a" }} />}
-                  <Text style={{ color: "#52c41a", fontWeight: 700 }}>{Math.abs(item.growth)}%</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>so với kỳ trước</Text>
-                </Space>
-              </div>
+              {item.growth == null ? (
+                <div style={{ marginTop: 16 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Chưa có dữ liệu so sánh kỳ trước</Text>
+                </div>
+              ) : (
+                <div style={{ marginTop: 16 }}>
+                  <Space size={4}>
+                    {item.trend === "up" ? <ArrowUpOutlined style={{ color: "#52c41a" }} /> : <ArrowDownOutlined style={{ color: "#52c41a" }} />}
+                    <Text style={{ color: "#52c41a", fontWeight: 700 }}>{Math.abs(item.growth)}%</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>so với kỳ trước</Text>
+                  </Space>
+                </div>
+              )}
             </Card>
           </Col>
         ))}
