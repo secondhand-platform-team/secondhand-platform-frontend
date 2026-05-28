@@ -1,4 +1,5 @@
 import { Client, IMessage } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 import type { Notification } from "@/types/notification.type";
 import type { ChatMessageSocketResponse, SendChatMessagePayload } from "@/types/message.type";
 import envConfig from "@/config";
@@ -25,7 +26,7 @@ class WebSocketService {
 
   /**
    * Kết nối WebSocket
-   * Endpoint: ws://localhost:8000/core/ws-notification
+   * Endpoint: http://localhost:8000/core/ws-notification (SockJS)
    * Topic: /topic/notifications/{userId}
    */
   connect(userId: string): Promise<void> {
@@ -46,10 +47,10 @@ class WebSocketService {
 
       try {
         const baseUrl = envConfig.NEXT_PUBLIC_API_ENDPOINT.replace(/\/+$/, "");
-        const socketUrl = `${baseUrl.replace(/^http/, "ws")}/core/ws-notification`;
+        const socketUrl = `${baseUrl}/core/ws-notification`;
 
         this.client = new Client({
-          brokerURL: socketUrl,
+          webSocketFactory: () => new SockJS(socketUrl),
           reconnectDelay: this.reconnectDelay,
           heartbeatIncoming: 4000,
           heartbeatOutgoing: 4000,
