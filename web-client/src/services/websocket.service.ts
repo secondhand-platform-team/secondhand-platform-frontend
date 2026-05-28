@@ -168,18 +168,9 @@ class ChatSocketService {
   private subscriptions = new Map<string, () => void>();
   private currentUserId: string | null = null;
 
-  private resolveWebSocketUrl() {
+  private resolveSockJsUrl() {
     const normalized = envConfig.NEXT_PUBLIC_API_ENDPOINT.replace(/\/+$/, "");
-
-    if (normalized.startsWith("https://")) {
-      return `${normalized.replace("https://", "wss://")}/chat/ws-chat`;
-    }
-
-    if (normalized.startsWith("http://")) {
-      return `${normalized.replace("http://", "ws://")}/chat/ws-chat`;
-    }
-
-    return `${normalized}/auth/chat/ws-chat`;
+    return `${normalized}/chat/ws-chat`;
   }
 
   connect(onConnected?: () => void, onError?: (error: string) => void) {
@@ -192,8 +183,10 @@ class ChatSocketService {
       return;
     }
 
+    const sockJsUrl = this.resolveSockJsUrl();
+
     this.client = new Client({
-      brokerURL: this.resolveWebSocketUrl(),
+      webSocketFactory: () => new SockJS(sockJsUrl),
       connectHeaders: this.currentUserId ? { userId: this.currentUserId } : undefined,
       reconnectDelay: 3000,
       heartbeatIncoming: 10000,

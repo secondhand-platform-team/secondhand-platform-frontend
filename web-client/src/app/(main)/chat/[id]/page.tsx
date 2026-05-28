@@ -383,8 +383,7 @@ const ChatWindowPageContent = () => {
               currentUserId={user?.userId || ""}
               canSendMessage={
                 Boolean(activeConversation.participantId) &&
-                activeConversation.participantId !== "unknown" &&
-                connected
+                activeConversation.participantId !== "unknown"
               }
               onSendMessage={handleSendMessage}
               replyingTo={replyingTo}
