@@ -187,11 +187,7 @@ class ChatSocketService {
     const sockJsOptions = { withCredentials: true } as any;
 
     this.client = new Client({
-<<<<<<< HEAD
       webSocketFactory: () => new SockJS(sockJsUrl, undefined, sockJsOptions),
-=======
-      webSocketFactory: () => new SockJS(this.resolveSockJsUrl()),
->>>>>>> 064af2b (fix(client): use sockjs for chat socket)
       connectHeaders: this.currentUserId ? { userId: this.currentUserId } : undefined,
       reconnectDelay: 3000,
       heartbeatIncoming: 10000,
