@@ -40,7 +40,7 @@ const statusConfig: Record<
   RESERVED: { color: "orange", label: "Đã đặt cọc" },
   SOLD: { color: "red", label: "Đã bán" },
   HIDDEN: { color: "default", label: "Ẩn" },
-  EXPIRED: { color: "error", label: "Hết hạn" },
+  // EXPIRED: { color: "error", label: "Hết hạn" },
 };
 
 const conditionConfig: Record<string, string> = {

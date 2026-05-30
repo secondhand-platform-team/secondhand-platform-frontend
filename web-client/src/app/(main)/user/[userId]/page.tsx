@@ -86,6 +86,12 @@ export default function UserProfilePage() {
     });
   };
 
+  const isExpiredItem = (item: ItemWithImages) => {
+    if (item.status === "SOLD") return false;
+    if (!item.expiredAt) return item.status === "EXPIRED";
+    return new Date(item.expiredAt).getTime() <= Date.now();
+  };
+
   // ================================================================
   // Load data
   // ================================================================
@@ -169,15 +175,20 @@ export default function UserProfilePage() {
     .filter(Boolean)
     .join(", ");
 
-  const activeItems = items.filter((i) => i.status === "ACTIVE");
+  const activeItems = items.filter((i) => i.status === "ACTIVE" && !isExpiredItem(i));
   const soldItems = items.filter((i) => i.status === "SOLD");
+  const expiredItems = items.filter((i) => isExpiredItem(i));
 
   const filteredItems =
     itemFilter === "ALL"
-      ? items.filter((i) => i.status === "ACTIVE")
+      ? isOwnProfile
+        ? items.filter((i) => i.status === "ACTIVE" || isExpiredItem(i))
+        : items.filter((i) => i.status === "ACTIVE")
       : itemFilter === "SOLD"
         ? soldItems
-        : items.filter((i) => i.status === "ACTIVE");
+        : itemFilter === "EXPIRED"
+          ? expiredItems
+          : items.filter((i) => i.status === "ACTIVE" && !isExpiredItem(i));
 
   const joinDate = formatDate(profile?.user?.createdAt || undefined);
 
@@ -538,6 +549,15 @@ export default function UserProfilePage() {
                       icon: <ShoppingBag className="w-4 h-4" />,
                       count: activeItems.length,
                     },
+                    ...(isOwnProfile
+                      ? [
+                          {
+                            key: "EXPIRED",
+                            label: "Hết hạn",
+                            count: expiredItems.length,
+                          },
+                        ]
+                      : []),
                     {
                       key: "reviews",
                       label: "Đánh giá",
@@ -627,14 +647,15 @@ export default function UserProfilePage() {
                         item.itemImageList?.[0];
                       const condition =
                         CONDITION_MAP[item.condition] || CONDITION_MAP.USED;
-                      const isSold = item.status === "SOLD";
+                        const isSold = item.status === "SOLD";
+                        const isExpired = isExpiredItem(item);
 
                       return (
-                        <Link
-                          key={item.itemId}
-                          href={`/items/${item.itemId}`}
-                          className={`group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg hover:border-emerald-200 transition-all duration-300 ${isSold ? "opacity-75" : ""}`}
-                        >
+                          <Link
+                            key={item.itemId}
+                            href={`/items/${item.itemId}`}
+                            className={`group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg hover:border-emerald-200 transition-all duration-300 ${isSold ? "opacity-75" : ""} ${isExpired ? "ring-1 ring-amber-200" : ""}`}
+                          >
                           {/* Image */}
                           <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
                             {primaryImage?.imageUrl ? (
@@ -664,6 +685,11 @@ export default function UserProfilePage() {
                                 {condition.label}
                               </span>
                             )}
+                            {isExpired && (
+                              <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                                HẾT HẠN
+                              </span>
+                            )}
                             {/* Favorite count */}
                             {item.favoriteCount ? (
                               <span className="absolute top-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm text-xs font-semibold px-2 py-0.5 rounded-full text-red-500">
@@ -690,6 +716,13 @@ export default function UserProfilePage() {
                               )}
                               <span>{formatFullDate(item.createdAt)}</span>
                             </div>
+                            {isExpired && isOwnProfile && (
+                              <div className="mt-3">
+                                <span className="inline-flex items-center justify-center w-full rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold px-3 py-2 border border-amber-200">
+                                  Nhấn để xem và gia hạn
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </Link>
                       );

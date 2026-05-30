@@ -17,6 +17,7 @@ import {
 } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "../../stores/hooks";
+import envConfig from "../../config";
 import {
   fetchPendingReports,
   assignReportToStaff,
@@ -40,6 +41,9 @@ const reportStatusMap: Record<string, { label: string; color: string }> = {
   RESOLVED: { label: "Đã xử lý", color: "success" },
   REJECTED: { label: "Từ chối", color: "default" },
 };
+
+const getItemUrl = (itemId: string) =>
+  `${envConfig.WEB_CLIENT_URL.replace(/\/$/, "")}/items/${itemId}`;
 
 interface ReportModalState {
   isOpen: boolean;
@@ -300,7 +304,16 @@ const ReportPage = () => {
                 {modalState.report.reporterId}
               </Descriptions.Item>
               <Descriptions.Item label="ID tin đăng">
-                {modalState.report.itemId}
+                <Space direction="vertical" size={0}>
+                  <span>{modalState.report.itemId}</span>
+                  <a
+                    href={getItemUrl(modalState.report.itemId)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Mở trang sản phẩm
+                  </a>
+                </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Ngày báo cáo">
                 {new Date(modalState.report.createdAt).toLocaleString("vi-VN")}
