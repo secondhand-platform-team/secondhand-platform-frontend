@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  App,
   Button,
   Card,
   DatePicker,
-  Input,
   Pagination,
   Select,
   Space,
@@ -13,11 +11,9 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { EyeOutlined } from "@ant-design/icons";
 import type { Dayjs } from "dayjs";
 import { useAppDispatch, useAppSelector } from "../stores/hooks";
 import { fetchWalletTransactions } from "../stores/slices/wallet.slice";
-import type { WalletTransaction } from "../stores/slices/wallet.slice";
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -78,7 +74,6 @@ const formatDateParam = (value: Dayjs | null) =>
   value ? value.format("YYYY-MM-DDTHH:mm:ss") : undefined;
 
 export default function WalletTransactionsTable() {
-  const { message } = App.useApp();
   const dispatch = useAppDispatch();
   const { transactions, listLoading, totalElements, totalPages } = useAppSelector(
     (s) => s.wallet
