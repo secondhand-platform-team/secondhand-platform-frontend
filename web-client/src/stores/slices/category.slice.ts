@@ -60,7 +60,7 @@ class CategoryService {
         images: item.itemImageList || [],
         favoriteCount: item.favoriteCount ?? 0,
         isFavorited: item.isFavorited ?? false,
-        viewCount: item.viewCount ?? 0,
+        viewCount: (item as any).viewCount ?? 0,
       })) as ItemWithImages[],
     } as PageResponse<ItemWithImages>;
   }
