@@ -5,9 +5,7 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import { chatSocketService } from "@/services/websocket.service";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
-  connectChatSocket,
   createConversation,
-  disconnectChatSocket,
   fetchConversationMessages,
   fetchMyConversations,
   reactToChatMessage,
@@ -194,11 +192,6 @@ const ChatWindowPageContent = () => {
     }
 
     dispatch(fetchMyConversations());
-    dispatch(connectChatSocket());
-
-    return () => {
-      dispatch(disconnectChatSocket());
-    };
   }, [dispatch, isAuth, user?.userId]);
 
   useEffect(() => {

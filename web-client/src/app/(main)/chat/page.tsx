@@ -5,9 +5,7 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import { chatSocketService } from "@/services/websocket.service";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
-  connectChatSocket,
   createConversation,
-  disconnectChatSocket,
   fetchConversationMessages,
   fetchMyConversations,
   reactToChatMessage,
@@ -141,12 +139,8 @@ const ChatPageContent = () => {
       return;
     }
 
+    // Fetch conversations khi vào trang chat (socket đã kết nối toàn cục từ NotificationProvider)
     dispatch(fetchMyConversations());
-    dispatch(connectChatSocket());
-
-    return () => {
-      dispatch(disconnectChatSocket());
-    };
   }, [dispatch, isAuth, user?.userId]);
 
   useEffect(() => {
@@ -193,13 +187,9 @@ const ChatPageContent = () => {
   }, [conversations, dispatch, searchParams]);
 
   useEffect(() => {
-    if (!connected || !user?.userId) {
+    if (!chatSocketService.isConnected() || !user?.userId) {
       return;
     }
-
-    const unsubscribeConversationEvents = chatSocketService.subscribeUserConversations(user.userId, () => {
-      dispatch(fetchMyConversations());
-    });
 
     const unsubscribePresence = chatSocketService.subscribePresence((event) => {
       dispatch(
@@ -211,10 +201,9 @@ const ChatPageContent = () => {
     });
 
     return () => {
-      unsubscribeConversationEvents();
       unsubscribePresence();
     };
-  }, [connected, dispatch, user?.userId]);
+  }, [dispatch, user?.userId]);
 
   useEffect(() => {
     if (!connected || !user?.userId) {
@@ -341,7 +330,7 @@ const ChatPageContent = () => {
               canSendMessage={
                 Boolean(activeConversation.participantId) &&
                 activeConversation.participantId !== "unknown" &&
-                connected
+                chatSocketService.isConnected()
               }
               onSendMessage={handleSendMessage}
               replyingTo={replyingTo}

@@ -204,6 +204,8 @@ export default function ItemDetailPage() {
     [item.location?.district, item.location?.city].filter(Boolean).join(", ") ||
     "Toàn quốc";
 
+  const isOwner = Boolean(currentUser?.userId && item.userId && currentUser.userId === item.userId);
+
   const handleChat = async () => {
     if (!item.userId) {
       messageApi.error("Không thể lấy thông tin người bán");
@@ -233,6 +235,10 @@ export default function ItemDetailPage() {
       messageApi.warning("Vui lòng đăng nhập để thêm vào giỏ hàng");
       return;
     }
+    if (isOwner) {
+      messageApi.warning("Bạn không thể mua sản phẩm của chính mình");
+      return;
+    }
     try {
       setAddingToCart(true);
       await dispatch(
@@ -251,6 +257,10 @@ export default function ItemDetailPage() {
   const handleBuyNow = async () => {
     if (!isAuth) {
       messageApi.warning("Vui lòng đăng nhập để mua hàng");
+      return;
+    }
+    if (isOwner) {
+      messageApi.warning("Bạn không thể mua sản phẩm của chính mình");
       return;
     }
     try {
@@ -617,13 +627,33 @@ export default function ItemDetailPage() {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                 {/* Badges */}
                 <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">
-                    {item.transactionType === "SELL"
-                      ? "Đang bán"
-                      : item.transactionType === "GIVE_AWAY"
-                        ? "Cho tặng"
-                        : "Mới"}
-                  </span>
+                  {item.status !== "ACTIVE" ? (
+                    <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${
+                      item.status === "SOLD"
+                        ? "bg-red-50 text-red-700 border-red-200"
+                        : item.status === "RESERVED"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-slate-50 text-slate-700 border-slate-200"
+                    }`}>
+                      {item.status === "SOLD"
+                        ? "Đã bán"
+                        : item.status === "RESERVED"
+                          ? "Đang xử lý"
+                          : item.status === "EXPIRED"
+                            ? "Hết hạn"
+                            : item.status === "INACTIVE"
+                              ? "Ẩn"
+                              : item.status}
+                    </span>
+                  ) : (
+                    <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">
+                      {item.transactionType === "SELL"
+                        ? "Đang bán"
+                        : item.transactionType === "GIVE_AWAY"
+                          ? "Cho tặng"
+                          : "Mới"}
+                    </span>
+                  )}
                   <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">
                     {CONDITIONS[item.condition] || item.condition || "Chưa rõ"}
                   </span>
@@ -684,7 +714,8 @@ export default function ItemDetailPage() {
                   )}
                   <button
                     onClick={handleBuyNow}
-                    disabled={buyingNow || item.status !== "ACTIVE"}
+                    disabled={buyingNow || item.status !== "ACTIVE" || isOwner}
+                    title={isOwner ? "Bạn không thể mua sản phẩm của chính mình" : undefined}
                     className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {buyingNow ? (
@@ -697,7 +728,8 @@ export default function ItemDetailPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={handleAddToCart}
-                      disabled={addingToCart || item.status !== "ACTIVE"}
+                      disabled={addingToCart || item.status !== "ACTIVE" || isOwner}
+                      title={isOwner ? "Bạn không thể mua sản phẩm của chính mình" : undefined}
                       className="flex items-center justify-center gap-2 bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 py-3 rounded-xl font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {addingToCart ? (

@@ -382,6 +382,9 @@ const chatSlice = createSlice({
   name: "chat",
   initialState,
   reducers: {
+    setConnected: (state, action: PayloadAction<boolean>) => {
+      state.connected = action.payload;
+    },
     clearChatError: (state) => {
       state.error = null;
     },
@@ -598,6 +601,7 @@ const chatSlice = createSlice({
 });
 
 export const {
+  setConnected,
   clearChatError,
   setActiveConversation,
   upsertConversation,
