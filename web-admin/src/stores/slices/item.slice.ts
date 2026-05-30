@@ -46,6 +46,22 @@ export const deleteItem = createAsyncThunk<
   }
 });
 
+// 3. Thunk cập nhật trạng thái item
+export const updateItemStatus = createAsyncThunk<
+  ItemResponse,
+  { itemId: string; status: string },
+  { rejectValue: string }
+>("item/updateItemStatus", async ({ itemId, status }, { rejectWithValue }) => {
+  try {
+    const response = await http.patch(`/items/${itemId}/status`, { status }, {
+      headers: { "X-Service": "core" },
+    });
+    return response as ItemResponse;
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Không thể cập nhật trạng thái");
+  }
+});
+
 const itemSlice = createSlice({
   name: "item",
   initialState,
@@ -79,6 +95,22 @@ const itemSlice = createSlice({
       .addCase(deleteItem.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Lỗi khi xóa";
+      })
+
+      // 4. Xử lý updateItemStatus
+      .addCase(updateItemStatus.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateItemStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.items.findIndex(i => i.itemId === action.payload.itemId);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
+      .addCase(updateItemStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Lỗi khi cập nhật trạng thái";
       });
   },
 });

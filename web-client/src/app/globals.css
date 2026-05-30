@@ -102,9 +102,48 @@ button{
   animation: relifeDropdown 0.18s ease;
 }
 
-/* Position Ant Design messages at top-right */
+/* Position Ant Design messages */
+.ant-message-notice-content {
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
 
+.ant-message-custom-content {
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 16px;
+  min-width: 320px;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
 
+.ant-message-custom-content.ant-message-success {
+  background-color: #f6ffed !important;
+  border: 1px solid #b7eb8f;
+  color: #237804;
+}
+
+.ant-message-custom-content.ant-message-error {
+  background-color: #fff2f0 !important;
+  border: 1px solid #ffccc7;
+  color: #cf1322;
+}
+
+.ant-message-custom-content.ant-message-warning {
+  background-color: #fffbe6 !important;
+  border: 1px solid #ffe58f;
+  color: #ad6800;
+}
+
+.ant-message-custom-content.ant-message-info {
+  background-color: #e6f4ff !important;
+  border: 1px solid #91caff;
+  color: #0958d9;
+}
 
 .dark .relife-dropdown .ant-dropdown-menu {
   background: #1e293b;

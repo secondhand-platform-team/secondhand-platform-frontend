@@ -14,6 +14,7 @@ import {
   CheckCircle,
   XCircle,
   Banknote,
+  Trash2,
 } from "lucide-react";
 import { useAppSelector } from "@/stores/hooks";
 import { itemService } from "@/stores/slices/items.slice";
@@ -168,6 +169,23 @@ export default function CheckoutPage() {
   };
 
   const total = items.reduce((sum, item) => sum + (item.price ?? 0), 0);
+
+  const handleRemoveItem = (itemIdToRemove: string) => {
+    const newItems = items.filter((i) => i.itemId !== itemIdToRemove);
+    setItems(newItems);
+    
+    // Update URL to reflect the removal without reloading page
+    const newItemIds = newItems.map(i => i.itemId).join(",");
+    const url = new URL(window.location.href);
+    if (newItemIds) {
+      url.searchParams.set("itemIds", newItemIds);
+      url.searchParams.delete("itemId");
+      window.history.replaceState({}, "", url.toString());
+    } else {
+      messageApi.warning("Không còn sản phẩm nào để thanh toán");
+      router.push("/cart");
+    }
+  };
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
@@ -717,13 +735,20 @@ export default function CheckoutPage() {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-6 relative">
                       <p className="text-sm font-semibold text-slate-800 line-clamp-2">
                         {item.title}
                       </p>
                       <p className="text-sm font-bold text-emerald-600 mt-1">
                         {formatPrice(item.price ?? 0)}
                       </p>
+                      <button
+                        onClick={() => handleRemoveItem(item.itemId)}
+                        className="absolute top-0 right-0 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        title="Xóa sản phẩm này"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))}

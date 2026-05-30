@@ -20,6 +20,8 @@ import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import { logoutUser } from "@/stores/slices/auth.slice";
 import { fetchMyCart } from "@/stores/slices/cart.slice";
 import { fetchMyWallet } from "@/stores/slices/wallet.slice";
+import { fetchMyFavorites } from "@/stores/slices/items.slice";
+import { fetchMyConversations } from "@/stores/slices/chat.slice";
 import type { UserType } from "@/types/user.type";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -37,6 +39,13 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   const cartItemCount = useAppSelector(
     (state) => state.cart.cart?.cartItems?.length || 0,
   );
+  const unreadChatCount = useAppSelector(
+    (state) => state.chat.conversations?.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0) || 0
+  );
+  const favoriteCount = useAppSelector(
+    (state) => state.items.totalFavorites || 0
+  );
+
   const walletBalance = useAppSelector(
     (state) => state.wallet.wallet?.balance ?? null,
   );
@@ -54,6 +63,8 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
     if (isAuth && mounted) {
       dispatch(fetchMyCart());
       dispatch(fetchMyWallet());
+      dispatch(fetchMyFavorites());
+      dispatch(fetchMyConversations());
     }
   }, [isAuth, dispatch, mounted]);
 
@@ -92,7 +103,7 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
   const handleLogout = async () => {
     try {
       await dispatch(logoutUser()).unwrap();
-      messageApi.success("Đã đăng xuất");
+      messageApi.error("Đã đăng xuất");
       router.replace("/home");
     } catch (error) {
       messageApi.error(
@@ -200,10 +211,12 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                     {/* Chat */}
                     <button
                       onClick={() => router.push("/chat")}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-emerald-600"
+                      className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-emerald-600"
                       title="Tin nhắn"
                     >
-                      <MessageCircle size={18} />
+                      <Badge count={unreadChatCount} size="small" offset={[-2, 2]}>
+                        <MessageCircle size={18} />
+                      </Badge>
                     </button>
                   </>
                 )}
@@ -211,10 +224,12 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
                 {/* Favorites */}
                 <button
                   onClick={() => router.push("/dashboard/favorites")}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-emerald-600"
+                  className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-emerald-600"
                   title="Yêu thích"
                 >
-                  <Heart size={18} />
+                  <Badge count={favoriteCount} size="small" offset={[-2, 2]}>
+                    <Heart size={18} />
+                  </Badge>
                 </button>
 
                 {/* Cart */}
@@ -277,7 +292,7 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
               >
                 <div className="hidden cursor-pointer items-center gap-2 rounded-xl bg-white px-2.5 py-1.5 transition-all hover:bg-slate-100 hover:shadow-sm dark:bg-slate-800 dark:hover:bg-slate-700 sm:flex">
                   <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-600">
-                    {user?.avatarUrl ? (
+                    {user?.avatarUrl && !user.avatarUrl.includes("ui-avatars.com") ? (
                       <Image
                         src={user.avatarUrl}
                         alt="Ảnh đại diện"
@@ -306,9 +321,8 @@ export default function Header({ user, isAuth, onOpenAuth }: SiteHeaderProps) {
 
                   <ChevronDown
                     size={16}
-                    className={`text-slate-500 transition-transform duration-200 ${
-                      open ? "rotate-180" : ""
-                    }`}
+                    className={`text-slate-500 transition-transform duration-200 ${open ? "rotate-180" : ""
+                      }`}
                   />
                 </div>
               </Dropdown>

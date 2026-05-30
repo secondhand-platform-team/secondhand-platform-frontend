@@ -5,6 +5,8 @@ import itemReducer from './slices/item.slice'
 import categoryReducer from './slices/category.slice'
 import reportReducer from './slices/report.slice'
 import paymentReducer from './slices/payment.slice'
+import orderReducer from './slices/order.slice'
+import walletReducer from './slices/wallet.slice'
 
 export const makeStore = () => {
   return configureStore({
@@ -15,6 +17,8 @@ export const makeStore = () => {
       category: categoryReducer,
       report: reportReducer,
       payment: paymentReducer,
+      order: orderReducer,
+      wallet: walletReducer,
     },
   })
 }

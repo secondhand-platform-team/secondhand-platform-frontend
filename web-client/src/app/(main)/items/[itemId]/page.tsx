@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import http from "@/utils/api";
 import { itemService } from "@/stores/slices/items.slice";
 import { categoryService } from "@/stores/slices/category.slice";
 import type { ItemWithImages } from "@/types/item.type";
@@ -65,6 +66,10 @@ export default function ItemDetailPage() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [sellerReviews, setSellerReviews] = useState<any[]>([]);
+  const [sellerAverageRating, setSellerAverageRating] = useState<number>(0);
+  const [sellerTotalReviews, setSellerTotalReviews] = useState<number>(0);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const { isAuth } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const { message: messageApi } = App.useApp();
@@ -119,6 +124,16 @@ export default function ItemDetailPage() {
             .getUserProfileByUserId(data.userId)
             .then((res) => setSellerProfile(res as any))
             .catch(() => {});
+
+          setReviewsLoading(true);
+          http.get<any>(`/core/api/users/${data.userId}/reviews`)
+            .then((res) => {
+              setSellerReviews(res.reviews || []);
+              setSellerAverageRating(res.averageRating || 0);
+              setSellerTotalReviews(res.totalReviews || 0);
+            })
+            .catch((err) => console.error("Failed to load seller reviews:", err))
+            .finally(() => setReviewsLoading(false));
         }
       })
       .catch(() => {})
@@ -465,6 +480,60 @@ export default function ItemDetailPage() {
                 </div>
               </div>
 
+              {/* Seller Reviews Section */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" /> Đánh giá về người bán
+                  </h2>
+                  {sellerTotalReviews > 0 && (
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+                      ★ {sellerAverageRating.toFixed(1)} / 5.0 ({sellerTotalReviews} đánh giá)
+                    </span>
+                  )}
+                </div>
+
+                {reviewsLoading ? (
+                  <div className="flex justify-center py-8"><Spin size="small" /></div>
+                ) : sellerReviews.length === 0 ? (
+                  <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-sm font-semibold text-slate-400">Chưa có đánh giá nào cho người bán này</p>
+                    <p className="text-xs text-slate-400 mt-1">Đánh giá sẽ xuất hiện khi giao dịch hoàn tất</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
+                    {sellerReviews.map((rev) => (
+                      <div key={rev.id || rev.reviewId} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:border-emerald-100 transition duration-300">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center font-black text-emerald-700 text-xs uppercase">
+                              {(rev.buyerName || "U")[0]}
+                            </div>
+                            <div>
+                              <span className="text-xs font-black text-slate-700 block">{rev.buyerName || "Người mua ReLife"}</span>
+                              <span className="text-[10px] text-slate-400 mt-0.5 block">{new Date(rev.createdAt).toLocaleDateString("vi-VN")}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3.5 h-3.5 ${
+                                  i < rev.rating
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "text-slate-200"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {rev.comment && <p className="text-sm text-slate-600 mt-2 bg-white p-3 rounded-xl border border-slate-100/50 leading-relaxed font-medium">{rev.comment}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Similar Products */}
               {similarItems.length > 0 && (
                 <div>
@@ -680,7 +749,7 @@ export default function ItemDetailPage() {
                       Đánh giá
                     </p>
                     <p className="font-black text-slate-800 flex items-center justify-center gap-1">
-                      4.9{" "}
+                      {sellerTotalReviews > 0 ? sellerAverageRating.toFixed(1) : "Chưa có"}{" "}
                       <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                     </p>
                   </div>

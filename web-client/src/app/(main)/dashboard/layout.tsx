@@ -39,6 +39,11 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { user } = useAppSelector((state) => state.auth);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navigation = [
     { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
@@ -64,7 +69,7 @@ export default function DashboardLayout({
     { label: "Đã bán thành công", value: "Chưa có dữ liệu", highlight: false },
     {
       label: "Lượt đăng miễn phí đã dùng",
-      value: user?.freeSellUsed || "0",
+      value: (mounted && user?.freeSellUsed) || "0",
       highlight: false,
     },
   ];
@@ -108,7 +113,7 @@ export default function DashboardLayout({
           <div className="px-6 pb-6 pt-2 relative flex flex-col md:flex-row md:items-end md:justify-between gap-6 -mt-16">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
               <div className="w-32 h-32 rounded-full border-4 border-white overflow-hidden shadow-xl bg-white shrink-0 relative z-10">
-                {user?.avatarUrl ? (
+                {mounted && user?.avatarUrl && !user.avatarUrl.includes("ui-avatars.com") ? (
                   <img
                     src={user.avatarUrl}
                     alt="Avatar"
@@ -116,24 +121,24 @@ export default function DashboardLayout({
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-4xl font-black">
-                    {getAvatarInitials(user?.fullName, user?.email)}
+                    {mounted ? getAvatarInitials(user?.fullName, user?.email) : "U"}
                   </div>
                 )}
               </div>
               <div className="text-center md:text-left mb-2">
                 <h1 className="text-3xl font-black text-slate-900">
-                  {user?.fullName || "Người dùng"}
+                  {mounted && user?.fullName ? user.fullName : "Người dùng"}
                 </h1>
                 <div className="flex items-center justify-center md:justify-start gap-4 text-sm text-slate-500 mt-2">
                   <span className="flex items-center gap-1.5">
                     <MapPin className="w-4 h-4" />
-                    {user?.city
+                    {mounted && user?.city
                       ? `${user.district ? user.district + ", " : ""}${user.city}`
                       : "Toàn quốc"}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <ShoppingBag className="w-4 h-4" />{" "}
-                    {user?.createdAt
+                    {mounted && user?.createdAt
                       ? `Tham gia từ ${new Date(user.createdAt).toLocaleDateString("vi-VN", { month: "long", year: "numeric" })}`
                       : "Thành viên ReLife"}
                   </span>

@@ -13,6 +13,7 @@ import {
   Spin,
   Table,
   Tag,
+  Tabs,
   Typography,
 } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
@@ -24,6 +25,7 @@ import {
   fetchPayments,
 } from "../../stores/slices/payment.slice";
 import type { PaymentResponse, PaymentStatus } from "../../types/payment.type";
+import WalletTransactionsTable from "../../components/WalletTransactionsTable";
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -91,6 +93,7 @@ const PaymentPage = () => {
     null,
   );
   const [searchLoading, setSearchLoading] = useState(false);
+  const [tabView, setTabView] = useState<"vnpay" | "wallet">("vnpay");
 
   const loadPayments = (
     nextPage = pagination.page,
@@ -259,106 +262,128 @@ const PaymentPage = () => {
 
   return (
     <div style={{ padding: "24px" }}>
-      <Card
-        title={
-          <div>
-            <h2>Quản Lý Thanh Toán</h2>
-            <p style={{ fontSize: "14px", color: "#666", marginTop: "4px" }}>
-              Danh sách các giao dịch payment trong hệ thống •
-              <span style={{ marginLeft: 6, fontWeight: 600 }}>
-                {totalElements} giao dịch
-              </span>
-              <span style={{ marginLeft: 12, color: "#389e0d" }}>
-                {paymentSummary.success} đã thanh toán
-              </span>
-              <span style={{ marginLeft: 12, color: "#d46b08" }}>
-                {paymentSummary.pending} chờ xử lý
-              </span>
-              <span style={{ marginLeft: 12, color: "#1677ff" }}>
-                {paymentSummary.refunded} hoàn tiền
-              </span>
-            </p>
-          </div>
-        }
-        style={{ marginBottom: "24px" }}
-      >
-        <Space
-          direction="vertical"
-          style={{ width: "100%", marginBottom: 16 }}
-          size={12}
-        >
-          <Space
-            wrap
-            style={{ width: "100%", justifyContent: "space-between" }}
-          >
-            <Input.Search
-              allowClear
-              style={{ maxWidth: 340 }}
-              placeholder="Tìm theo mã payment / transaction ID"
-              value={searchState.id}
-              onChange={(event) =>
-                setSearchState((prev) => ({ ...prev, id: event.target.value }))
-              }
-              onSearch={handleSearch}
-              loading={searchLoading}
-            />
-            <Space wrap>
-              <Select
-                style={{ width: 200 }}
-                value={searchState.status}
-                options={statusOptions}
-                onChange={(value: PaymentStatus | "") => {
-                  setSearchState((prev) => ({ ...prev, status: value }));
-                  setPagination((prev) => ({ ...prev, page: 0 }));
-                }}
-              />
-              <RangePicker
-                value={searchState.dateRange || undefined}
-                showTime
-                allowClear
-                onChange={(values) => {
-                  setSearchState((prev) => ({
-                    ...prev,
-                    dateRange: values as [Dayjs | null, Dayjs | null] | null,
-                  }));
-                  setPagination((prev) => ({ ...prev, page: 0 }));
-                }}
-              />
-              <Button onClick={handleSearch} loading={searchLoading}>
-                Tìm kiếm
-              </Button>
-              <Button onClick={handleResetFilters}>Đặt lại</Button>
-            </Space>
-          </Space>
-          <div style={{ fontSize: 12, color: "#8c8c8c" }}>
-            Lọc theo trạng thái và khoảng ngày đang đi qua API core; ô tìm kiếm
-            là tra cứu chính xác theo mã giao dịch/payment ID.
-          </div>
-        </Space>
+      <Tabs
+        activeKey={tabView}
+        onChange={(key) => setTabView(key as "vnpay" | "wallet")}
+        items={[
+          {
+            key: "vnpay",
+            label: "Thanh Toán VNPay",
+            children: (
+              <Card
+                title={
+                  <div>
+                    <h2>Quản Lý Thanh Toán VNPay</h2>
+                    <p style={{ fontSize: "14px", color: "#666", marginTop: "4px" }}>
+                      Danh sách các giao dịch payment VNPay trong hệ thống •
+                      <span style={{ marginLeft: 6, fontWeight: 600 }}>
+                        {totalElements} giao dịch
+                      </span>
+                      <span style={{ marginLeft: 12, color: "#389e0d" }}>
+                        {paymentSummary.success} đã thanh toán
+                      </span>
+                      <span style={{ marginLeft: 12, color: "#d46b08" }}>
+                        {paymentSummary.pending} chờ xử lý
+                      </span>
+                      <span style={{ marginLeft: 12, color: "#1677ff" }}>
+                        {paymentSummary.refunded} hoàn tiền
+                      </span>
+                    </p>
+                  </div>
+                }
+                styles={{ body: { padding: 0 } }}
+              >
+                <div
+                  className="flex flex-col gap-3"
+                  style={{ width: "100%", marginBottom: 16, padding: "16px 24px 0" }}
+                >
+                  <Space
+                    wrap
+                    style={{ width: "100%", justifyContent: "space-between" }}
+                  >
+                    <Input.Search
+                      allowClear
+                      style={{ maxWidth: 340 }}
+                      placeholder="Tìm theo mã payment / transaction ID"
+                      value={searchState.id}
+                      onChange={(event) =>
+                        setSearchState((prev) => ({ ...prev, id: event.target.value }))
+                      }
+                      onSearch={handleSearch}
+                      loading={searchLoading}
+                    />
+                    <Space wrap>
+                      <Select
+                        style={{ width: 200 }}
+                        value={searchState.status}
+                        options={statusOptions}
+                        onChange={(value: PaymentStatus | "") => {
+                          setSearchState((prev) => ({ ...prev, status: value }));
+                          setPagination((prev) => ({ ...prev, page: 0 }));
+                        }}
+                      />
+                      <RangePicker
+                        value={searchState.dateRange || undefined}
+                        showTime
+                        allowClear
+                        onChange={(values) => {
+                          setSearchState((prev) => ({
+                            ...prev,
+                            dateRange: values as [Dayjs | null, Dayjs | null] | null,
+                          }));
+                          setPagination((prev) => ({ ...prev, page: 0 }));
+                        }}
+                      />
+                      <Button onClick={handleSearch} loading={searchLoading}>
+                        Tìm kiếm
+                      </Button>
+                      <Button onClick={handleResetFilters}>Đặt lại</Button>
+                    </Space>
+                  </Space>
+                  <div style={{ fontSize: 12, color: "#8c8c8c" }}>
+                    Lọc theo trạng thái và khoảng ngày đang đi qua API core; ô tìm kiếm
+                    là tra cứu chính xác theo mã giao dịch/payment ID.
+                  </div>
+                </div>
 
-        <Table
-          columns={columns}
-          dataSource={displayedPayments}
-          loading={listLoading || searchLoading}
-          rowKey="id"
-          pagination={false}
-          scroll={{ x: 1200 }}
-        />
-        <div style={{ marginTop: "16px", textAlign: "right" }}>
-          <Pagination
-            current={pagination.page + 1}
-            pageSize={pagination.size}
-            total={searchResult ? 1 : totalElements}
-            onChange={(page, pageSize) => {
-              setPagination({ page: page - 1, size: pageSize });
-              setSearchResult(null);
-            }}
-            showSizeChanger
-            showTotal={(total) => `Tổng ${total} giao dịch`}
-            disabled={Boolean(searchResult)}
-          />
-        </div>
-      </Card>
+                <div style={{ padding: "16px 24px" }}>
+                  <Table
+                    columns={columns}
+                    dataSource={displayedPayments}
+                    loading={listLoading || searchLoading}
+                    rowKey="id"
+                    pagination={false}
+                    scroll={{ x: 1200 }}
+                  />
+                  <div style={{ marginTop: "16px", textAlign: "right" }}>
+                    <Pagination
+                      current={pagination.page + 1}
+                      pageSize={pagination.size}
+                      total={searchResult ? 1 : totalElements}
+                      onChange={(page, pageSize) => {
+                        setPagination({ page: page - 1, size: pageSize });
+                        setSearchResult(null);
+                      }}
+                      showSizeChanger
+                      showTotal={(total) => `Tổng ${total} giao dịch`}
+                      disabled={Boolean(searchResult)}
+                    />
+                  </div>
+                </div>
+              </Card>
+            ),
+          },
+          {
+            key: "wallet",
+            label: "Giao Dịch Ví Hệ Thống",
+            children: (
+              <div>
+                <WalletTransactionsTable />
+              </div>
+            ),
+          },
+        ]}
+      />
 
       <Modal
         title="Chi Tiết Thanh Toán"

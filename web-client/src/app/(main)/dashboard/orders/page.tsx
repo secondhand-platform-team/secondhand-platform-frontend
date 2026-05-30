@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import { useAppSelector } from "@/stores/hooks";
 import { orderService } from "@/stores/slices/order.slice";
+import { chatService } from "@/stores/slices/chat.slice";
+import ReviewModal from "@/components/ReviewModal";
+import http from "@/utils/api";
 
 import type { OrderType, OrderItemType, ShipmentType } from "@/types/order.type";
 
@@ -58,6 +61,76 @@ function getProgressIndex(status: string): number {
   return idx >= 0 ? idx : -1;
 }
 
+const getSimulatedTrackingLocations = (order: OrderType) => {
+  const list: { time: string; text: string; active?: boolean }[] = [];
+  if (!order || !order.shipment) return list;
+
+  const shipment = order.shipment;
+  const createdTime = new Date(order.createdAt);
+  const shippedTime = shipment.shippedAt ? new Date(shipment.shippedAt) : null;
+  const deliveredTime = shipment.deliveredAt ? new Date(shipment.deliveredAt) : null;
+
+  const formatT = (d: Date) => d.toLocaleDateString("vi-VN", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+
+  list.push({
+    time: formatT(createdTime),
+    text: "Đơn hàng đã được tạo thành công",
+  });
+
+  const prepTime = new Date(createdTime.getTime() + 2 * 60 * 1000);
+  if (!shippedTime || prepTime < shippedTime) {
+    list.push({
+      time: formatT(prepTime),
+      text: "Người bán đang chuẩn bị đóng gói hàng",
+    });
+  }
+
+  if (shippedTime) {
+    list.push({
+      time: formatT(shippedTime),
+      text: `Đã bàn giao cho đơn vị vận chuyển [${shipment.carrier}]`,
+    });
+
+    const pickupTime = new Date(shippedTime.getTime() + 15 * 1000);
+    if (order.status === "IN_TRANSIT" || order.status === "DELIVERED" || order.status === "RECEIVED" || order.status === "COMPLETED") {
+      list.push({
+        time: formatT(pickupTime),
+        text: "Shipper đã lấy hàng thành công. Đang di chuyển tới kho trung chuyển",
+      });
+
+      const sortingTime = new Date(shippedTime.getTime() + 30 * 1000);
+      list.push({
+        time: formatT(sortingTime),
+        text: "Hàng đã đến kho phân loại trung tâm. Sẵn sàng vận chuyển",
+      });
+    }
+
+    if (order.status === "DELIVERED" || order.status === "RECEIVED" || order.status === "COMPLETED") {
+      const deliveredDate = deliveredTime ? deliveredTime : new Date(shippedTime.getTime() + 60 * 1000);
+      const deliveryTripTime = new Date(deliveredDate.getTime() - 15 * 1000);
+      list.push({
+        time: formatT(deliveryTripTime),
+        text: "Shipper đang trên đường giao sản phẩm đến địa chỉ của bạn",
+      });
+
+      list.push({
+        time: formatT(deliveredDate),
+        text: "Đã giao thành công tại địa chỉ người nhận",
+        active: true,
+      });
+    }
+  }
+
+  if (list.length > 0 && !list[list.length - 1].active) {
+    list[list.length - 1].active = true;
+  }
+
+  return list.reverse();
+};
+
 // ====================================================================
 // Page Component
 // ====================================================================
@@ -67,6 +140,7 @@ export default function OrderHistoryPage() {
   const { isAuth, loading: authLoading } = useAppSelector((s) => s.auth);
   const { message: messageApi } = App.useApp();
 
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<OrderType[]>([]);
   const [activeTab, setActiveTab] = useState("ALL");
@@ -78,15 +152,45 @@ export default function OrderHistoryPage() {
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
   const [disputeOrderId, setDisputeOrderId] = useState("");
 
+  // Seller profile info
+  const [sellerProfile, setSellerProfile] = useState<any | null>(null);
+  const [sellerLoading, setSellerLoading] = useState(false);
+
   // Seller handover form
   const [handoverModalOpen, setHandoverModalOpen] = useState(false);
   const [handoverOrderId, setHandoverOrderId] = useState("");
   const [handoverCarrier, setHandoverCarrier] = useState("GHN");
   const [handoverTrackingCode, setHandoverTrackingCode] = useState("");
 
+  // Review modal
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewOrderId, setReviewOrderId] = useState("");
+  const [reviewedItemIds, setReviewedItemIds] = useState<string[]>([]);
+
+  const openDetail = async (order: OrderType) => {
+    setDetailOrder(order);
+    setDetailOpen(true);
+    setSellerProfile(null);
+    if (order.sellerId) {
+      try {
+        setSellerLoading(true);
+        const profile = await chatService.getUserProfileByUserId(order.sellerId);
+        setSellerProfile(profile);
+      } catch (err) {
+        console.error("Failed to load seller profile:", err);
+      } finally {
+        setSellerLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
-    if (!authLoading && !isAuth) router.push("/home");
-  }, [isAuth, authLoading, router]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !authLoading && !isAuth) router.push("/home");
+  }, [isAuth, authLoading, router, mounted]);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -102,9 +206,23 @@ export default function OrderHistoryPage() {
     }
   }, [viewMode, messageApi]);
 
+  const fetchReviewedItems = useCallback(async () => {
+    try {
+      const ids = await http.get<string[]>("/core/api/reviews/reviewed-items");
+      setReviewedItemIds(ids);
+    } catch (err) {
+      console.error("Failed to fetch reviewed items:", err);
+    }
+  }, []);
+
   useEffect(() => {
-    if (isAuth) fetchOrders();
-  }, [isAuth, fetchOrders]);
+    if (isAuth) {
+      fetchOrders();
+      if (viewMode === "BUY") {
+        fetchReviewedItems();
+      }
+    }
+  }, [isAuth, fetchOrders, fetchReviewedItems, viewMode]);
 
   // ====================================================================
   // Actions
@@ -130,12 +248,25 @@ export default function OrderHistoryPage() {
   const handleCancelBuyer = (orderId: string) => {
     Modal.confirm({
       title: "Hủy đơn hàng?",
-      content: "Tiền sẽ được hoàn vào ví của bạn.",
+      content: "Tiền sẽ được hoàn vào ví của bạn (nếu đã thanh toán).",
       okText: "Hủy đơn",
       cancelText: "Không",
       okButtonProps: { danger: true },
       onOk: () => handleAction(orderId, `/${orderId}/cancel`),
     });
+  };
+
+  const handleRepay = async (orderId: string, itemId: string) => {
+    try {
+      setActionLoading(true);
+      await orderService.actionOrder(`/${orderId}/cancel`);
+      router.push(`/checkout?itemIds=${itemId}`);
+    } catch {
+      messageApi.error("Không thể khởi tạo lại thanh toán!");
+    } finally {
+      setActionLoading(false);
+      fetchOrders();
+    }
   };
 
   const handleConfirmReceived = (orderId: string) => {
@@ -198,6 +329,35 @@ export default function OrderHistoryPage() {
     });
   };
 
+  const openReviewModal = (orderId: string) => {
+    setReviewOrderId(orderId);
+    setReviewModalOpen(true);
+  };
+
+  const openReviewModalFromList = async (order: OrderType) => {
+    setDetailOrder(order);
+    setReviewOrderId(order.id);
+    setReviewModalOpen(true);
+    setSellerProfile(null);
+    if (order.sellerId) {
+      try {
+        setSellerLoading(true);
+        const profile = await chatService.getUserProfileByUserId(order.sellerId);
+        setSellerProfile(profile);
+      } catch (err) {
+        console.error("Failed to load seller profile:", err);
+      } finally {
+        setSellerLoading(false);
+      }
+    }
+  };
+
+  const handleReviewSuccess = () => {
+    setReviewModalOpen(false);
+    fetchOrders();
+    fetchReviewedItems();
+  };
+
   // ====================================================================
   // Filter & Render
   // ====================================================================
@@ -215,7 +375,7 @@ export default function OrderHistoryPage() {
       hour: "2-digit", minute: "2-digit",
     });
 
-  if (authLoading || !isAuth) {
+  if (!mounted || authLoading || !isAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Spin size="large" />
@@ -428,7 +588,7 @@ export default function OrderHistoryPage() {
               <div className="px-5 py-4 bg-gray-50/50 border-t flex items-center justify-between">
                 <button
                   className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition flex items-center gap-1.5"
-                  onClick={() => { setDetailOrder(order); setDetailOpen(true); }}
+                  onClick={() => openDetail(order)}
                 >
                   <Eye className="w-4 h-4" /> Xem chi tiết
                 </button>
@@ -437,7 +597,25 @@ export default function OrderHistoryPage() {
                   {/* BUYER actions */}
                   {viewMode === "BUY" && (
                     <>
+                      {order.status === "PENDING_PAYMENT" && (
+                        <button
+                          className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-1.5"
+                          onClick={() => handleRepay(order.id, order.orderItems?.[0]?.itemId || "")}
+                          disabled={actionLoading}
+                        >
+                          <CreditCard className="w-4 h-4" /> Thanh toán lại
+                        </button>
+                      )}
                       {order.status === "PAID" && (
+                        <button
+                          className="px-4 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                          onClick={() => handleCancelBuyer(order.id)}
+                          disabled={actionLoading}
+                        >
+                          Hủy đơn
+                        </button>
+                      )}
+                      {order.status === "PENDING_PAYMENT" && (
                         <button
                           className="px-4 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
                           onClick={() => handleCancelBuyer(order.id)}
@@ -463,6 +641,21 @@ export default function OrderHistoryPage() {
                             Khiếu nại
                           </button>
                         </>
+                      )}
+                      {order.status === "COMPLETED" && (
+                        !reviewedItemIds.includes(order.orderItems?.[0]?.itemId || "") ? (
+                          <button
+                            className="px-4 py-1.5 text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl hover:shadow-md transition-all flex items-center gap-1.5 font-bold shadow-sm"
+                            onClick={() => openReviewModalFromList(order)}
+                            disabled={actionLoading}
+                          >
+                            ⭐ Đánh giá người bán
+                          </button>
+                        ) : (
+                          <span className="px-3 py-1.5 text-xs bg-gray-100 text-gray-500 rounded-lg font-medium flex items-center gap-1">
+                            ✓ Đã đánh giá
+                          </span>
+                        )
                       )}
                     </>
                   )}
@@ -536,36 +729,83 @@ export default function OrderHistoryPage() {
 
       {/* ====== Handover Modal ====== */}
       <Modal
-        title="Giao hàng cho shipper"
+        title={null}
         open={handoverModalOpen}
         onOk={handleHandover}
         onCancel={() => setHandoverModalOpen(false)}
-        okText="Xác nhận giao"
+        okText="Xác nhận bàn giao"
         cancelText="Hủy"
         confirmLoading={actionLoading}
+        width={520}
+        centered
+        okButtonProps={{
+          className: "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl border-none shadow-md shadow-emerald-500/20 px-6 py-2.5 h-auto transition-all"
+        }}
+        cancelButtonProps={{
+          className: "border-slate-200 hover:border-emerald-500 hover:text-emerald-600 font-bold rounded-xl px-6 py-2.5 h-auto transition-all text-slate-500"
+        }}
       >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Đơn vị vận chuyển</label>
-            <select
-              className="w-full border rounded-lg px-3 py-2"
-              value={handoverCarrier}
-              onChange={(e) => setHandoverCarrier(e.target.value)}
-            >
-              <option value="GHN">Giao Hàng Nhanh (GHN)</option>
-              <option value="GHTK">Giao Hàng Tiết Kiệm (GHTK)</option>
-              <option value="VNPost">VNPost</option>
-              <option value="J&T">J&T Express</option>
-              <option value="Grab">Grab Express</option>
-              <option value="Khác">Khác</option>
-            </select>
+        <div className="-mx-6 -mt-6 mb-6 p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-b border-emerald-100/50 rounded-t-3xl relative overflow-hidden">
+          {/* Subtle design elements */}
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-200/20 rounded-full blur-2xl" />
+          <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-teal-200/20 rounded-full blur-2xl" />
+          
+          <div className="relative flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-2xl shadow-md flex items-center justify-center border border-emerald-100 shrink-0">
+              <Truck className="w-6 h-6 text-emerald-600 animate-bounce" />
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-100/60 px-2 py-0.5 rounded-md">Quy trình vận đơn</span>
+              <h3 className="text-lg font-black text-slate-800 mt-0.5">
+                Bàn giao sản phẩm cho Shipper
+              </h3>
+            </div>
           </div>
+        </div>
+
+        <div className="space-y-5 px-1">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mã vận đơn</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Chọn đơn vị vận chuyển</label>
+            <div className="grid grid-cols-2 gap-3.5">
+              {[
+                { value: "GHN", label: "Giao Hàng Nhanh", desc: "Độ phủ toàn quốc", color: "from-orange-500 to-amber-500", initials: "GHN" },
+                { value: "GHTK", label: "Giao Hàng Tiết Kiệm", desc: "Tối ưu chi phí", color: "from-emerald-500 to-green-500", initials: "GTK" },
+                { value: "VNPost", label: "VNPost", desc: "Bưu điện Việt Nam", color: "from-blue-500 to-indigo-500", initials: "VNP" },
+                { value: "J&T", label: "J&T Express", desc: "Mạng lưới chuẩn xác", color: "from-red-500 to-rose-500", initials: "J&T" },
+                { value: "Grab", label: "Grab Express", desc: "Siêu tốc nội thành", color: "from-emerald-600 to-green-600", initials: "GRB" },
+              ].map((c) => {
+                const isActive = handoverCarrier === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    onClick={() => setHandoverCarrier(c.value)}
+                    className={`flex items-start gap-2.5 p-3 rounded-2xl border text-left transition-all ${
+                      isActive
+                        ? "border-emerald-500 bg-emerald-50/40 ring-2 ring-emerald-500/10 shadow-sm"
+                        : "border-slate-150 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${c.color} text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm`}>
+                      {c.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`text-xs font-black truncate ${isActive ? "text-emerald-700" : "text-slate-700"}`}>{c.label}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">{c.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Mã vận đơn (Tracking Code)</label>
             <Input
               value={handoverTrackingCode}
               onChange={(e) => setHandoverTrackingCode(e.target.value)}
-              placeholder="Nhập mã vận đơn..."
+              placeholder="Nhập mã vận đơn từ nhà vận chuyển (Ví dụ: GHN-12345)..."
+              size="large"
+              className="rounded-2xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 text-slate-700 placeholder-slate-400 text-sm py-3 transition"
             />
           </div>
         </div>
@@ -587,6 +827,47 @@ export default function OrderHistoryPage() {
               <Tag color={STATUS_MAP[detailOrder.status]?.color || "default"}>
                 {STATUS_MAP[detailOrder.status]?.label || detailOrder.status}
               </Tag>
+            </div>
+
+            {/* Seller Info */}
+            <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+              <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-emerald-600" />
+                Người bán / Người đăng tin
+              </h4>
+              {sellerLoading ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <Spin size="small" /> Đang tải thông tin người bán...
+                </div>
+              ) : sellerProfile ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-white border shrink-0">
+                      {sellerProfile.user_profile?.avatarUrl ? (
+                        <img src={sellerProfile.user_profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-emerald-500 text-white flex items-center justify-center font-bold">
+                          {(sellerProfile.user_profile?.fullName || "U")[0].toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-slate-900 text-sm">{sellerProfile.user_profile?.fullName || "Người dùng ReLife"}</h5>
+                      <p className="text-xs text-slate-500">{sellerProfile.user_profile?.city || "Toàn quốc"}</p>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/user/${detailOrder.sellerId}`}
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl hover:bg-emerald-50 transition-all"
+                  >
+                    Xem chi tiết
+                  </Link>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-500">
+                  Mã người bán: <span className="font-mono">{detailOrder.sellerId}</span>
+                </div>
+              )}
             </div>
 
             {/* Item info */}
@@ -624,24 +905,36 @@ export default function OrderHistoryPage() {
               </div>
             </div>
 
-            {/* Shipment */}
+            {/* Shipment Routing Timeline */}
             {detailOrder.shipment && (
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-sm">
-                <p className="font-bold text-slate-800 flex items-center gap-2 mb-2">
-                  <Truck className="w-4 h-4 text-emerald-600" /> Thông tin vận chuyển
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm">
+                <p className="font-bold text-slate-800 flex items-center gap-2 mb-3">
+                  <Truck className="w-4 h-4 text-emerald-600 animate-pulse" /> Hành trình vận chuyển (Giả lập Shipper)
                 </p>
-                <div className="space-y-1.5 text-slate-600 ml-6">
-                  <p><span className="font-medium text-slate-500">Đơn vị:</span> {detailOrder.shipment.carrier}</p>
-                  <p><span className="font-medium text-slate-500">Mã vận đơn:</span> <span className="text-emerald-600 font-medium">{detailOrder.shipment.trackingCode}</span></p>
-                  {detailOrder.shipment.currentLocation && (
-                    <p><span className="font-medium text-slate-500">Vị trí:</span> {detailOrder.shipment.currentLocation}</p>
-                  )}
-                  {detailOrder.shipment.shippedAt && (
-                    <p><span className="font-medium text-slate-500">Ngày giao:</span> {formatDate(detailOrder.shipment.shippedAt)}</p>
-                  )}
-                  {detailOrder.shipment.deliveredAt && (
-                    <p><span className="font-medium text-slate-500">Ngày nhận:</span> {formatDate(detailOrder.shipment.deliveredAt)}</p>
-                  )}
+                
+                <div className="mb-4 bg-white p-3 rounded-xl border border-slate-100 space-y-1 text-xs">
+                  <p><span className="font-semibold text-slate-500">Đơn vị:</span> {detailOrder.shipment.carrier}</p>
+                  <p><span className="font-semibold text-slate-500">Mã vận đơn:</span> <span className="text-emerald-600 font-mono font-bold">{detailOrder.shipment.trackingCode}</span></p>
+                </div>
+
+                <div className="relative pl-6 border-l border-slate-200 space-y-5 ml-2 mt-2">
+                  {getSimulatedTrackingLocations(detailOrder).map((loc, idx) => (
+                    <div key={idx} className="relative">
+                      {/* Circle Dot */}
+                      <span className={`absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full border-2 bg-white flex items-center justify-center ${
+                        loc.active ? "border-emerald-500 ring-4 ring-emerald-50" : "border-slate-300"
+                      }`}>
+                        {loc.active && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                      </span>
+                      {/* Content */}
+                      <div>
+                        <p className={`font-semibold text-xs leading-none ${loc.active ? "text-emerald-600" : "text-slate-700"}`}>
+                          {loc.text}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1">{loc.time}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -651,9 +944,39 @@ export default function OrderHistoryPage() {
               <p>Tạo lúc: {formatDate(detailOrder.createdAt)}</p>
               <p>Cập nhật: {formatDate(detailOrder.updatedAt)}</p>
             </div>
+
+            {/* Review action - only for DELIVERED orders */}
+            {viewMode === "BUY" && (detailOrder.status === "DELIVERED" || detailOrder.status === "RECEIVED" || detailOrder.status === "COMPLETED") && (
+              <div className="mt-4 pt-4 border-t flex gap-2">
+                {!reviewedItemIds.includes(detailOrder.orderItems?.[0]?.itemId || "") ? (
+                  <button
+                    onClick={() => openReviewModal(detailOrder.id)}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:shadow-md transition text-sm font-medium"
+                  >
+                    ⭐ Đánh giá người bán
+                  </button>
+                ) : (
+                  <div className="flex-1 text-center py-2 bg-gray-100 text-gray-500 rounded-lg text-sm font-medium">
+                    ✓ Bạn đã đánh giá sản phẩm này
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </Modal>
+
+      {/* Review Modal */}
+      {detailOrder && (
+        <ReviewModal
+          open={reviewModalOpen}
+          itemId={detailOrder.orderItems?.[0]?.itemId || ""}
+          sellerId={detailOrder.sellerId || ""}
+          sellerName={sellerProfile?.user_profile?.fullName || "Người bán"}
+          onClose={() => setReviewModalOpen(false)}
+          onSuccess={handleReviewSuccess}
+        />
+      )}
     </div>
   );
 }

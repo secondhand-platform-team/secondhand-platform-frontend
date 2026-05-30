@@ -11,6 +11,8 @@ import AnalyticsPage from "../pages/analytics/AnalyticsPage";
 import UsersPage from "../pages/users/UsersPage";
 import CategoriesPage from "../pages/categories/CategoriesPage";
 import OrdersPage from "../pages/orders/OrdersPage";
+import ItemsPage from "../pages/items/ItemsPage";
+import SettingsPage from "../pages/settings/SettingsPage";
 
 const router = createBrowserRouter([
   {
@@ -24,19 +26,18 @@ const router = createBrowserRouter([
       {
         element: <AdminLayout />,
         children: [
-          { path: "dashboard", element: <DashboardPage /> },
-          { path: "profile", element: <ProfilePage /> },
-          { path: "analytics", element: <AnalyticsPage /> },
-          { path: "users", element: <UsersPage /> },
-          { path: "items", element: <DashboardPage /> },
-          { path: "orders", element: <OrdersPage /> },
+          { path: "dashboard",    element: <DashboardPage /> },
+          { path: "profile",      element: <ProfilePage /> },
+          { path: "analytics",    element: <AnalyticsPage /> },
+          { path: "users",        element: <UsersPage /> },
+          { path: "items",        element: <ItemsPage /> },
+          { path: "orders",       element: <OrdersPage /> },
           { path: "transactions", element: <DashboardPage /> },
-          { path: "payments", element: <PaymentPage /> },
-          { path: "reports", element: <ReportPage /> },
-          { path: "my-reports", element: <MyReportsPage /> },
-          { path: "approvals", element: <DashboardPage /> },
-          { path: "categories", element: <CategoriesPage /> },
-          { path: "settings", element: <DashboardPage /> },
+          { path: "payments",     element: <PaymentPage /> },
+          { path: "reports",      element: <ReportPage /> },
+          { path: "my-reports",   element: <MyReportsPage /> },
+          { path: "categories",   element: <CategoriesPage /> },
+          { path: "settings",     element: <SettingsPage /> },
         ],
       },
     ],

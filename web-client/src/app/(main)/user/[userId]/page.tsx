@@ -28,6 +28,7 @@ import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { createConversation } from "@/stores/slices/chat.slice";
 import { chatService } from "@/stores/slices/chat.slice";
 import { itemService } from "@/stores/slices/items.slice";
+import { fetchReviewsBySellerId } from "@/stores/slices/review.slice";
 import type { UserProfileApiResponseType } from "@/types/user.type";
 import type { ItemWithImages } from "@/types/item.type";
 
@@ -60,6 +61,8 @@ export default function UserProfilePage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [itemFilter, setItemFilter] = useState("ALL");
   const [shareTooltip, setShareTooltip] = useState(false);
+  const [tabView, setTabView] = useState<"items" | "reviews">("items");
+  const { reviews, averageRating, totalReviews, loading: reviewsLoading } = useAppSelector((s) => s.review);
 
   const isOwnProfile = currentUser?.userId === userId;
 
@@ -99,12 +102,15 @@ export default function UserProfilePage() {
 
       setProfile(profileData);
       setItems(itemsData || []);
+      
+      // Fetch reviews using Redux dispatch
+      dispatch(fetchReviewsBySellerId(userId));
     } catch {
       messageApi.error("Không thể tải thông tin người dùng");
     } finally {
       setLoading(false);
     }
-  }, [userId, messageApi]);
+  }, [userId, messageApi, dispatch]);
 
   useEffect(() => {
     if (userId) loadData();
@@ -388,9 +394,11 @@ export default function UserProfilePage() {
                     <Star className="w-4 h-4 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-xl font-black text-slate-800">—</p>
+                    <p className="text-xl font-black text-slate-800">
+                      {averageRating ? averageRating.toFixed(1) : "—"}
+                    </p>
                     <p className="text-[11px] text-slate-500 font-medium -mt-0.5">
-                      Đánh giá
+                      {totalReviews > 0 ? `${totalReviews} đánh giá` : "Chưa có đánh giá"}
                     </p>
                   </div>
                 </div>
@@ -517,37 +525,36 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-          {/* Main Content — Product Listings */}
+          {/* Main Content — Product Listings & Reviews */}
           <div className="flex-1 min-w-0">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              {/* Tabs */}
+              {/* Main Tabs */}
               <div className="px-5 pt-5 pb-0 border-b border-slate-100">
-                <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-emerald-500" />
-                  Sản phẩm đang bán
-                </h2>
                 <div className="flex gap-2 pb-3">
                   {[
                     {
-                      key: "ALL",
-                      label: "Đang bán",
+                      key: "items",
+                      label: "Sản phẩm",
+                      icon: <ShoppingBag className="w-4 h-4" />,
                       count: activeItems.length,
                     },
                     {
-                      key: "SOLD",
-                      label: "Đã bán",
-                      count: soldItems.length,
+                      key: "reviews",
+                      label: "Đánh giá",
+                      icon: <Star className="w-4 h-4" />,
+                      count: totalReviews,
                     },
                   ].map((tab) => (
                     <button
                       key={tab.key}
-                      onClick={() => setItemFilter(tab.key)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        itemFilter === tab.key
+                      onClick={() => setTabView(tab.key as "items" | "reviews")}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                        tabView === tab.key
                           ? "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm border"
                           : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
                       }`}
                     >
+                      {tab.icon}
                       {tab.label}
                       <span className="ml-1.5 text-xs opacity-75">
                         ({tab.count})
@@ -557,22 +564,61 @@ export default function UserProfilePage() {
                 </div>
               </div>
 
-              {/* Items Grid */}
-              <div className="p-5">
-                {filteredItems.length === 0 ? (
-                  <Empty
-                    description={
-                      <span className="text-slate-500">
-                        {itemFilter === "SOLD"
-                          ? "Chưa có sản phẩm nào đã bán"
-                          : "Chưa có sản phẩm nào đang bán"}
-                      </span>
-                    }
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    className="py-12"
-                  />
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {/* Items Tab */}
+              {tabView === "items" && (
+                <>
+                  <div className="px-5 py-4 border-b border-slate-100">
+                    <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <ShoppingBag className="w-5 h-5 text-emerald-500" />
+                      Sản phẩm đang bán
+                    </h2>
+                    <div className="flex gap-2">
+                      {[
+                        {
+                          key: "ALL",
+                          label: "Đang bán",
+                          count: activeItems.length,
+                        },
+                        {
+                          key: "SOLD",
+                          label: "Đã bán",
+                          count: soldItems.length,
+                        },
+                      ].map((subTab) => (
+                        <button
+                          key={subTab.key}
+                          onClick={() => setItemFilter(subTab.key)}
+                          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                            itemFilter === subTab.key
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm border"
+                              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          {subTab.label}
+                          <span className="ml-1.5 text-xs opacity-75">
+                            ({subTab.count})
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Items Grid */}
+                  <div className="p-5">
+                    {filteredItems.length === 0 ? (
+                      <Empty
+                        description={
+                          <span className="text-slate-500">
+                            {itemFilter === "SOLD"
+                              ? "Chưa có sản phẩm nào đã bán"
+                              : "Chưa có sản phẩm nào đang bán"}
+                          </span>
+                        }
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        className="py-12"
+                      />
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredItems.map((item) => {
                       const primaryImage =
                         item.images?.find((img) => img.isPrimary) ||
@@ -650,7 +696,93 @@ export default function UserProfilePage() {
                     })}
                   </div>
                 )}
-              </div>
+                  </div>
+                </>
+              )}
+
+              {/* Reviews Tab */}
+              {tabView === "reviews" && (
+                <div className="p-5">
+                  {reviewsLoading ? (
+                    <Spin className="flex justify-center py-12" />
+                  ) : !reviews || reviews.length === 0 ? (
+                    <Empty
+                      description="Chưa có đánh giá nào"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      className="py-12"
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="mb-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-5 h-5 ${
+                                  i < Math.round(averageRating)
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "text-slate-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-800">
+                              {averageRating.toFixed(1)} / 5.0
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              Trên {totalReviews} đánh giá
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {reviews.map((review) => (
+                        <div
+                          key={review.id}
+                          className="p-4 border border-slate-100 rounded-xl hover:border-emerald-200 transition"
+                        >
+                          <div className="flex items-start gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-bold text-emerald-700">
+                                {(review.buyerName || "U")[0].toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <p className="font-semibold text-slate-800 text-sm">
+                                  {review.buyerName || "Người mua"}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-3.5 h-3.5 ${
+                                        i < review.rating
+                                          ? "fill-amber-400 text-amber-400"
+                                          : "text-slate-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <p className="text-xs text-slate-400">
+                                {new Date(review.createdAt).toLocaleDateString("vi-VN")}
+                              </p>
+                            </div>
+                          </div>
+                          {review.comment && (
+                            <p className="text-sm text-slate-600 mt-2">
+                              {review.comment}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

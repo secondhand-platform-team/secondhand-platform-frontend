@@ -181,6 +181,7 @@ type ItemsState = {
   loading: boolean;
   itemLoading: boolean;
   error: string | null;
+  totalFavorites: number;
 };
 
 const initialState: ItemsState = {
@@ -196,6 +197,7 @@ const initialState: ItemsState = {
   loading: false,
   itemLoading: false,
   error: null,
+  totalFavorites: 0,
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -354,6 +356,7 @@ const itemsSlice = createSlice({
         state.loading = false;
         state.myFavorites = action.payload.content || (action.payload as any);
         state.items = state.myFavorites;
+        state.totalFavorites = action.payload.totalElements ?? state.myFavorites.length;
       })
       .addCase(fetchMyFavorites.rejected, (state, action) => {
         state.loading = false;
@@ -451,32 +454,44 @@ const itemsSlice = createSlice({
       })
       .addCase(toggleItemFavorite.fulfilled, (state, action) => {
         state.loading = false;
+        let targetItem = null;
+
+        // Update in items list
         const item = state.items.find((i) => i.itemId === action.payload.itemId);
         if (item) {
           item.isFavorited = action.payload.isFavorited;
           if (item.favoriteCount !== undefined) {
             item.favoriteCount += action.payload.isFavorited ? 1 : -1;
           }
+          targetItem = { ...item };
         }
         
+        // Update in selectedItem
+        if (state.selectedItem && state.selectedItem.itemId === action.payload.itemId) {
+          state.selectedItem.isFavorited = action.payload.isFavorited;
+          if (state.selectedItem.favoriteCount !== undefined) {
+            state.selectedItem.favoriteCount += action.payload.isFavorited ? 1 : -1;
+          }
+          if (!targetItem) {
+            targetItem = { ...state.selectedItem };
+          }
+        }
+
         // Also update myFavorites array
         const favIndex = state.myFavorites.findIndex((i) => i.itemId === action.payload.itemId);
         if (favIndex !== -1) {
           if (!action.payload.isFavorited) {
             // If unfavorited, remove from list
             state.myFavorites.splice(favIndex, 1);
+            state.totalFavorites = Math.max(0, state.totalFavorites - 1);
           } else {
-            // This case shouldn't normally happen in a "Favorites" list view, 
-            // but for completeness:
             state.myFavorites[favIndex].isFavorited = true;
           }
-        }
-
-        if (state.selectedItem && state.selectedItem.itemId === action.payload.itemId) {
-          state.selectedItem.isFavorited = action.payload.isFavorited;
-          if (state.selectedItem.favoriteCount !== undefined) {
-            state.selectedItem.favoriteCount += action.payload.isFavorited ? 1 : -1;
+        } else if (action.payload.isFavorited) {
+          if (targetItem) {
+            state.myFavorites.unshift(targetItem);
           }
+          state.totalFavorites += 1;
         }
       })
       .addCase(toggleItemFavorite.rejected, (state, action) => {

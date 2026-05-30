@@ -65,7 +65,7 @@ export default function FavoriteButton({
       if (targetFaved) {
         messageApi.success("Đã thêm vào danh sách yêu thích!");
       } else {
-        messageApi.success("Đã xóa khỏi danh sách yêu thích!");
+        messageApi.error("Đã xóa khỏi danh sách yêu thích!");
       }
     } catch (err) {
       // Revert optimistic updates on error

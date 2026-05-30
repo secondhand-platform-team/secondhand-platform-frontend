@@ -6,6 +6,7 @@ import searchReducer from "./slices/search.slice";
 import cartReducer from "./slices/cart.slice";
 import notificationReducer from "./slices/notification.slice";
 import walletReducer from "./slices/wallet.slice";
+import reviewReducer from "./slices/review.slice";
 
 export const makeStore = () => {
   return configureStore({
@@ -17,6 +18,7 @@ export const makeStore = () => {
       cart: cartReducer,
       notification: notificationReducer,
       wallet: walletReducer,
+      review: reviewReducer,
     },
   });
 };

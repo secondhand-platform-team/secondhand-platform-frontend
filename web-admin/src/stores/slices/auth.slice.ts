@@ -106,6 +106,21 @@ export const updateAvatar = createAsyncThunk<
   }
 });
 
+// Đổi mật khẩu
+export const changePassword = createAsyncThunk<
+  void,
+  { currentPassword: string; newPassword: string },
+  { rejectValue: string }
+>("auth/changePassword", async (data, { rejectWithValue }) => {
+  try {
+    await http.put("/password", data, {
+      headers: { "X-Service": "auth" },
+    });
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Đổi mật khẩu thất bại");
+  }
+});
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -204,6 +219,19 @@ const authSlice = createSlice({
       .addCase(updateAvatar.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Upload avatar thất bại";
+      })
+
+      // Change password
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Đổi mật khẩu thất bại";
       });
   },
 });
