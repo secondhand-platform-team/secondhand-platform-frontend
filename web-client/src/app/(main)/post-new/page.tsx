@@ -15,7 +15,7 @@ import {
   Tag as AntTag,
   Typography,
   Upload,
-  message,
+  App,
 } from "antd";
 import {
   CircleHelp,
@@ -30,7 +30,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useEffect, useState, type CSSProperties } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import {
   createNewItem,
@@ -71,8 +71,10 @@ const conditionOptions: { label: string; value: ItemCondition }[] = [
 
 export default function PostNewPage() {
   const [form] = Form.useForm();
+  const { message } = App.useApp();
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuth } = useAppSelector((state) => state.auth);
   const { categories, myPosts, myFavorites, loading } = useAppSelector(
     (state) => state.items,
@@ -85,6 +87,7 @@ export default function PostNewPage() {
   const [wards, setWards] = useState<Ward[]>([]);
   const [loadingProvince, setLoadingProvince] = useState(false);
   const [loadingDistrict, setLoadingDistrict] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
 
   const selectedCity = Form.useWatch("city", form);
   const selectedDistrict = Form.useWatch("district", form);
@@ -133,6 +136,139 @@ export default function PostNewPage() {
       dispatch(fetchMyFavorites());
     }
   }, [activeTab, dispatch, isAuth]);
+
+  useEffect(() => {
+    if (!isAuth || provinces.length === 0 || prefilled) {
+      return;
+    }
+
+    const hasAiParam = searchParams.get("title") || searchParams.get("city") || searchParams.get("price") || searchParams.get("description") || searchParams.get("category");
+    if (!hasAiParam) {
+      return;
+    }
+
+    const categoryHint = searchParams.get("category");
+    if (categoryHint && categories.length === 0) {
+      return; // Return early and wait for categories to finish loading
+    }
+
+    // Helper to clean Vietnam administrative prefixes and normalize Unicode (NFC) for perfect matching
+    const cleanName = (name: string): string => {
+      if (!name) return "";
+      return name
+        .normalize("NFC")
+        .toLowerCase()
+        .replace(/^(thành phố|tỉnh|quận|huyện|thị xã|thị trấn|phường|xã)\s+/gi, "")
+        .replace(/^(tp\.|tp)\s+/gi, "")
+        .trim();
+    };
+
+    // Robust category matching helper that strips out special symbols, spaces, and accents to achieve perfect fuzzy matching
+    const cleanCategoryName = (name: string): string => {
+      if (!name) return "";
+      return name
+        .normalize("NFC")
+        .toLowerCase()
+        .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, "")
+        .trim();
+    };
+
+    const title = searchParams.get("title") || "Sản phẩm secondhand";
+    const priceVal = searchParams.get("price");
+    const price = priceVal !== null && priceVal !== undefined ? Number(priceVal) : 0;
+    const condition = searchParams.get("condition") || "USED";
+    const city = searchParams.get("city") || "Hà Nội";
+    const district = searchParams.get("district") || "Cầu Giấy";
+    const description = searchParams.get("description") || "Mô tả sản phẩm secondhand từ ReBot.";
+
+    // 1. Fuzzy match Category using robust category cleaner
+    let categoryId = undefined;
+    if (categoryHint && categories.length > 0) {
+      const matchedCategory = categories.find(
+        (c) => 
+          cleanCategoryName(c.name).includes(cleanCategoryName(categoryHint)) || 
+          cleanCategoryName(categoryHint).includes(cleanCategoryName(c.name))
+      );
+      if (matchedCategory) {
+        categoryId = matchedCategory.categoryId;
+      }
+    }
+
+    // 2. Sequential loading for City, Districts, and Wards to prevent race conditions and guarantee mounting
+    const loadAllPrefillData = async () => {
+      setLoadingDistrict(true);
+      try {
+        let matchedCityName = "Thành phố Hà Nội";
+        let targetProvince = provinces.find((p) => cleanName(p.name) === cleanName(city));
+        if (!targetProvince) {
+          targetProvince = provinces.find((p) => cleanName(p.name).includes(cleanName(city)) || cleanName(city).includes(cleanName(p.name)));
+        }
+
+        let districtList: District[] = [];
+        let wardList: Ward[] = [];
+        let finalDistrictName = undefined;
+
+        if (targetProvince) {
+          matchedCityName = targetProvince.name;
+          
+          // Fetch districts of the matched province
+          const districtRes = await provinceService.getProvinceWithDistricts(targetProvince.code);
+          districtList = districtRes.districts || [];
+          
+          const targetDistrict = district || "Cầu Giấy";
+          let matchedDistrict = districtList.find((d) => cleanName(d.name) === cleanName(targetDistrict));
+          if (!matchedDistrict) {
+            matchedDistrict = districtList.find((d) => cleanName(d.name).includes(cleanName(targetDistrict)) || cleanName(targetDistrict).includes(cleanName(d.name)));
+          }
+
+          if (matchedDistrict) {
+            finalDistrictName = matchedDistrict.name;
+            
+            // Fetch wards of the matched district
+            try {
+              const wardRes = await provinceService.getDistrictWithWards(matchedDistrict.code);
+              wardList = wardRes.wards || [];
+            } catch (err) {
+              console.warn("Failed to load wards for district during pre-fill:", err);
+            }
+          }
+        }
+
+        // Set all cascading options simultaneously
+        setDistricts(districtList);
+        setWards(wardList);
+
+        const fields: Record<string, any> = {
+          title,
+          price: isNaN(price) ? 0 : price,
+          condition,
+          city: matchedCityName,
+          description
+        };
+        if (categoryId) {
+          fields.categoryId = categoryId;
+        }
+        if (finalDistrictName) {
+          fields.district = finalDistrictName;
+        }
+
+        setPrefilled(true);
+
+        // Perform standard form setting inside a small delay to ensure field elements have mounted cleanly
+        setTimeout(() => {
+          form.setFieldsValue(fields);
+          form.setFieldValue("price", fields.price);
+        }, 150);
+
+      } catch (err) {
+        console.error("Failed to load cascading pre-fill location data:", err);
+      } finally {
+        setLoadingDistrict(false);
+      }
+    };
+
+    void loadAllPrefillData();
+  }, [isAuth, provinces, categories, searchParams, form, prefilled]);
 
   if (!isAuth) {
     return null;
@@ -762,20 +898,16 @@ export default function PostNewPage() {
                     }
                     className="!mb-3"
                   >
-                    <div className="relative">
-                      <InputNumber
-                        min={0}
-                        disabled={freePost}
-                        className="!h-[40px] !w-full !pr-14"
-                        placeholder="Nhập giá bán"
-                      />
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500">
-                        VND
-                      </span>
-                    </div>
+                    <InputNumber
+                      min={0}
+                      disabled={freePost}
+                      className="!h-[40px] !w-full"
+                      placeholder="Nhập giá bán"
+                      suffix="VND"
+                    />
                   </Form.Item>
 
-                  <Form.Item name="status" initialValue="AVAILABLE" hidden>
+                  <Form.Item name="status" hidden>
                     <Input />
                   </Form.Item>
 

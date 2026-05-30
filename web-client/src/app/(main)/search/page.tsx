@@ -139,22 +139,46 @@ export default function SearchPage() {
     setPage(0);
   };
 
-  // Load categories and provinces on mount
+  // Load provinces on mount and initial allCategories
   useEffect(() => {
-    Promise.all([
-      categoryService.getTopLevelCategories(),
-      categoryService.getAllCategories(),
-    ])
-      .then(([topLevel, all]) => {
-        setCategories(Array.isArray(topLevel) ? (topLevel as unknown as CategoryType[]) : []);
+    categoryService.getAllCategories()
+      .then((all) => {
         setAllCategories(Array.isArray(all) ? (all as unknown as CategoryType[]) : []);
       })
       .catch(() => {
-        setCategories([]);
         setAllCategories([]);
       });
     provinceService.getProvinces().then(setProvinces).catch(() => { });
   }, []);
+
+  // Dynamically load categories in tabs based on selectedCategory
+  useEffect(() => {
+    const activeCatId = selectedCategories[0] || "";
+    if (activeCatId) {
+      // Find parent of active category to show siblings in tabs if it's a subcategory
+      const currentCat = allCategories.find((c) => c.categoryId === activeCatId);
+      const parentId = currentCat?.parentId || "";
+      
+      const targetCatId = parentId || activeCatId;
+      
+      categoryService.getChildCategories(targetCatId)
+        .then((childrenLevel) => {
+          setCategories(Array.isArray(childrenLevel) ? (childrenLevel as unknown as CategoryType[]) : []);
+        })
+        .catch(() => {
+          setCategories([]);
+        });
+    } else {
+      // Fetch top-level categories if no category is selected
+      categoryService.getTopLevelCategories()
+        .then((topLevel) => {
+          setCategories(Array.isArray(topLevel) ? (topLevel as unknown as CategoryType[]) : []);
+        })
+        .catch(() => {
+          setCategories([]);
+        });
+    }
+  }, [selectedCategories, allCategories]);
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams();
@@ -176,20 +200,36 @@ export default function SearchPage() {
     setLoading(true);
     try {
       const effectiveCategoryId = selectedCategories.length > 0 ? selectedCategories[0] : undefined;
-      const response = await itemService.searchItems({
-        q: keyword || undefined,
-        categoryId: effectiveCategoryId || undefined,
-        minPrice: minPrice ? Number(minPrice) : undefined,
-        maxPrice: maxPrice ? Number(maxPrice) : undefined,
-        condition: condition || undefined,
-        transactionType: transactionType || undefined,
-        city: city || undefined,
-        district: district || undefined,
-        ward: ward || undefined,
-        page,
-        size: PAGE_SIZE,
-        sort,
-      });
+      let response;
+      if (effectiveCategoryId) {
+        response = await categoryService.searchItemsByCategory(effectiveCategoryId, {
+          q: keyword || undefined,
+          minPrice: minPrice ? Number(minPrice) : undefined,
+          maxPrice: maxPrice ? Number(maxPrice) : undefined,
+          condition: condition || undefined,
+          transactionType: transactionType || undefined,
+          city: city || undefined,
+          district: district || undefined,
+          ward: ward || undefined,
+          page,
+          size: PAGE_SIZE,
+          sort,
+        });
+      } else {
+        response = await itemService.searchItems({
+          q: keyword || undefined,
+          minPrice: minPrice ? Number(minPrice) : undefined,
+          maxPrice: maxPrice ? Number(maxPrice) : undefined,
+          condition: condition || undefined,
+          transactionType: transactionType || undefined,
+          city: city || undefined,
+          district: district || undefined,
+          ward: ward || undefined,
+          page,
+          size: PAGE_SIZE,
+          sort,
+        });
+      }
       setItems(response.content);
       const { content: _, ...rest } = response;
       setPageInfo(rest);

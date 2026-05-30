@@ -515,3 +515,61 @@
     height: 50px;
   }
 }
+
+/* AI Agent Redirect Card */
+.redirectCard {
+  background: #ffffff;
+  border: 1px solid #B7E4C7;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  max-width: 85%;
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.08);
+  animation: fadeInMsg 0.25s ease;
+}
+
+.redirectHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2D6A4F;
+  border-bottom: 1px dashed #E2E8F0;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.redirectIcon {
+  color: #2D6A4F;
+}
+
+.redirectBody {
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.redirectBtn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #52B788;
+  color: #ffffff;
+  border: none;
+  text-align: center;
+  transition: background 0.15s ease;
+  font-family: inherit;
+}
+
+.redirectBtn:hover {
+  background: #2D6A4F;
+}

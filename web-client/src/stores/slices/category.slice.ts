@@ -58,8 +58,9 @@ class CategoryService {
       content: response.content.map((item) => ({
         ...item,
         images: item.itemImageList || [],
-        favoriteCount: 0,
-        viewCount: 0,
+        favoriteCount: item.favoriteCount ?? 0,
+        isFavorited: item.isFavorited ?? false,
+        viewCount: (item as any).viewCount ?? 0,
       })) as ItemWithImages[],
     } as PageResponse<ItemWithImages>;
   }
