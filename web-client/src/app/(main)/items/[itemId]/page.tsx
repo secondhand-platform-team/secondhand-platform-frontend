@@ -32,7 +32,7 @@ import {
 import FavoriteButton from "@/components/item/FavoriteButton";
 import { chatService } from "@/stores/slices/chat.slice";
 import type { UserProfileApiResponseType } from "@/types/user.type";
-import { message as antdMessage, Spin, App } from "antd";
+import { Spin, App, Modal, Radio } from "antd";
 
 import { useAppSelector, useAppDispatch } from "@/stores/hooks";
 import { addItemToCart } from "@/stores/slices/cart.slice";
@@ -61,6 +61,9 @@ export default function ItemDetailPage() {
   const [sellerProfile, setSellerProfile] =
     useState<UserProfileApiResponseType | null>(null);
   const [showPhone, setShowPhone] = useState(false);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [renewing, setRenewing] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
@@ -68,6 +71,7 @@ export default function ItemDetailPage() {
   const { isAuth } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const { message: messageApi } = App.useApp();
+  const currentUser = useAppSelector((s) => s.auth.user);
   const {
     open: reportOpen,
     itemId: reportItemId,
@@ -246,6 +250,33 @@ export default function ItemDetailPage() {
       messageApi.error("Lỗi khi thêm vào giỏ hàng");
     } finally {
       setBuyingNow(false);
+    }
+  };
+
+  const handleConfirmRenew = async () => {
+    if (!isAuth) {
+      messageApi.warning("Vui lòng đăng nhập để gia hạn tin");
+      return;
+    }
+    if (currentUser?.userId !== item.userId) {
+      messageApi.error("Chỉ chủ tin mới có thể gia hạn");
+      return;
+    }
+
+    try {
+      setRenewing(true);
+      const res = await itemService.renewItem(item.itemId, selectedPayment ?? undefined);
+      if (res && (res as any).paymentUrl) {
+        window.location.href = (res as any).paymentUrl as string;
+        return;
+      }
+      setItem(res as any);
+      messageApi.success("Gia hạn thành công! Tin đã được hiển thị lại.");
+      setShowRenewModal(false);
+    } catch (e) {
+      messageApi.error("Lỗi khi thực hiện gia hạn");
+    } finally {
+      setRenewing(false);
     }
   };
 
@@ -569,6 +600,19 @@ export default function ItemDetailPage() {
 
                 {/* Action Buttons */}
                 <div className="space-y-3 mb-5">
+                  {item.status === "HIDDEN" && isAuth && currentUser?.userId === item.userId && (
+                    <button
+                      onClick={() => {
+                        setSelectedPayment(item.transactionType === "SELL" ? "WALLET" : null);
+                        setShowRenewModal(true);
+                      }}
+                      disabled={renewing}
+                      className="w-full flex items-center justify-center gap-2.5 bg-yellow-500 hover:bg-yellow-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg hover:shadow-yellow-400/20 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <Clock className="w-5 h-5" />
+                      Gia hạn tin đăng
+                    </button>
+                  )}
                   <button
                     onClick={handleBuyNow}
                     disabled={buyingNow || item.status !== "ACTIVE"}
@@ -729,6 +773,30 @@ export default function ItemDetailPage() {
         itemId={reportItemId}
         onClose={closeReportModal}
       />
+      <Modal
+        title="Gia hạn tin đăng"
+        open={showRenewModal}
+        onOk={handleConfirmRenew}
+        onCancel={() => setShowRenewModal(false)}
+        okButtonProps={{ loading: renewing }}
+        cancelText="Hủy"
+      >
+        {item.transactionType === "SELL" ? (
+          <div>
+            <p className="mb-3">Chọn phương thức thanh toán:</p>
+            <Radio.Group
+              onChange={(e) => setSelectedPayment(e.target.value)}
+              value={selectedPayment}
+            >
+              <Radio value="WALLET">Thanh toán bằng Ví</Radio>
+              <div className="h-2" />
+              <Radio value="VNPAY">Thanh toán qua VNPAY (chuyển hướng)</Radio>
+            </Radio.Group>
+          </div>
+        ) : (
+          <p>Tin này được gia hạn miễn phí. Xác nhận để gia hạn.</p>
+        )}
+      </Modal>
     </>
   );
 }

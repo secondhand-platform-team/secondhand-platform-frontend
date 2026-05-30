@@ -52,6 +52,7 @@ export interface ItemResponse {
   itemImageList?: ItemImageResponse[];
   createdAt: string;
   updatedAt?: string;
+  expiredAt?: string | null;
   // Payment fields
   transactionId?: string;
   paymentUrl?: string;

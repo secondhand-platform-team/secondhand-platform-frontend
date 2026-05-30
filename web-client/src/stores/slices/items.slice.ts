@@ -160,6 +160,17 @@ class ItemService {
 
     return http.post<ReportResponse>("core/api/reports", formData);
   }
+
+  async renewItem(itemId: string, paymentMethod?: string) {
+    const body = paymentMethod ? { paymentMethod } : {};
+    const response = await http.post<ItemResponse>(`core/api/items/${itemId}/renew`, body);
+    return {
+      ...response,
+      images: response.itemImageList || [],
+      favoriteCount: response.favoriteCount ?? 0,
+      isFavorited: response.isFavorited ?? false,
+    } as ItemWithImages;
+  }
 }
 
 

@@ -3,12 +3,12 @@ import type { ItemWithImages } from "@/types/item.type";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Select, Pagination, message, Spin, Empty, Tag, Dropdown, Image } from "antd";
+import { Button, Input, Select, Pagination, message, Spin, Empty, Tag, Dropdown, Modal, Radio } from "antd";
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { Eye, Edit, Trash2, MoreVertical, Clock, MapPin, Heart, TrendingUp, Package } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import PostsDetailModal from "@/components/my-posts/PostsDetailModal";
-import { fetchMyItems, clearSelectedItem, deleteItemThunk, updateItemStatusThunk } from "@/stores/slices/items.slice";
+import { fetchMyItems, clearSelectedItem, deleteItemThunk, updateItemStatusThunk, itemService } from "@/stores/slices/items.slice";
 import type { MenuProps } from "antd";
 import Link from "next/link";
 
@@ -43,6 +43,10 @@ export default function MyPostsPage() {
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [page, setPage] = useState(0);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [renewOpen, setRenewOpen] = useState(false);
+  const [renewing, setRenewing] = useState(false);
+  const [renewTarget, setRenewTarget] = useState<ItemWithImages | null>(null);
+  const [renewPaymentMethod, setRenewPaymentMethod] = useState<string | null>(null);
 
   useEffect(() => {
     // Wait for auth check to finish before deciding to redirect
@@ -99,11 +103,50 @@ export default function MyPostsPage() {
     }
   };
 
+  const isExpiredItem = (item: ItemWithImages) => {
+    if (item.status !== "HIDDEN" && item.status !== "EXPIRED") return false;
+    if (!item.expiredAt) return item.status === "EXPIRED";
+    return new Date(item.expiredAt).getTime() <= Date.now();
+  };
+
+  const openRenew = (item: ItemWithImages) => {
+    setRenewTarget(item);
+    setRenewPaymentMethod(item.transactionType === "SELL" ? "WALLET" : null);
+    setRenewOpen(true);
+  };
+
+  const closeRenew = () => {
+    setRenewOpen(false);
+    setRenewTarget(null);
+    setRenewPaymentMethod(null);
+  };
+
+  const handleRenew = async () => {
+    if (!renewTarget) return;
+    setRenewing(true);
+    try {
+      const res = await itemService.renewItem(renewTarget.itemId, renewPaymentMethod ?? undefined);
+      if (res?.paymentUrl) {
+        window.location.href = res.paymentUrl;
+        return;
+      }
+      message.success("Gia hạn thành công! Tin đã được hiển thị lại.");
+      closeRenew();
+      handleRefresh();
+    } catch {
+      message.error("Gia hạn thất bại!");
+    } finally {
+      setRenewing(false);
+    }
+  };
+
   const getMenuItems = (record: ItemWithImages): MenuProps["items"] => {
     const statusOptions = ["ACTIVE", "RESERVED", "SOLD", "HIDDEN", "DRAFT"];
+    const expired = isExpiredItem(record);
     return [
       { key: "view", label: "Xem chi tiết", icon: <Eye size={15} />, onClick: () => handleViewDetail(record) },
       { key: "edit", label: "Chỉnh sửa", icon: <Edit size={15} />, onClick: () => handleEdit(record) },
+      expired ? { key: "renew", label: "Gia hạn", icon: <Clock size={15} />, onClick: () => openRenew(record) } : null,
       { type: "divider" as const },
       {
         key: "status-submenu", label: "Đổi trạng thái", icon: <Clock size={15} />,
@@ -127,6 +170,13 @@ export default function MyPostsPage() {
 
   const formatPrice = (price: number | null | undefined) =>
     price ? price.toLocaleString("vi-VN") + "đ" : "Liên hệ";
+
+  const getStatusLabel = (item: ItemWithImages) => {
+    if (isExpiredItem(item)) {
+      return statusConfig.EXPIRED;
+    }
+    return statusConfig[item.status || "DRAFT"];
+  };
 
   const totalActive = Array.isArray(myPosts) ? myPosts.filter(i => i.status === "ACTIVE").length : 0;
   const totalSold = Array.isArray(myPosts) ? myPosts.filter(i => i.status === "SOLD").length : 0;
@@ -214,8 +264,9 @@ export default function MyPostsPage() {
           {filteredItems.map((item) => {
             const primaryImage = item.images?.[0]?.imageUrl;
             const isLoading = loadingId === item.itemId;
-            const stCfg = statusConfig[item.status || "DRAFT"];
+            const stCfg = getStatusLabel(item);
             const ttCfg = transactionTypeConfig[item.transactionType];
+            const expired = isExpiredItem(item);
 
             return (
               <div key={item.itemId}
@@ -314,9 +365,15 @@ export default function MyPostsPage() {
 
                   {/* Actions Footer */}
                   <div className="flex gap-2">
+                    {expired && (
+                      <button onClick={() => openRenew(item)}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-sm font-semibold transition-colors border border-amber-200">
+                        <Clock className="w-4 h-4" /> Gia hạn
+                      </button>
+                    )}
                     <button onClick={() => handleEdit(item)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold transition-colors border border-slate-200">
-                      <Edit className="w-4 h-4" /> Chỉnh sửa
+                      className={`${expired ? "flex-1" : "flex-1"} flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold transition-colors border border-slate-200`}>
+                      <Edit className="w-4 h-4" /> Sửa
                     </button>
                     <Dropdown menu={{ items: getMenuItems(item) }} trigger={["click"]} placement="bottomRight">
                       <button className="w-9 h-9 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 transition-colors">
@@ -355,6 +412,33 @@ export default function MyPostsPage() {
           dispatch(clearSelectedItem());
         }}
       />
+
+      <Modal
+        title="Renew"
+        open={renewOpen}
+        onOk={handleRenew}
+        onCancel={closeRenew}
+        okButtonProps={{ loading: renewing }}
+        cancelText="Hủy"
+      >
+        <div className="space-y-3">
+          <p className="text-slate-600 text-sm">
+            {renewTarget?.transactionType === "SELL"
+              ? "Chọn cách thanh toán."
+              : "Tin này gia hạn miễn phí."}
+          </p>
+          {renewTarget?.transactionType === "SELL" ? (
+            <Radio.Group
+              onChange={(e) => setRenewPaymentMethod(e.target.value)}
+              value={renewPaymentMethod}
+              className="flex flex-col gap-2"
+            >
+              <Radio value="WALLET">Thanh toán bằng ví</Radio>
+              <Radio value="VNPAY">Thanh toán qua VNPAY</Radio>
+            </Radio.Group>
+          ) : null}
+        </div>
+      </Modal>
     </div>
   );
 }
