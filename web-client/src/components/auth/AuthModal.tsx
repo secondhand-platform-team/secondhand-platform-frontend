@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Alert,
   Dropdown,
@@ -19,6 +19,8 @@ import {
   PhoneOutlined,
   UserOutlined,
   ArrowRightOutlined,
+  ArrowLeftOutlined,
+  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
@@ -27,6 +29,7 @@ import {
   loginUser,
   registerUser,
   loginWithGoogle,
+  userService,
 } from "@/stores/slices/auth.slice";
 import { FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
@@ -56,12 +59,27 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
   const [mode, setMode] = useState<"login" | "register" | "forgot_password">("login");
 
+  // Forgot password sub-steps: "email" -> "otp"
+  const [forgotStep, setForgotStep] = useState<"email" | "otp">("email");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [otpValues, setOtpValues] = useState<string[]>(["", "", "", "", "", ""]);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  // Countdown timer for OTP
+  const [countdown, setCountdown] = useState(0);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
   const [loginForm, setLoginForm] = useState(defaultLogin);
   const [registerForm, setRegisterForm] = useState(defaultRegister);
 
   const [formError, setFormError] = useState<string | null>(null);
 
   const { message: messageApi } = App.useApp();
+
+  // OTP input refs
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (formError) {
@@ -91,9 +109,42 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     }
   }, [isAuth, open, onClose, messageApi]);
 
+  // Cleanup countdown on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
+
+  const startCountdown = (seconds: number) => {
+    setCountdown(seconds);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const resetForgotState = () => {
+    setForgotStep("email");
+    setForgotEmail("");
+    setOtpValues(["", "", "", "", "", ""]);
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setForgotLoading(false);
+    setCountdown(0);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+  };
+
   const closeModal = () => {
     setFormError(null);
     dispatch(clearAuthError());
+    resetForgotState();
     onClose();
   };
 
@@ -130,6 +181,261 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     if (credentialResponse.credential) {
       dispatch(loginWithGoogle(credentialResponse.credential));
     }
+  };
+
+  // ── Forgot Password Handlers ──────────────────────────────────────────
+
+  const handleSendOtp = async () => {
+    if (!forgotEmail || !forgotEmail.includes("@")) {
+      setFormError("Vui lòng nhập email hợp lệ");
+      return;
+    }
+
+    setForgotLoading(true);
+    try {
+      await userService.forgotPassword(forgotEmail);
+      messageApi.success("Mã OTP đã được gửi đến email của bạn!");
+      setForgotStep("otp");
+      startCountdown(300); // 5 minutes
+    } catch (error: any) {
+      messageApi.error(error?.message || "Không thể gửi OTP. Vui lòng thử lại.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setForgotLoading(true);
+    try {
+      await userService.forgotPassword(forgotEmail);
+      messageApi.success("Mã OTP mới đã được gửi!");
+      setOtpValues(["", "", "", "", "", ""]);
+      startCountdown(300);
+    } catch (error: any) {
+      messageApi.error(error?.message || "Không thể gửi lại OTP.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const otp = otpValues.join("");
+    if (otp.length !== 6) {
+      setFormError("Vui lòng nhập đầy đủ mã OTP 6 chữ số");
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      setFormError("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setFormError("Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    setForgotLoading(true);
+    try {
+      await userService.resetPassword({
+        email: forgotEmail,
+        otp,
+        newPassword,
+      });
+      messageApi.success("Đặt lại mật khẩu thành công! Vui lòng đăng nhập.");
+      resetForgotState();
+      setMode("login");
+    } catch (error: any) {
+      messageApi.error(error?.message || "Đặt lại mật khẩu thất bại.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(-1);
+    if (value && !/^\d$/.test(value)) return;
+
+    const newOtp = [...otpValues];
+    newOtp[index] = value;
+    setOtpValues(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpValues[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pastedData) {
+      const newOtp = [...otpValues];
+      for (let i = 0; i < pastedData.length; i++) {
+        newOtp[i] = pastedData[i];
+      }
+      setOtpValues(newOtp);
+      const nextIndex = Math.min(pastedData.length, 5);
+      otpRefs.current[nextIndex]?.focus();
+    }
+  };
+
+  const formatCountdown = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────
+
+  const renderForgotPasswordContent = () => {
+    if (forgotStep === "email") {
+      return (
+        <div className="space-y-4">
+          <Input
+            size="large"
+            placeholder="Nhập email đã đăng ký"
+            prefix={<MailOutlined />}
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+            className="!rounded-xl h-11"
+            onPressEnter={handleSendOtp}
+          />
+
+          <Button
+            type="primary"
+            size="large"
+            block
+            loading={forgotLoading}
+            icon={<ArrowRightOutlined />}
+            onClick={handleSendOtp}
+            className="h-12 !rounded-xl font-bold mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 border-none"
+          >
+            Gửi mã OTP
+          </Button>
+
+          <div className="text-center mt-4">
+            <span
+              className="text-sm text-slate-500 font-semibold cursor-pointer hover:text-emerald-600 hover:underline transition"
+              onClick={() => {
+                resetForgotState();
+                setMode("login");
+              }}
+            >
+              <ArrowLeftOutlined className="mr-1" />
+              Quay lại đăng nhập
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // OTP step
+    return (
+      <div className="space-y-5">
+        {/* OTP sent indicator */}
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+          <p className="text-emerald-700 text-sm font-medium mb-0">
+            📧 Mã OTP đã gửi đến <strong>{forgotEmail}</strong>
+          </p>
+          {countdown > 0 && (
+            <p className="text-emerald-500 text-xs mt-1 mb-0">
+              ⏱ Mã có hiệu lực trong <strong>{formatCountdown(countdown)}</strong>
+            </p>
+          )}
+        </div>
+
+        {/* OTP Input */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Mã OTP</label>
+          <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+            {otpValues.map((val, idx) => (
+              <input
+                key={idx}
+                ref={(el) => { otpRefs.current[idx] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={val}
+                onChange={(e) => handleOtpChange(idx, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                className="w-12 h-14 text-center text-xl font-bold border-2 border-slate-200 rounded-xl
+                  focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none
+                  transition-all bg-white hover:border-slate-300"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* New Password */}
+        <div>
+          <Input.Password
+            size="large"
+            placeholder="Mật khẩu mới (tối thiểu 6 ký tự)"
+            prefix={<LockOutlined />}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="!rounded-xl h-11"
+          />
+        </div>
+
+        {/* Confirm Password */}
+        <div>
+          <Input.Password
+            size="large"
+            placeholder="Xác nhận mật khẩu mới"
+            prefix={<LockOutlined />}
+            value={confirmNewPassword}
+            onChange={(e) => setConfirmNewPassword(e.target.value)}
+            className="!rounded-xl h-11"
+          />
+        </div>
+
+        {/* Submit */}
+        <Button
+          type="primary"
+          size="large"
+          block
+          loading={forgotLoading}
+          icon={<SafetyCertificateOutlined />}
+          onClick={handleResetPassword}
+          className="h-12 !rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 border-none"
+        >
+          Đặt lại mật khẩu
+        </Button>
+
+        {/* Resend & Back */}
+        <div className="flex items-center justify-between mt-2">
+          <span
+            className="text-sm text-slate-500 font-semibold cursor-pointer hover:text-emerald-600 hover:underline transition"
+            onClick={() => {
+              resetForgotState();
+              setMode("login");
+            }}
+          >
+            <ArrowLeftOutlined className="mr-1" />
+            Đăng nhập
+          </span>
+
+          {countdown === 0 ? (
+            <span
+              className="text-sm text-emerald-600 font-semibold cursor-pointer hover:underline transition"
+              onClick={handleResendOtp}
+            >
+              Gửi lại OTP
+            </span>
+          ) : (
+            <span className="text-sm text-slate-400">
+              Gửi lại sau {formatCountdown(countdown)}
+            </span>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -208,7 +514,9 @@ items-center justify-center p-12 overflow-hidden">
                     ? "Đăng nhập để tiếp tục"
                     : mode === "register"
                       ? "Tham gia cộng đồng mua sắm bền vững"
-                      : "Nhập email hoặc số điện thoại để lấy lại mật khẩu"}
+                      : forgotStep === "email"
+                        ? "Nhập email để nhận mã OTP đặt lại mật khẩu"
+                        : "Nhập mã OTP và mật khẩu mới"}
                 </Typography.Text>
               </div>
 
@@ -242,82 +550,80 @@ items-center justify-center p-12 overflow-hidden">
               <AnimatePresence mode="wait">
 
                 <motion.div
-                  key={mode}
+                  key={mode + (mode === "forgot_password" ? forgotStep : "")}
                   initial={{ opacity: 0, x: 15 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -15 }}
                   transition={{ duration: 0.25 }}
                 >
 
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (mode === "login") handleLogin(e);
-                      else if (mode === "register") handleRegister(e);
-                      else {
-                        messageApi.success("Đã gửi hướng dẫn khôi phục mật khẩu đến " + loginForm.email);
-                        setMode("login");
-                      }
-                    }}
-                    className="space-y-4"
-                  >
+                  {mode === "forgot_password" ? (
+                    renderForgotPasswordContent()
+                  ) : (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (mode === "login") handleLogin(e);
+                        else if (mode === "register") handleRegister(e);
+                      }}
+                      className="space-y-4"
+                    >
 
-                    {mode === "register" && (
+                      {mode === "register" && (
+                        <Input
+                          size="large"
+                          placeholder="Họ và tên"
+                          prefix={<UserOutlined />}
+                          value={registerForm.fullName}
+                          onChange={(e) =>
+                            setRegisterForm({
+                              ...registerForm,
+                              fullName: e.target.value,
+                            })
+                          }
+                          className="!rounded-xl h-11"
+                        />
+                      )}
+
                       <Input
                         size="large"
-                        placeholder="Họ và tên"
-                        prefix={<UserOutlined />}
-                        value={registerForm.fullName}
+                        placeholder={mode === "register" ? "Email" : "Email hoặc Số điện thoại"}
+                        prefix={mode === "register" ? <MailOutlined /> : <UserOutlined />}
+                        value={
+                          mode === "register"
+                            ? registerForm.email
+                            : loginForm.email
+                        }
                         onChange={(e) =>
-                          setRegisterForm({
-                            ...registerForm,
-                            fullName: e.target.value,
-                          })
+                          mode === "register"
+                            ? setRegisterForm({
+                              ...registerForm,
+                              email: e.target.value,
+                            })
+                            : setLoginForm({
+                              ...loginForm,
+                              email: e.target.value,
+                            })
                         }
                         className="!rounded-xl h-11"
                       />
-                    )}
 
-                    <Input
-                      size="large"
-                      placeholder={mode === "register" ? "Email" : "Email hoặc Số điện thoại"}
-                      prefix={mode === "register" ? <MailOutlined /> : <UserOutlined />}
-                      value={
-                        mode === "register"
-                          ? registerForm.email
-                          : loginForm.email
-                      }
-                      onChange={(e) =>
-                        mode === "register"
-                          ? setRegisterForm({
-                            ...registerForm,
-                            email: e.target.value,
-                          })
-                          : setLoginForm({
-                            ...loginForm,
-                            email: e.target.value,
-                          })
-                      }
-                      className="!rounded-xl h-11"
-                    />
+                      {mode === "register" && (
+                        <Input
+                          size="large"
+                          placeholder="Số điện thoại"
+                          prefix={<PhoneOutlined />}
+                          value={registerForm.phoneNumber}
+                          onChange={(e) =>
+                            setRegisterForm({
+                              ...registerForm,
+                              phoneNumber: e.target.value,
+                            })
+                          }
+                          className="!rounded-xl h-11"
+                        />
+                      )}
 
-                    {mode === "register" && (
-                      <Input
-                        size="large"
-                        placeholder="Số điện thoại"
-                        prefix={<PhoneOutlined />}
-                        value={registerForm.phoneNumber}
-                        onChange={(e) =>
-                          setRegisterForm({
-                            ...registerForm,
-                            phoneNumber: e.target.value,
-                          })
-                        }
-                        className="!rounded-xl h-11"
-                      />
-                    )}
-
-                    {mode !== "forgot_password" && (
                       <Input.Password
                         size="large"
                         placeholder="Mật khẩu"
@@ -340,61 +646,49 @@ items-center justify-center p-12 overflow-hidden">
                         }
                         className="!rounded-xl h-11"
                       />
-                    )}
 
-                    {mode === "login" && (
-                      <div className="flex justify-end">
-                        <span
-                          className="text-sm text-emerald-600 font-semibold cursor-pointer hover:underline"
-                          onClick={() => {
-                            setMode("forgot_password");
-                          }}
-                        >
-                          Quên mật khẩu?
-                        </span>
-                      </div>
-                    )}
+                      {mode === "login" && (
+                        <div className="flex justify-end">
+                          <span
+                            className="text-sm text-emerald-600 font-semibold cursor-pointer hover:underline"
+                            onClick={() => {
+                              setMode("forgot_password");
+                              setForgotStep("email");
+                            }}
+                          >
+                            Quên mật khẩu?
+                          </span>
+                        </div>
+                      )}
 
-                    {mode === "register" && (
-                      <Input.Password
+                      {mode === "register" && (
+                        <Input.Password
+                          size="large"
+                          placeholder="Xác nhận mật khẩu"
+                          prefix={<LockOutlined />}
+                          value={registerForm.confirmPassword}
+                          onChange={(e) =>
+                            setRegisterForm({
+                              ...registerForm,
+                              confirmPassword: e.target.value,
+                            })
+                          }
+                          className="!rounded-xl h-11"
+                        />
+                      )}
+
+                      <Button
+                        type="primary"
                         size="large"
-                        placeholder="Xác nhận mật khẩu"
-                        prefix={<LockOutlined />}
-                        value={registerForm.confirmPassword}
-                        onChange={(e) =>
-                          setRegisterForm({
-                            ...registerForm,
-                            confirmPassword: e.target.value,
-                          })
-                        }
-                        className="!rounded-xl h-11"
-                      />
-                    )}
+                        htmlType="submit"
+                        block
+                        loading={loading}
+                        icon={<ArrowRightOutlined />}
+                        className="h-12 !rounded-xl font-bold mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 border-none"
+                      >
+                        {mode === "login" ? "Đăng nhập" : "Tạo tài khoản"}
+                      </Button>
 
-                    <Button
-                      type="primary"
-                      size="large"
-                      htmlType="submit"
-                      block
-                      loading={loading}
-                      icon={<ArrowRightOutlined />}
-                      className="h-12 !rounded-xl font-bold mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 border-none"
-                    >
-                      {mode === "login" ? "Đăng nhập" : mode === "register" ? "Tạo tài khoản" : "Gửi yêu cầu"}
-                    </Button>
-
-                    {mode === "forgot_password" && (
-                      <div className="text-center mt-4">
-                        <span
-                          className="text-sm text-slate-500 font-semibold cursor-pointer hover:text-emerald-600 hover:underline transition"
-                          onClick={() => setMode("login")}
-                        >
-                          Quay lại đăng nhập
-                        </span>
-                      </div>
-                    )}
-
-                    {mode !== "forgot_password" && (
                       <>
                         <Divider plain>Hoặc</Divider>
 
@@ -441,19 +735,11 @@ items-center justify-center p-12 overflow-hidden">
                             </div>
                           </div>
 
-                          {/* <Button
-                          //   className="flex-1 h-11 !rounded-xl flex items-center justify-center gap-2
-                          //     !border !border-slate-200 dark:!border-slate-600 !bg-white dark:!bg-slate-800 hover:!bg-slate-50 dark:hover:!bg-slate-700 !text-slate-700 dark:!text-slate-200 hover:!shadow-md !transition-shadow"
-                          // >
-                          //     <FaFacebookF size={16} className="text-[#1877F2]" />
-                          //     Facebook
-                          //   </Button> */}
-
                         </div>
                       </>
-                    )}
 
-                  </form>
+                    </form>
+                  )}
                 </motion.div>
 
               </AnimatePresence>

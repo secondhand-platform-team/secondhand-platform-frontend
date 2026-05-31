@@ -250,6 +250,15 @@ export const userService = {
 	setDefaultAddress: async (id: number) => {
 		return http.put(`/auth/api/addresses/${id}/set-default`);
 	},
+	changePassword: async (payload: { currentPassword: string; newPassword: string }) => {
+		return http.put<{ message?: string }>("/auth/api/password", payload);
+	},
+	forgotPassword: async (email: string) => {
+		return http.post<{ message?: string }>("/auth/api/forgot-password", { email });
+	},
+	resetPassword: async (payload: { email: string; otp: string; newPassword: string }) => {
+		return http.post<{ message?: string }>("/auth/api/reset-password", payload);
+	},
 };
 
 export default authSlice.reducer;
