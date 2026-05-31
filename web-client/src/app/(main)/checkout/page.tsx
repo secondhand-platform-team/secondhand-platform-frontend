@@ -254,6 +254,13 @@ export default function CheckoutPage() {
             itemId: item.itemId,
           });
 
+          // If VNPAY, redirect IMMEDIATELY before showing any result screen
+          if (paymentMethod === "VNPAY" && res?.paymentUrl) {
+            messageApi.loading("Đang chuyển hướng đến VNPay...");
+            window.location.href = res.paymentUrl;
+            return; // Stop here — don't render success screen
+          }
+
           results.push({
             itemId: item.itemId,
             title: item.title,
@@ -285,17 +292,6 @@ export default function CheckoutPage() {
         );
       } else {
         messageApi.error("Tất cả đơn hàng đều thất bại.");
-      }
-
-      // If VNPAY and first order has paymentUrl, redirect
-      if (paymentMethod === "VNPAY") {
-        const firstSuccess = results.find(
-          (r) => r.success && r.paymentUrl,
-        );
-        if (firstSuccess?.paymentUrl) {
-          window.location.href = firstSuccess.paymentUrl;
-          return;
-        }
       }
     } catch (err: any) {
       messageApi.error(err?.message || "Đặt hàng thất bại");
